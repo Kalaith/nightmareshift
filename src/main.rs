@@ -65,7 +65,6 @@ impl Game {
             game_data: Some(game_data),
             game_state,
             player_stats,
-            loading_complete: true,
             show_rules: false,
             show_inventory: false,
             transition: ScreenTransition::new(),

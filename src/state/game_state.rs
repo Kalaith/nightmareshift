@@ -67,7 +67,6 @@ impl Default for RelationshipLevel {
 
 /// Current ride information
 #[derive(Debug, Clone)]
-#[allow(dead_code)]
 pub struct CurrentRide {
     pub passenger: Passenger,
     pub pickup_location: String,
@@ -80,8 +79,6 @@ pub struct CurrentRide {
 /// Passenger need state tracking
 #[derive(Debug, Clone)]
 pub struct PassengerNeedState {
-    pub _passenger_id: u32,
-    pub _need_type: NeedType,
     pub level: u32,
     pub stage: NeedStage,
     pub stability: f32,
@@ -97,8 +94,6 @@ impl PassengerNeedState {
         let stage = Self::calculate_stage(profile.initial_level, &profile.thresholds);
         
         Some(Self {
-            _passenger_id: passenger.id,
-            _need_type: profile.need_type,
             level: profile.initial_level.clamp(0, 100),
             stage,
             stability: 1.0 - (profile.initial_level as f32 / 100.0),
@@ -127,8 +122,8 @@ impl PassengerNeedState {
 pub struct DetectedTell {
     pub tell: PassengerTell,
     pub passenger_id: u32,
-    pub _detection_time: f64,
-    pub _player_noticed: bool,
+    pub detection_time: f64,
+    pub player_noticed: bool,
     pub related_guideline: Option<u32>,
     pub exception_id: Option<String>,
 }
@@ -196,7 +191,7 @@ impl PassengerReputation {
 
 /// Route history entry
 #[derive(Debug, Clone)]
-#[allow(dead_code)]
+
 pub struct RouteHistoryEntry {
     pub route_type: RouteType,
     pub driving_phase: DrivingPhase,
@@ -216,7 +211,7 @@ pub struct RouteStreak {
 
 /// Guideline decision history
 #[derive(Debug, Clone)]
-#[allow(dead_code)]
+
 pub struct GuidelineDecision {
     pub guideline_id: u32,
     pub passenger_id: u32,
@@ -244,7 +239,7 @@ pub struct RideCompletion {
 
 /// Dialogue display
 #[derive(Debug, Clone)]
-#[allow(dead_code)]
+
 pub struct CurrentDialogue {
     pub text: String,
     pub speaker: DialogueSpeaker,
@@ -253,7 +248,7 @@ pub struct CurrentDialogue {
 
 /// Who is speaking
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[allow(dead_code)]
+
 pub enum DialogueSpeaker {
     Passenger,
     Driver,
@@ -283,20 +278,17 @@ pub struct GameState {
     pub driving_phase: Option<DrivingPhase>,
     pub used_passengers: Vec<u32>,
     pub shift_start_time: Option<f64>,
-    pub _session_start_time: f64,
     pub difficulty_level: u32,
 
     // Passenger state machine
     pub current_passenger_need_state: Option<PassengerNeedState>,
     pub detected_tells: Vec<DetectedTell>,
-    pub _rule_confidence: f32,
     pub player_trust: f32,
     pub decision_history: Vec<GuidelineDecision>,
     
     // Route tracking
     pub route_history: Vec<RouteHistoryEntry>,
     pub route_mastery: HashMap<RouteType, u32>,
-    pub _route_consequences: Vec<String>,
     pub consecutive_route_streak: Option<RouteStreak>,
 
     // Weather system
@@ -306,7 +298,6 @@ pub struct GameState {
     pub environmental_hazards: Vec<EnvironmentalHazard>,
 
     // Persistence
-    pub _passenger_backstories: HashMap<u32, bool>,
     pub passenger_reputation: HashMap<u32, PassengerReputation>,
     pub minimum_earnings: u32,
     
@@ -331,7 +322,7 @@ pub struct GameState {
 
 impl GameState {
     /// Create a new game state with initial values from constants
-    pub fn new(current_time: f64, constants: &GameConstants) -> Self {
+    pub fn new(_current_time: f64, constants: &GameConstants) -> Self {
         Self {
             fuel: constants.initial_fuel as f32,
             earnings: 0,
@@ -350,22 +341,18 @@ impl GameState {
             driving_phase: None,
             used_passengers: Vec::new(),
             shift_start_time: None,
-            _session_start_time: current_time,
             difficulty_level: 0,
             current_passenger_need_state: None,
             detected_tells: Vec::new(),
-            _rule_confidence: 0.5,
             player_trust: 0.5,
             decision_history: Vec::new(),
             route_history: Vec::new(),
             route_mastery: HashMap::new(),
-            _route_consequences: Vec::new(),
             consecutive_route_streak: None,
             current_weather: WeatherCondition::default(),
             time_of_day: TimeOfDay::default(),
             season: Season::default(),
             environmental_hazards: Vec::new(),
-            _passenger_backstories: HashMap::new(),
             passenger_reputation: HashMap::new(),
             minimum_earnings: constants.minimum_earnings,
             rule_immunity_charges: 0,
