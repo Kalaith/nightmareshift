@@ -33,8 +33,41 @@ pub mod colors {
 
 /// Standard spacing values
 pub mod spacing {
+    pub const PADDING_SM: f32 = 8.0;
     pub const PADDING_MD: f32 = 16.0;
     pub const PADDING_LG: f32 = 24.0;
+    pub const PADDING_XL: f32 = 32.0;
+}
+
+/// Layout constants for consistent UI positioning
+pub mod layout {
+    // Status bar
+    pub const STATUS_BAR_HEIGHT: f32 = 55.0;
+    pub const STATUS_BAR_TEXT_Y: f32 = 35.0;
+    pub const STATUS_ITEM_SPACING: f32 = 100.0;
+    pub const STATUS_EARNINGS_SPACING: f32 = 120.0;
+    
+    // Buttons
+    pub const BUTTON_WIDTH_SM: f32 = 100.0;
+    pub const BUTTON_WIDTH_MD: f32 = 150.0;
+    pub const BUTTON_WIDTH_LG: f32 = 200.0;
+    pub const BUTTON_HEIGHT: f32 = 40.0;
+    pub const BUTTON_SPACING: f32 = 20.0;
+    
+    // Cards and panels
+    pub const CARD_WIDTH: f32 = 400.0;
+    pub const CARD_HEIGHT: f32 = 350.0;
+    pub const PANEL_MIN_WIDTH: f32 = 300.0;
+    
+    // Game timing defaults
+    pub const DEFAULT_START_HOUR: u32 = 20; // 8 PM
+    pub const DEFAULT_MONTH: u32 = 10; // October
+    
+    // Fuel thresholds
+    pub const FUEL_CRITICAL_THRESHOLD: f32 = 10.0;
+    pub const FUEL_LOW_THRESHOLD: f32 = 20.0;
+    pub const FUEL_MEDIUM_THRESHOLD: f32 = 40.0;
+    pub const MINIMUM_FUEL_FOR_RIDE: f32 = 5.0;
 }
 
 /// Font sizes
@@ -100,11 +133,11 @@ pub fn draw_panel_bordered(rect: UiRect, bg: Color, border: Color, border_width:
 
 /// Get color for fuel level
 pub fn get_fuel_color(fuel: f32) -> Color {
-    if fuel <= 10.0 {
+    if fuel <= layout::FUEL_CRITICAL_THRESHOLD {
         colors::FUEL_CRITICAL // Red - Critical
-    } else if fuel <= 20.0 {
+    } else if fuel <= layout::FUEL_LOW_THRESHOLD {
         colors::FUEL_LOW // Red/Orange - Low
-    } else if fuel <= 40.0 {
+    } else if fuel <= layout::FUEL_MEDIUM_THRESHOLD {
         colors::ACCENT_WARNING // Yellow - Medium
     } else {
         colors::FUEL_GOOD // Green - Good

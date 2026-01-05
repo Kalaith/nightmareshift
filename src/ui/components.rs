@@ -11,23 +11,23 @@ pub struct StatusBar;
 
 impl StatusBar {
     pub fn draw(state: &GameState, constants: &ConstantsData) {
-        let bar_rect = UiRect::new(0.0, 0.0, screen_width(), 55.0);
+        let bar_rect = UiRect::new(0.0, 0.0, screen_width(), layout::STATUS_BAR_HEIGHT);
         draw_panel(bar_rect, colors::PANEL_BG);
 
         let padding = spacing::PADDING_LG;
         let mut x = padding;
-        let y = 35.0;
+        let y = layout::STATUS_BAR_TEXT_Y;
 
         // Fuel gauge with icon
         let fuel_color = get_fuel_color(state.fuel);
         let fuel_text = format!("⛽ {}%", state.fuel as u32);
         draw_text(&fuel_text, x, y, fonts::SIZE_LG, fuel_color);
-        x += 100.0;
+        x += layout::STATUS_ITEM_SPACING;
 
         // Earnings
         let earnings_text = format!("💰 ${}", state.earnings);
         draw_text(&earnings_text, x, y, fonts::SIZE_LG, colors::ACCENT_GOLD);
-        x += 120.0;
+        x += layout::STATUS_EARNINGS_SPACING;
 
         // Time remaining
         let time_color = if state.is_time_critical(constants) {
@@ -39,7 +39,7 @@ impl StatusBar {
         let mins = state.time_remaining % 60;
         let time_text = format!("⏰ {}:{:02}", hours, mins);
         draw_text(&time_text, x, y, fonts::SIZE_LG, time_color);
-        x += 100.0;
+        x += layout::STATUS_ITEM_SPACING;
 
         // Rides completed
         let rides_text = format!("🚕 {} rides", state.rides_completed);

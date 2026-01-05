@@ -1,4 +1,7 @@
-//! Screen modules (placeholder for future expansion).
+//! Screen rendering modules.
+//!
+//! Screens are separated by purpose to keep file sizes manageable.
 
-// Screens are currently implemented inline in main.rs for simplicity.
-// This module can be expanded to separate screen logic.
+pub mod meta_screens;
+
+pub use meta_screens::*;
