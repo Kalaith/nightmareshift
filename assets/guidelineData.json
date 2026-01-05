@@ -1,0 +1,89 @@
+[
+  {
+    "id": 1001,
+    "title": "Never Make Eye Contact",
+    "description": "Avoid looking directly at passengers to prevent supernatural consequences",
+    "difficulty": "medium",
+    "type": "basic",
+    "visible": true,
+    "isGuideline": true,
+    "defaultSafety": "safe",
+    "exceptions": [
+      {
+        "id": "eye_contact_lonely",
+        "passengerTypes": ["Ghost of former taxi passenger", "Lost child who doesn't realize he's been missing"],
+        "conditions": [
+          {
+            "type": "passenger_dialogue",
+            "value": "Why won't you look at me",
+            "operator": "contains",
+            "description": "Passenger asks for acknowledgment"
+          },
+          {
+            "type": "passenger_behavior",
+            "value": 0.6,
+            "operator": "greater_than",
+            "description": "High stress level indicating need for comfort"
+          }
+        ],
+        "tells": [
+          {
+            "type": "verbal",
+            "intensity": "obvious",
+            "description": "Passenger asks 'Why won't you look at me?'",
+            "triggerPhrase": "Why won't you look at me",
+            "reliability": 0.9
+          },
+          {
+            "type": "behavioral",
+            "intensity": "moderate",
+            "description": "Passenger fidgets nervously and glances at mirror repeatedly",
+            "animationCue": "fidget_glance",
+            "reliability": 0.7
+          },
+          {
+            "type": "verbal",
+            "intensity": "subtle",
+            "description": "Voice gets louder and more agitated over time",
+            "audioCue": "voice_escalation",
+            "reliability": 0.6
+          }
+        ],
+        "breakingSafer": true,
+        "description": "Lonely passengers need acknowledgment or they become hostile",
+        "probability": 0.3,
+        "requiredStage": "warning"
+      }
+    ],
+    "followConsequences": [
+      {
+        "type": "survival",
+        "value": 1,
+        "description": "Avoided supernatural gaze encounter",
+        "probability": 0.8
+      }
+    ],
+    "breakConsequences": [
+      {
+        "type": "death",
+        "value": 1,
+        "description": "Made eye contact - face twisted into void",
+        "probability": 0.7
+      }
+    ],
+    "exceptionRewards": [
+      {
+        "type": "reputation",
+        "value": 8,
+        "description": "Acknowledged a lonely spirit with compassion.",
+        "probability": 0.75
+      },
+      {
+        "type": "story_unlock",
+        "value": 1,
+        "description": "Unlocked a new memory from the restless passenger.",
+        "probability": 0.5
+      }
+    ]
+  }
+]

@@ -1,0 +1,251 @@
+//! Environment data types for weather, time, and hazards.
+
+use serde::{Deserialize, Serialize};
+use super::passenger::RouteType;
+
+/// Weather types
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum WeatherType {
+    Clear,
+    Rain,
+    Fog,
+    Snow,
+    Thunderstorm,
+    Wind,
+}
+
+impl Default for WeatherType {
+    fn default() -> Self {
+        WeatherType::Clear
+    }
+}
+
+/// Weather intensity
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum WeatherIntensity {
+    Light,
+    Moderate,
+    Heavy,
+}
+
+impl Default for WeatherIntensity {
+    fn default() -> Self {
+        WeatherIntensity::Light
+    }
+}
+
+/// Type of weather effect
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum WeatherEffectType {
+    VisibilityReduction,
+    FuelConsumption,
+    TimeDelay,
+    SupernaturalAttraction,
+    PassengerBehavior,
+    RouteBlockage,
+    RuleModification,
+}
+
+/// A weather effect applied during a condition
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct WeatherEffect {
+    #[serde(rename = "type")]
+    pub effect_type: WeatherEffectType,
+    pub value: i32,
+    pub description: String,
+    #[serde(rename = "appliesTo")]
+    pub applies_to: Option<String>,
+}
+
+/// Current weather conditions
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct WeatherCondition {
+    #[serde(rename = "type")]
+    pub weather_type: WeatherType,
+    pub intensity: WeatherIntensity,
+    pub visibility: u32,
+    pub description: String,
+    pub icon: String,
+    #[serde(default)]
+    pub effects: Vec<WeatherEffect>,
+    pub duration: u32,
+    pub start_time: f64,
+}
+
+impl Default for WeatherCondition {
+    fn default() -> Self {
+        Self {
+            weather_type: WeatherType::Clear,
+            intensity: WeatherIntensity::Light,
+            visibility: 100,
+            description: "Clear night skies".to_string(),
+            icon: "🌙".to_string(),
+            effects: Vec::new(),
+            duration: 60,
+            start_time: 0.0,
+        }
+    }
+}
+
+
+/// Time of day phases
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum TimePhase {
+    Dawn,
+    Morning,
+    Afternoon,
+    Dusk,
+    Night,
+    Latenight,
+}
+
+impl Default for TimePhase {
+    fn default() -> Self {
+        TimePhase::Night
+    }
+}
+
+/// Current time of day
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TimeOfDay {
+    pub phase: TimePhase,
+    pub hour: u32,
+    pub description: String,
+    #[serde(rename = "ambientLight")]
+    pub ambient_light: u32,
+    #[serde(rename = "supernaturalActivity")]
+    pub supernatural_activity: u32,
+}
+
+impl Default for TimeOfDay {
+    fn default() -> Self {
+        Self {
+            phase: TimePhase::Night,
+            hour: 20,
+            description: "Darkness settles over the city".to_string(),
+            ambient_light: 15,
+            supernatural_activity: 85,
+        }
+    }
+}
+
+impl TimeOfDay {
+    /// Check if it's nighttime (night or latenight)
+    pub fn is_night(&self) -> bool {
+        matches!(self.phase, TimePhase::Night | TimePhase::Latenight)
+    }
+}
+
+/// Season types
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum SeasonType {
+    Spring,
+    Summer,
+    Fall,
+    Winter,
+}
+
+impl Default for SeasonType {
+    fn default() -> Self {
+        SeasonType::Fall
+    }
+}
+
+/// Temperature levels
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum Temperature {
+    Cold,
+    Cool,
+    Mild,
+    Warm,
+    Hot,
+}
+
+/// Current season
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Season {
+    #[serde(rename = "type")]
+    pub season_type: SeasonType,
+    pub month: u32,
+    pub temperature: Temperature,
+    pub description: String,
+}
+
+impl Default for Season {
+    fn default() -> Self {
+        Self {
+            season_type: SeasonType::Fall,
+            month: 10,
+            temperature: Temperature::Cool,
+            description: "Autumn brings unpredictable conditions".to_string(),
+        }
+    }
+}
+
+/// Environmental hazard types
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum HazardType {
+    Construction,
+    Accident,
+    SupernaturalEvent,
+    RoadClosure,
+    PoliceCheckpoint,
+}
+
+/// Hazard severity levels
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum HazardSeverity {
+    Minor,
+    Major,
+    Extreme,
+}
+
+/// Effects of a hazard on routes
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct HazardEffects {
+    #[serde(rename = "routeBlocked")]
+    pub route_blocked: Option<Vec<RouteType>>,
+    #[serde(rename = "timeDelay")]
+    pub time_delay: Option<u32>,
+    #[serde(rename = "fuelIncrease")]
+    pub fuel_increase: Option<u32>,
+    #[serde(rename = "riskIncrease")]
+    pub risk_increase: Option<u32>,
+    #[serde(rename = "forcedChoice")]
+    pub forced_choice: Option<bool>,
+}
+
+/// An environmental hazard affecting routes
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct EnvironmentalHazard {
+    pub id: String,
+    #[serde(rename = "type")]
+    pub hazard_type: HazardType,
+    pub location: String,
+    pub severity: HazardSeverity,
+    pub description: String,
+    #[serde(default)]
+    pub effects: HazardEffects,
+    pub duration: u32,
+    pub start_time: f64,
+    #[serde(rename = "weatherTriggered", default)]
+    pub weather_triggered: bool,
+}
+
+impl EnvironmentalHazard {
+    /// Check if this hazard blocks a specific route type
+    pub fn blocks_route(&self, route: RouteType) -> bool {
+        self.effects.route_blocked
+            .as_ref()
+            .map(|blocked| blocked.contains(&route))
+            .unwrap_or(false)
+    }
+}

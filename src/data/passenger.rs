@@ -1,0 +1,260 @@
+//! Passenger data types matching passengerData.json.
+
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
+
+/// Passenger rarity tier
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum Rarity {
+    Common,
+    Uncommon,
+    Rare,
+    Legendary,
+}
+
+impl Default for Rarity {
+    fn default() -> Self {
+        Rarity::Common
+    }
+}
+
+/// Route types for navigation
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum RouteType {
+    Normal,
+    Shortcut,
+    Scenic,
+    Police,
+}
+
+impl Default for RouteType {
+    fn default() -> Self {
+        RouteType::Normal
+    }
+}
+
+/// How a passenger feels about a route
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum PreferenceLevel {
+    Loves,
+    Likes,
+    Neutral,
+    Dislikes,
+    Fears,
+}
+
+impl Default for PreferenceLevel {
+    fn default() -> Self {
+        PreferenceLevel::Neutral
+    }
+}
+
+/// Type of behavioral tell
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum TellType {
+    Verbal,
+    Behavioral,
+    Visual,
+    Environmental,
+}
+
+/// Intensity of a tell
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum TellIntensity {
+    Subtle,
+    Moderate,
+    Obvious,
+}
+
+/// Type of passenger need
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum NeedType {
+    Hunger,
+    Fear,
+    Wrath,
+    Decay,
+    Loneliness,
+    Unknown,
+}
+
+impl Default for NeedType {
+    fn default() -> Self {
+        NeedType::Unknown
+    }
+}
+
+/// A behavioral tell that hints at the passenger's state
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PassengerTell {
+    #[serde(rename = "type")]
+    pub tell_type: TellType,
+    pub intensity: TellIntensity,
+    pub description: String,
+    #[serde(rename = "triggerPhrase")]
+    pub trigger_phrase: Option<String>,
+    #[serde(rename = "animationCue")]
+    pub animation_cue: Option<String>,
+    #[serde(rename = "audioCue")]
+    pub audio_cue: Option<String>,
+    #[serde(default)]
+    pub reliability: f32,
+}
+
+/// Thresholds for need stage transitions
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct NeedThresholds {
+    pub warning: u32,
+    pub critical: u32,
+    pub meltdown: u32,
+}
+
+/// How need level changes based on actions
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct NeedChangeProfile {
+    pub passive: i32,
+    pub obey: i32,
+    #[serde(rename = "break")]
+    pub break_rule: i32,
+    #[serde(rename = "exceptionRelief")]
+    pub exception_relief: i32,
+}
+
+/// Stage-specific tell intensities
+pub type TellIntensityMap = HashMap<String, Vec<String>>;
+
+/// Stage-specific dialogue lines
+pub type DialogueByStage = HashMap<String, Vec<String>>;
+
+/// Stage-specific impact values
+pub type StageImpact = HashMap<String, f32>;
+
+/// Complete state profile for a passenger's supernatural nature
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PassengerStateProfile {
+    #[serde(rename = "needType")]
+    pub need_type: NeedType,
+    #[serde(rename = "initialLevel")]
+    pub initial_level: u32,
+    pub thresholds: NeedThresholds,
+    #[serde(rename = "needChange")]
+    pub need_change: NeedChangeProfile,
+    #[serde(rename = "exceptionId")]
+    pub exception_id: Option<String>,
+    #[serde(rename = "tellIntensities")]
+    pub tell_intensities: Option<TellIntensityMap>,
+    #[serde(rename = "dialogueByStage")]
+    pub dialogue_by_stage: Option<DialogueByStage>,
+    #[serde(rename = "confidenceImpact")]
+    pub confidence_impact: Option<StageImpact>,
+    #[serde(rename = "trustImpact")]
+    pub trust_impact: Option<StageImpact>,
+}
+
+/// Passenger preference for a specific route type
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RoutePreference {
+    pub route: RouteType,
+    pub preference: PreferenceLevel,
+    pub reason: String,
+    #[serde(rename = "fareModifier")]
+    pub fare_modifier: f32,
+    #[serde(rename = "stressModifier")]
+    pub stress_modifier: f32,
+    #[serde(rename = "specialDialogue")]
+    pub special_dialogue: Option<String>,
+    #[serde(rename = "triggerChance")]
+    pub trigger_chance: Option<f32>,
+}
+
+/// Rule modification capability
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RuleModification {
+    #[serde(rename = "canModify")]
+    pub can_modify: bool,
+    #[serde(rename = "type")]
+    pub modification_type: String,
+    pub description: String,
+}
+
+/// A supernatural passenger in the game
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Passenger {
+    pub id: u32,
+    pub name: String,
+    pub emoji: String,
+    pub description: String,
+    pub pickup: String,
+    pub destination: String,
+    #[serde(rename = "personalRule")]
+    pub personal_rule: String,
+    pub supernatural: String,
+    pub fare: u32,
+    #[serde(default)]
+    pub rarity: Rarity,
+    #[serde(default)]
+    pub items: Vec<String>,
+    #[serde(default)]
+    pub dialogue: Vec<String>,
+    #[serde(default)]
+    pub relationships: Vec<u32>,
+    #[serde(rename = "backstoryUnlocked", default)]
+    pub backstory_unlocked: bool,
+    #[serde(rename = "backstoryDetails", default)]
+    pub backstory_details: String,
+    #[serde(default)]
+    pub tells: Vec<PassengerTell>,
+    #[serde(rename = "guidelineExceptions", default)]
+    pub guideline_exceptions: Vec<String>,
+    #[serde(rename = "deceptionLevel", default)]
+    pub deception_level: f32,
+    #[serde(rename = "stressLevel", default)]
+    pub stress_level: f32,
+    #[serde(rename = "trustRequired", default)]
+    pub trust_required: f32,
+    #[serde(rename = "stateProfile")]
+    pub state_profile: Option<PassengerStateProfile>,
+    #[serde(rename = "routePreferences", default)]
+    pub route_preferences: Vec<RoutePreference>,
+    #[serde(rename = "ruleModification")]
+    pub rule_modification: Option<RuleModification>,
+    
+    // Item and trading fields
+    #[serde(rename = "dropItems", default)]
+    pub drop_items: Vec<String>,
+    #[serde(rename = "wantsTrade", default)]
+    pub wants_trade: bool,
+    #[serde(rename = "wantedItems", default)]
+    pub wanted_items: Vec<String>,
+    #[serde(rename = "isSupernatural", default)]
+    pub is_supernatural: bool,
+}
+
+impl Passenger {
+    /// Get random dialogue line
+    pub fn random_dialogue(&self) -> Option<&str> {
+        if self.dialogue.is_empty() {
+            None
+        } else {
+            use rand::seq::SliceRandom;
+            self.dialogue.choose(&mut rand::thread_rng()).map(|s| s.as_str())
+        }
+    }
+
+    /// Find route preference for a given route type
+    pub fn get_route_preference(&self, route: RouteType) -> Option<&RoutePreference> {
+        self.route_preferences.iter().find(|p| p.route == route)
+    }
+
+    /// Check if passenger fears this route
+    pub fn fears_route(&self, route: RouteType) -> bool {
+        self.get_route_preference(route)
+            .map(|p| p.preference == PreferenceLevel::Fears)
+            .unwrap_or(false)
+    }
+}

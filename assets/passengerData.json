@@ -1,0 +1,1398 @@
+[
+    {
+        "id": 1,
+        "name": "Mrs. Chen",
+        "emoji": "👵",
+        "description": "Elderly woman, going to Riverside Cemetery",
+        "pickup": "Downtown Apartments",
+        "destination": "Riverside Cemetery",
+        "personalRule": "Hates bright lights - will ask you to dim dashboard",
+        "supernatural": "Ghost of former taxi passenger",
+        "fare": 15,
+        "rarity": "common",
+        "items": [
+            "old locket",
+            "withered flowers"
+        ],
+        "dialogue": [
+            "It's so cold tonight, isn't it?",
+            "I haven't been home in so long...",
+            "Thank you for the ride, dear",
+            "Why won't you look at me, dear?"
+        ],
+        "relationships": [],
+        "backstoryUnlocked": false,
+        "backstoryDetails": "Mrs. Chen was a regular taxi passenger for 40 years before her accident on this very route...",
+        "tells": [
+            {
+                "type": "verbal",
+                "intensity": "moderate",
+                "description": "Asks why you won't make eye contact",
+                "triggerPhrase": "Why won't you look at me",
+                "reliability": 0.8
+            },
+            {
+                "type": "behavioral",
+                "intensity": "subtle",
+                "description": "Fidgets with old locket when ignored",
+                "animationCue": "fidget_locket",
+                "reliability": 0.6
+            }
+        ],
+        "guidelineExceptions": [
+            "eye_contact_lonely"
+        ],
+        "deceptionLevel": 0.1,
+        "stressLevel": 0.7,
+        "trustRequired": 0.3,
+        "stateProfile": {
+            "needType": "loneliness",
+            "initialLevel": 45,
+            "thresholds": {
+                "warning": 60,
+                "critical": 80,
+                "meltdown": 92
+            },
+            "needChange": {
+                "passive": 4,
+                "obey": 8,
+                "break": 2,
+                "exceptionRelief": 28
+            },
+            "exceptionId": "eye_contact_lonely",
+            "tellIntensities": {
+                "warning": [
+                    "moderate"
+                ],
+                "critical": [
+                    "obvious"
+                ]
+            },
+            "dialogueByStage": {
+                "warning": [
+                    "Please... could you just look at me for a moment?",
+                    "It gets so cold when no one sees me."
+                ],
+                "critical": [
+                    "Why won't you acknowledge me? I'm right here!",
+                    "If you keep ignoring me I might fade entirely."
+                ],
+                "meltdown": [
+                    "Look at me! I refuse to disappear again!"
+                ]
+            },
+            "confidenceImpact": {
+                "warning": -0.05,
+                "critical": -0.1
+            },
+            "trustImpact": {
+                "warning": 0.05,
+                "critical": 0.1
+            }
+        },
+        "routePreferences": [
+            {
+                "route": "normal",
+                "preference": "fears",
+                "reason": "Too many memories on the main roads...",
+                "fareModifier": 0.3,
+                "stressModifier": 0.3,
+                "specialDialogue": "Please... not the main road. Too many memories there.",
+                "triggerChance": 0.8
+            },
+            {
+                "route": "scenic",
+                "preference": "loves",
+                "reason": "The quiet paths remind me of peaceful times",
+                "fareModifier": 1.4,
+                "stressModifier": -0.2,
+                "specialDialogue": "Oh, the scenic route! How lovely... it reminds me of better days.",
+                "triggerChance": 0.9
+            },
+            {
+                "route": "shortcut",
+                "preference": "likes",
+                "reason": "Quick paths away from the crowds",
+                "fareModifier": 1.1,
+                "stressModifier": -0.1,
+                "specialDialogue": "A quiet shortcut... yes, away from all the noise.",
+                "triggerChance": 0.6
+            },
+            {
+                "route": "police",
+                "preference": "dislikes",
+                "reason": "Uniformed officers make me nervous",
+                "fareModifier": 0.9,
+                "stressModifier": 0.2,
+                "specialDialogue": "So many police cars... it makes me anxious.",
+                "triggerChance": 0.7
+            }
+        ]
+    },
+    {
+        "id": 2,
+        "name": "Jake Morrison",
+        "emoji": "👨‍💼",
+        "description": "Young professional, unusual pale complexion",
+        "pickup": "Office District",
+        "destination": "Industrial Warehouse",
+        "personalRule": "Don't ask about his work - becomes agitated",
+        "supernatural": "Vampire or undead worker",
+        "fare": 22,
+        "rarity": "common",
+        "items": [
+            "strange coins",
+            "business card with no company name"
+        ],
+        "dialogue": [
+            "Working late again...",
+            "Do you mind if I keep the windows up?",
+            "Some jobs you just can't talk about"
+        ],
+        "relationships": [
+            4
+        ],
+        "backstoryUnlocked": false,
+        "backstoryDetails": "Jake works the night shift at a blood bank, though his employment records don't seem to exist...",
+        "tells": [
+            {
+                "type": "behavioral",
+                "intensity": "moderate",
+                "description": "Checks his watch every minute as hunger builds",
+                "animationCue": "frantic_watch_check",
+                "reliability": 0.7
+            },
+            {
+                "type": "verbal",
+                "intensity": "obvious",
+                "description": "Mutters about needing to feed soon",
+                "triggerPhrase": "I need to feed",
+                "reliability": 0.85
+            }
+        ],
+        "guidelineExceptions": [
+            "shortcut_time_critical"
+        ],
+        "stateProfile": {
+            "needType": "hunger",
+            "initialLevel": 55,
+            "thresholds": {
+                "warning": 65,
+                "critical": 82,
+                "meltdown": 96
+            },
+            "needChange": {
+                "passive": 5,
+                "obey": 11,
+                "break": 3,
+                "exceptionRelief": 35
+            },
+            "exceptionId": "shortcut_time_critical",
+            "tellIntensities": {
+                "warning": [
+                    "moderate"
+                ],
+                "critical": [
+                    "obvious"
+                ]
+            },
+            "dialogueByStage": {
+                "warning": [
+                    "We really should pick up the pace... daylight is unforgiving.",
+                    "I can feel the hunger gnawing. Please, a faster route."
+                ],
+                "critical": [
+                    "If we don't hurry I might lose control.",
+                    "The thirst is unbearable. Take the alleys—now."
+                ],
+                "meltdown": [
+                    "Too late. I can't promise your safety any longer!"
+                ]
+            },
+            "confidenceImpact": {
+                "warning": -0.08,
+                "critical": -0.12
+            },
+            "trustImpact": {
+                "warning": 0.05,
+                "critical": 0.1
+            }
+        },
+        "routePreferences": [
+            {
+                "route": "police",
+                "preference": "fears",
+                "reason": "Police attention is... problematic for my kind",
+                "fareModifier": 0.3,
+                "stressModifier": 0.4,
+                "specialDialogue": "Not the police route! They ask too many questions...",
+                "triggerChance": 0.9
+            },
+            {
+                "route": "shortcut",
+                "preference": "loves",
+                "reason": "Dark alleys and back roads suit me",
+                "fareModifier": 1.3,
+                "stressModifier": -0.2,
+                "specialDialogue": "Perfect. The shadows will hide us well.",
+                "triggerChance": 0.7
+            },
+            {
+                "route": "normal",
+                "preference": "dislikes",
+                "reason": "Too many streetlights and witnesses",
+                "fareModifier": 0.9,
+                "stressModifier": 0.1,
+                "specialDialogue": "So many lights... so many watching eyes.",
+                "triggerChance": 0.5
+            },
+            {
+                "route": "scenic",
+                "preference": "neutral",
+                "reason": "Acceptable as long as it's not too bright",
+                "fareModifier": 1,
+                "stressModifier": 0,
+                "specialDialogue": "This route will do... peaceful enough.",
+                "triggerChance": 0.3
+            }
+        ]
+    },
+    {
+        "id": 3,
+        "name": "Sarah Woods",
+        "emoji": "👩‍🦰",
+        "description": "Young woman with dirt under her fingernails",
+        "pickup": "Forest Road",
+        "destination": "Downtown Hotel",
+        "personalRule": "Gets nervous if you take highway - prefers back roads",
+        "supernatural": "Escaped from something in the woods",
+        "fare": 28,
+        "rarity": "common",
+        "items": [
+            "muddy branch",
+            "torn fabric",
+            "cash with soil on it"
+        ],
+        "dialogue": [
+            "I need to get back to civilization",
+            "Stay away from the woods tonight",
+            "They might still be following",
+            "Don't take the highway, please - they use the main roads"
+        ],
+        "relationships": [
+            8
+        ],
+        "backstoryUnlocked": false,
+        "backstoryDetails": "Sarah was part of a hiking group that went missing three years ago. She was the only one who 'returned'...",
+        "tells": [
+            {
+                "type": "verbal",
+                "intensity": "obvious",
+                "description": "Warns against taking main roads",
+                "triggerPhrase": "Don't take",
+                "reliability": 0.9
+            },
+            {
+                "type": "behavioral",
+                "intensity": "moderate",
+                "description": "Shows visible panic when approaching highway entrances",
+                "animationCue": "panic_approach",
+                "reliability": 0.8
+            }
+        ],
+        "guidelineExceptions": [
+            "gps_passenger_warning"
+        ],
+        "deceptionLevel": 0.2,
+        "stressLevel": 0.8,
+        "trustRequired": 0.4,
+        "stateProfile": {
+            "needType": "fear",
+            "initialLevel": 50,
+            "thresholds": {
+                "warning": 65,
+                "critical": 83,
+                "meltdown": 94
+            },
+            "needChange": {
+                "passive": 6,
+                "obey": 9,
+                "break": 4,
+                "exceptionRelief": 24
+            },
+            "exceptionId": "gps_passenger_warning",
+            "tellIntensities": {
+                "warning": [
+                    "moderate"
+                ],
+                "critical": [
+                    "obvious"
+                ]
+            },
+            "dialogueByStage": {
+                "warning": [
+                    "Please, avoid the main roads—they know those paths.",
+                    "They watch the highways. Take the back roads, I beg you."
+                ],
+                "critical": [
+                    "If you follow the GPS we are dead. Turn now!",
+                    "I can hear them in the wires. We have to change course!"
+                ],
+                "meltdown": [
+                    "Too late—they found us through the lights!"
+                ]
+            }
+        },
+        "routePreferences": [
+            {
+                "route": "shortcut",
+                "preference": "loves",
+                "reason": "Back roads keep us hidden",
+                "fareModifier": 1.4,
+                "stressModifier": -0.3,
+                "specialDialogue": "Yes! Take the back roads - they won't find us!",
+                "triggerChance": 0.9
+            },
+            {
+                "route": "normal",
+                "preference": "fears",
+                "reason": "They watch the main roads!",
+                "fareModifier": 0.6,
+                "stressModifier": 0.4,
+                "specialDialogue": "Not the main road! They'll see us!",
+                "triggerChance": 0.8
+            },
+            {
+                "route": "police",
+                "preference": "dislikes",
+                "reason": "Too many questions",
+                "fareModifier": 0.8,
+                "stressModifier": 0.2,
+                "specialDialogue": "Police... they ask too many questions.",
+                "triggerChance": 0.6
+            },
+            {
+                "route": "scenic",
+                "preference": "neutral",
+                "reason": "Acceptable if quiet",
+                "fareModifier": 1,
+                "stressModifier": 0,
+                "specialDialogue": "This route is quiet at least.",
+                "triggerChance": 0.4
+            }
+        ]
+    },
+    {
+        "id": 4,
+        "name": "Dr. Hollow",
+        "emoji": "👨‍⚕️",
+        "description": "Doctor with old-fashioned medical bag",
+        "pickup": "Abandoned Hospital",
+        "destination": "Suburban House",
+        "personalRule": "Will offer medical advice - don't accept treatment",
+        "supernatural": "Former doctor who lost license for unethical experiments",
+        "fare": 35,
+        "rarity": "uncommon",
+        "items": [
+            "antique syringe",
+            "prescription pad",
+            "surgical tools"
+        ],
+        "dialogue": [
+            "House calls are so rare these days",
+            "I can help with any pain you're feeling",
+            "Medicine has come so far since my day",
+            "Please, I need to stop - someone might need medical attention!"
+        ],
+        "relationships": [
+            2,
+            9
+        ],
+        "backstoryUnlocked": false,
+        "backstoryDetails": "Dr. Hollow lost his license in 1987 for conducting unauthorized experiments on terminal patients...",
+        "tells": [
+            {
+                "type": "verbal",
+                "intensity": "obvious",
+                "description": "Insists on stopping to help with medical emergencies",
+                "triggerPhrase": "need to stop",
+                "reliability": 0.8
+            },
+            {
+                "type": "behavioral",
+                "intensity": "moderate",
+                "description": "Constantly checking medical equipment in bag",
+                "animationCue": "check_medical_bag",
+                "reliability": 0.7
+            }
+        ],
+        "guidelineExceptions": [
+            "stop_emergency_need"
+        ],
+        "deceptionLevel": 0.3,
+        "stressLevel": 0.5,
+        "trustRequired": 0.6,
+        "routePreferences": [
+            {
+                "route": "shortcut",
+                "preference": "likes",
+                "reason": "Discretion appreciated",
+                "fareModifier": 1.2,
+                "stressModifier": -0.1,
+                "specialDialogue": "The back roads... yes, discretion is appreciated.",
+                "triggerChance": 0.7
+            },
+            {
+                "route": "police",
+                "preference": "fears",
+                "reason": "My license... complications",
+                "fareModifier": 0.5,
+                "stressModifier": 0.5,
+                "specialDialogue": "Not past the police station! My license... there are complications.",
+                "triggerChance": 0.9
+            },
+            {
+                "route": "normal",
+                "preference": "neutral",
+                "reason": "Standard route acceptable",
+                "fareModifier": 1,
+                "stressModifier": 0,
+                "specialDialogue": "The standard route will suffice.",
+                "triggerChance": 0.4
+            },
+            {
+                "route": "scenic",
+                "preference": "likes",
+                "reason": "Peaceful, contemplative",
+                "fareModifier": 1.2,
+                "stressModifier": -0.1,
+                "specialDialogue": "Ah, the scenic route. Peaceful... contemplative.",
+                "triggerChance": 0.6
+            }
+        ]
+    },
+    {
+        "id": 5,
+        "name": "The Collector",
+        "emoji": "🕴️",
+        "description": "Well-dressed figure with multiple briefcases",
+        "pickup": "Antique Shop",
+        "destination": "Private Residence",
+        "personalRule": "Will try to buy things from your car - don't sell anything",
+        "supernatural": "Trades in supernatural artifacts and souls",
+        "fare": 50,
+        "rarity": "rare",
+        "items": [
+            "crystal pendant",
+            "ancient coin",
+            "contract paper"
+        ],
+        "dialogue": [
+            "I see you have interesting items",
+            "Everything has a price",
+            "I make excellent deals"
+        ],
+        "relationships": [
+            11,
+            16
+        ],
+        "backstoryUnlocked": false,
+        "backstoryDetails": "The Collector has been making deals in this city for over a century, always offering what people need most...",
+        "ruleModification": {
+            "canModify": true,
+            "type": "remove_rule",
+            "description": "Can remove one rule in exchange for a terrible price"
+        },
+        "routePreferences": [
+            {
+                "route": "scenic",
+                "preference": "loves",
+                "reason": "I appreciate the finer routes",
+                "fareModifier": 1.4,
+                "stressModifier": -0.2,
+                "specialDialogue": "Ah yes, the scenic route. I do appreciate the finer things.",
+                "triggerChance": 0.8
+            },
+            {
+                "route": "normal",
+                "preference": "likes",
+                "reason": "Efficiency has value",
+                "fareModifier": 1.1,
+                "stressModifier": 0,
+                "specialDialogue": "The normal route. Efficiency has its value.",
+                "triggerChance": 0.5
+            },
+            {
+                "route": "shortcut",
+                "preference": "dislikes",
+                "reason": "Too crude for my taste",
+                "fareModifier": 0.8,
+                "stressModifier": 0.1,
+                "specialDialogue": "A shortcut? How... crude.",
+                "triggerChance": 0.6
+            },
+            {
+                "route": "police",
+                "preference": "neutral",
+                "reason": "They know better than to stop me",
+                "fareModifier": 1,
+                "stressModifier": 0,
+                "specialDialogue": "The police know better than to interfere with my business.",
+                "triggerChance": 0.3
+            }
+        ]
+    },
+    {
+        "id": 6,
+        "name": "Tommy Sullivan",
+        "emoji": "👦",
+        "description": "Child in school uniform, shouldn't be out this late",
+        "pickup": "Elementary School",
+        "destination": "Suburban House",
+        "personalRule": "Don't ask about his parents - becomes very quiet",
+        "supernatural": "Lost child who doesn't realize he's been missing for decades",
+        "fare": 12,
+        "rarity": "common",
+        "items": [
+            "torn homework",
+            "old lunch box",
+            "class photo"
+        ],
+        "dialogue": [
+            "Is mommy waiting for me?",
+            "I don't like the dark",
+            "Teacher said I should go straight home",
+            "Why won't anyone look at me? Am I being bad?"
+        ],
+        "relationships": [],
+        "backstoryUnlocked": false,
+        "backstoryDetails": "Tommy went missing from school in 1982. His backpack was found, but he never was...",
+        "tells": [
+            {
+                "type": "verbal",
+                "intensity": "obvious",
+                "description": "Asks why no one will look at him",
+                "triggerPhrase": "Why won't anyone look at me",
+                "reliability": 0.9
+            },
+            {
+                "type": "behavioral",
+                "intensity": "moderate",
+                "description": "Voice trembles with increasing distress",
+                "audioCue": "child_distress",
+                "reliability": 0.7
+            }
+        ],
+        "guidelineExceptions": [
+            "eye_contact_lonely"
+        ],
+        "deceptionLevel": 0,
+        "stressLevel": 0.6,
+        "trustRequired": 0.2,
+        "routePreferences": [
+            {
+                "route": "shortcut",
+                "preference": "fears",
+                "reason": "Dark alleys scare children",
+                "fareModifier": 0.3,
+                "stressModifier": 0.4,
+                "specialDialogue": "I don't like this way! It's too scary and dark!",
+                "triggerChance": 0.9
+            },
+            {
+                "route": "normal",
+                "preference": "likes",
+                "reason": "Well-lit streets feel safer",
+                "fareModifier": 1.2,
+                "stressModifier": -0.1,
+                "specialDialogue": "This is the way I usually go home from school.",
+                "triggerChance": 0.6
+            },
+            {
+                "route": "police",
+                "preference": "loves",
+                "reason": "Police officers make children feel safe",
+                "fareModifier": 1.5,
+                "stressModifier": -0.3,
+                "specialDialogue": "Look! Police cars! They keep us safe from bad people!",
+                "triggerChance": 0.8
+            },
+            {
+                "route": "scenic",
+                "preference": "dislikes",
+                "reason": "Longer routes make children anxious to get home",
+                "fareModifier": 0.8,
+                "stressModifier": 0.2,
+                "specialDialogue": "This is taking too long... I want to go home to mommy.",
+                "triggerChance": 0.7
+            }
+        ]
+    },
+    {
+        "id": 7,
+        "name": "Elena Vasquez",
+        "emoji": "💃",
+        "description": "Dancer in vintage dress, speaks with old accent",
+        "pickup": "Old Theater District",
+        "destination": "Downtown Hotel",
+        "personalRule": "Requests specific songs - humming along will break silence rule",
+        "supernatural": "1940s nightclub performer who died in a fire",
+        "fare": 30,
+        "rarity": "uncommon",
+        "items": [
+            "vintage lipstick",
+            "burned dance card",
+            "pearl necklace"
+        ],
+        "dialogue": [
+            "The music never stops playing in my head",
+            "I had the most wonderful audition tonight",
+            "Do you know any Glenn Miller?",
+            "Please, I can't breathe - there's too much smoke in here!",
+            "Could you open a window? The air is so thick..."
+        ],
+        "relationships": [
+            12
+        ],
+        "backstoryUnlocked": false,
+        "backstoryDetails": "Elena was the star performer at the Moonlight Club before the fire of 1943 claimed 30 lives...",
+        "tells": [
+            {
+                "type": "verbal",
+                "intensity": "obvious",
+                "description": "Complains about smoke and thick air",
+                "triggerPhrase": "can't breathe",
+                "reliability": 0.85
+            },
+            {
+                "type": "behavioral",
+                "intensity": "obvious",
+                "description": "Coughing and gasping, touching throat frequently",
+                "animationCue": "fire_victim_cough",
+                "audioCue": "distressed_breathing",
+                "reliability": 0.9
+            },
+            {
+                "type": "behavioral",
+                "intensity": "moderate",
+                "description": "Panics when looking at closed windows",
+                "animationCue": "claustrophobic_panic",
+                "reliability": 0.7
+            }
+        ],
+        "guidelineExceptions": [
+            "windows_suffocation"
+        ],
+        "deceptionLevel": 0,
+        "stressLevel": 0.7,
+        "trustRequired": 0.3,
+        "routePreferences": [
+            {
+                "route": "scenic",
+                "preference": "loves",
+                "reason": "Reminds me of better times",
+                "fareModifier": 1.4,
+                "stressModifier": -0.3,
+                "specialDialogue": "Oh, the scenic route! It reminds me of when I was alive...",
+                "triggerChance": 0.9
+            },
+            {
+                "route": "normal",
+                "preference": "likes",
+                "reason": "The old familiar streets",
+                "fareModifier": 1.1,
+                "stressModifier": -0.1,
+                "specialDialogue": "These streets... I remember them from before.",
+                "triggerChance": 0.6
+            },
+            {
+                "route": "shortcut",
+                "preference": "fears",
+                "reason": "Dark alleys... like that night",
+                "fareModifier": 0.6,
+                "stressModifier": 0.4,
+                "specialDialogue": "Not the dark alleys! It reminds me of... that night.",
+                "triggerChance": 0.8
+            },
+            {
+                "route": "police",
+                "preference": "neutral",
+                "reason": "They never found who started the fire",
+                "fareModifier": 1,
+                "stressModifier": 0,
+                "specialDialogue": "The police... they never found who started the fire.",
+                "triggerChance": 0.4
+            }
+        ]
+    },
+    {
+        "id": 8,
+        "name": "Marcus Thompson",
+        "emoji": "🏃‍♂️",
+        "description": "Jogger in athletic gear, constantly looking over shoulder",
+        "pickup": "Forest Road",
+        "destination": "Police Station",
+        "personalRule": "Keeps asking you to drive faster - accepting will violate route rules",
+        "supernatural": "Runner who encountered something supernatural in the woods",
+        "fare": 20,
+        "rarity": "common",
+        "items": [
+            "torn running shoe",
+            "strange claw marks on clothes",
+            "broken GPS watch"
+        ],
+        "dialogue": [
+            "Did you see that behind us?",
+            "We need to go faster!",
+            "I should have listened to the locals",
+            "Talk to me, please - the silence is making me paranoid!",
+            "We need to take a shortcut - they know the main roads!"
+        ],
+        "relationships": [
+            3
+        ],
+        "backstoryUnlocked": false,
+        "backstoryDetails": "Marcus was training for a marathon when he took a wrong turn into the old growth forest...",
+        "tells": [
+            {
+                "type": "verbal",
+                "intensity": "obvious",
+                "description": "Begs for conversation to calm paranoia",
+                "triggerPhrase": "Talk to me",
+                "reliability": 0.85
+            },
+            {
+                "type": "behavioral",
+                "intensity": "moderate",
+                "description": "Constantly looking over shoulder with terror",
+                "animationCue": "paranoid_looking",
+                "reliability": 0.8
+            },
+            {
+                "type": "verbal",
+                "intensity": "obvious",
+                "description": "Urgently requests shortcuts to avoid main roads",
+                "triggerPhrase": "take a shortcut",
+                "reliability": 0.9
+            }
+        ],
+        "guidelineExceptions": [
+            "speak_nervous_passenger",
+            "shortcut_time_critical"
+        ],
+        "deceptionLevel": 0.1,
+        "stressLevel": 0.9,
+        "trustRequired": 0.3,
+        "routePreferences": [
+            {
+                "route": "shortcut",
+                "preference": "loves",
+                "reason": "Fast and hidden - perfect!",
+                "fareModifier": 1.4,
+                "stressModifier": -0.3,
+                "specialDialogue": "Yes! The shortcuts! Fast and hidden!",
+                "triggerChance": 0.9
+            },
+            {
+                "route": "police",
+                "preference": "likes",
+                "reason": "Safety in numbers",
+                "fareModifier": 1.2,
+                "stressModifier": -0.2,
+                "specialDialogue": "Police route... safety in numbers, right?",
+                "triggerChance": 0.7
+            },
+            {
+                "route": "normal",
+                "preference": "fears",
+                "reason": "Too exposed, too predictable",
+                "fareModifier": 0.7,
+                "stressModifier": 0.3,
+                "specialDialogue": "Not the main road! Too exposed!",
+                "triggerChance": 0.8
+            },
+            {
+                "route": "scenic",
+                "preference": "dislikes",
+                "reason": "Too slow! We need to move!",
+                "fareModifier": 0.8,
+                "stressModifier": 0.2,
+                "specialDialogue": "Too slow! We need to move faster!",
+                "triggerChance": 0.6
+            }
+        ]
+    },
+    {
+        "id": 9,
+        "name": "Nurse Catherine",
+        "emoji": "👩‍⚕️",
+        "description": "Hospital nurse in stained scrubs, very tired",
+        "pickup": "General Hospital",
+        "destination": "Abandoned Hospital",
+        "personalRule": "Will offer to check your pulse - accepting triggers medical rule violation",
+        "supernatural": "Overworked nurse who made a fatal mistake",
+        "fare": 25,
+        "rarity": "common",
+        "items": [
+            "medical clipboard",
+            "broken stethoscope",
+            "guilt-stained badge"
+        ],
+        "dialogue": [
+            "Another long shift ending",
+            "Some mistakes you can never take back",
+            "The patients keep calling my name",
+            "Please, just talk to me - I can't handle the silence right now",
+            "I need to stop - I feel sick, really sick"
+        ],
+        "relationships": [
+            4
+        ],
+        "backstoryUnlocked": false,
+        "backstoryDetails": "Catherine accidentally administered the wrong medication to a patient during a 36-hour shift...",
+        "tells": [
+            {
+                "type": "verbal",
+                "intensity": "obvious",
+                "description": "Desperately asks for conversation to escape guilt",
+                "triggerPhrase": "just talk to me",
+                "reliability": 0.8
+            },
+            {
+                "type": "behavioral",
+                "intensity": "obvious",
+                "description": "Shows signs of severe nausea and distress",
+                "animationCue": "nausea_distress",
+                "reliability": 0.9
+            },
+            {
+                "type": "behavioral",
+                "intensity": "moderate",
+                "description": "Clutching medical clipboard with trembling hands",
+                "animationCue": "trembling_clipboard",
+                "reliability": 0.7
+            }
+        ],
+        "guidelineExceptions": [
+            "speak_nervous_passenger",
+            "stop_emergency_need"
+        ],
+        "deceptionLevel": 0.1,
+        "stressLevel": 0.8,
+        "trustRequired": 0.4,
+        "routePreferences": [
+            {
+                "route": "scenic",
+                "preference": "likes",
+                "reason": "Quiet helps me think",
+                "fareModifier": 1.2,
+                "stressModifier": -0.2,
+                "specialDialogue": "The scenic route... quiet helps me think about what I did.",
+                "triggerChance": 0.7
+            },
+            {
+                "route": "normal",
+                "preference": "neutral",
+                "reason": "Just get me there",
+                "fareModifier": 1,
+                "stressModifier": 0,
+                "specialDialogue": "Just... just get me there.",
+                "triggerChance": 0.4
+            },
+            {
+                "route": "shortcut",
+                "preference": "dislikes",
+                "reason": "Rushing caused my mistake",
+                "fareModifier": 0.8,
+                "stressModifier": 0.2,
+                "specialDialogue": "Not a shortcut... rushing is what caused my mistake.",
+                "triggerChance": 0.6
+            },
+            {
+                "route": "police",
+                "preference": "fears",
+                "reason": "What if they investigate?",
+                "fareModifier": 0.6,
+                "stressModifier": 0.4,
+                "specialDialogue": "Not past the police station! What if they investigate?",
+                "triggerChance": 0.8
+            }
+        ]
+    },
+    {
+        "id": 10,
+        "name": "Old Pete",
+        "emoji": "🎣",
+        "description": "Fisherman with wet clothes despite no rain",
+        "pickup": "Harbor District",
+        "destination": "Riverside Cemetery",
+        "personalRule": "Insists on keeping windows down - conflicts with sealed windows rule",
+        "supernatural": "Drowned fisherman who refuses to accept his fate",
+        "fare": 18,
+        "rarity": "common",
+        "items": [
+            "rusty fishing hook",
+            "waterlogged wallet",
+            "boat registration"
+        ],
+        "dialogue": [
+            "The fish are really biting tonight",
+            "Haven't seen water this calm in years",
+            "My boat's just around the corner"
+        ],
+        "relationships": [
+            1
+        ],
+        "backstoryUnlocked": false,
+        "backstoryDetails": "Pete's boat was found capsized during a storm in 1995, but his body was never recovered...",
+        "routePreferences": [
+            {
+                "route": "scenic",
+                "preference": "loves",
+                "reason": "Reminds me of the water",
+                "fareModifier": 1.3,
+                "stressModifier": -0.2,
+                "specialDialogue": "Ah, the scenic route... reminds me of the water.",
+                "triggerChance": 0.8
+            },
+            {
+                "route": "normal",
+                "preference": "likes",
+                "reason": "The old routes I used to take",
+                "fareModifier": 1.1,
+                "stressModifier": -0.1,
+                "specialDialogue": "These are the old routes I used to take to the docks.",
+                "triggerChance": 0.6
+            },
+            {
+                "route": "shortcut",
+                "preference": "dislikes",
+                "reason": "Rushing leads to mistakes",
+                "fareModifier": 0.8,
+                "stressModifier": 0.1,
+                "specialDialogue": "No need to rush... rushing leads to mistakes.",
+                "triggerChance": 0.5
+            },
+            {
+                "route": "police",
+                "preference": "neutral",
+                "reason": "Never had trouble with the law",
+                "fareModifier": 1,
+                "stressModifier": 0,
+                "specialDialogue": "Never had trouble with the law in my day.",
+                "triggerChance": 0.3
+            }
+        ]
+    },
+    {
+        "id": 11,
+        "name": "Madame Zelda",
+        "emoji": "🔮",
+        "description": "Fortune teller with knowing eyes and crystal jewelry",
+        "pickup": "Psychic Shop",
+        "destination": "Private Residence",
+        "personalRule": "Will read your future - listening reveals upcoming rule violations",
+        "supernatural": "Psychic who sees too much of what's coming",
+        "fare": 40,
+        "rarity": "rare",
+        "items": [
+            "tarot cards",
+            "crystal ball",
+            "prophetic writings"
+        ],
+        "dialogue": [
+            "I see danger in your immediate future",
+            "The cards never lie about tonight",
+            "Some knowledge comes with a price"
+        ],
+        "relationships": [
+            5,
+            16
+        ],
+        "backstoryUnlocked": false,
+        "backstoryDetails": "Zelda's predictions are always accurate, but her clients rarely survive long enough to appreciate her gift...",
+        "ruleModification": {
+            "canModify": true,
+            "type": "reveal_hidden",
+            "description": "Reveals one hidden rule to the player"
+        },
+        "routePreferences": [
+            {
+                "route": "scenic",
+                "preference": "loves",
+                "reason": "The spirits speak clearer on quiet roads",
+                "fareModifier": 1.4,
+                "stressModifier": -0.2,
+                "specialDialogue": "The scenic route... the spirits speak clearer here.",
+                "triggerChance": 0.9
+            },
+            {
+                "route": "shortcut",
+                "preference": "likes",
+                "reason": "I see the path others miss",
+                "fareModifier": 1.2,
+                "stressModifier": -0.1,
+                "specialDialogue": "A shortcut? I see the path others miss.",
+                "triggerChance": 0.7
+            },
+            {
+                "route": "normal",
+                "preference": "neutral",
+                "reason": "All roads lead somewhere",
+                "fareModifier": 1,
+                "stressModifier": 0,
+                "specialDialogue": "All roads lead somewhere, driver.",
+                "triggerChance": 0.4
+            },
+            {
+                "route": "police",
+                "preference": "dislikes",
+                "reason": "They fear what they don't understand",
+                "fareModifier": 0.8,
+                "stressModifier": 0.1,
+                "specialDialogue": "Police... they fear what they don't understand.",
+                "triggerChance": 0.5
+            }
+        ]
+    },
+    {
+        "id": 12,
+        "name": "Frank the Pianist",
+        "emoji": "🎹",
+        "description": "Well-dressed musician with bandaged hands",
+        "pickup": "Old Theater District",
+        "destination": "Music Hall",
+        "personalRule": "Hums haunting melodies - will test your no music rule",
+        "supernatural": "Jazz musician who made a deal for talent",
+        "fare": 32,
+        "rarity": "uncommon",
+        "items": [
+            "sheet music",
+            "bloody piano keys",
+            "devil's contract"
+        ],
+        "dialogue": [
+            "Music is everything to me",
+            "I'd give anything to play again",
+            "Some contracts last forever"
+        ],
+        "relationships": [
+            7
+        ],
+        "backstoryUnlocked": false,
+        "backstoryDetails": "Frank sold his soul for incredible musical talent, but the devil's price was higher than expected...",
+        "routePreferences": [
+            {
+                "route": "scenic",
+                "preference": "loves",
+                "reason": "Beauty inspires music",
+                "fareModifier": 1.3,
+                "stressModifier": -0.2,
+                "specialDialogue": "The scenic route... beauty still inspires music in me.",
+                "triggerChance": 0.8
+            },
+            {
+                "route": "normal",
+                "preference": "likes",
+                "reason": "Steady rhythm, like a metronome",
+                "fareModifier": 1.1,
+                "stressModifier": -0.1,
+                "specialDialogue": "Steady rhythm, like a metronome. I appreciate that.",
+                "triggerChance": 0.6
+            },
+            {
+                "route": "shortcut",
+                "preference": "neutral",
+                "reason": "Sometimes speed is needed",
+                "fareModifier": 1,
+                "stressModifier": 0,
+                "specialDialogue": "Sometimes speed is needed in performance.",
+                "triggerChance": 0.4
+            },
+            {
+                "route": "police",
+                "preference": "dislikes",
+                "reason": "Too much scrutiny",
+                "fareModifier": 0.8,
+                "stressModifier": 0.1,
+                "specialDialogue": "Police... too much scrutiny for my liking.",
+                "triggerChance": 0.5
+            }
+        ]
+    },
+    {
+        "id": 13,
+        "name": "Sister Agnes",
+        "emoji": "👩‍🔬",
+        "description": "Nun with ancient texts and worried expression",
+        "pickup": "Old Cathedral",
+        "destination": "Seminary",
+        "personalRule": "Offers to bless your car - accepting may conflict with supernatural passengers",
+        "supernatural": "Nun investigating supernatural occurrences in the city",
+        "fare": 20,
+        "rarity": "uncommon",
+        "items": [
+            "holy water",
+            "ancient tome",
+            "blessed rosary"
+        ],
+        "dialogue": [
+            "Evil walks freely tonight",
+            "Faith is our only protection",
+            "Some souls cannot be saved"
+        ],
+        "relationships": [],
+        "backstoryUnlocked": false,
+        "backstoryDetails": "Sister Agnes is one of the few living people who knows the truth about the city's supernatural residents...",
+        "routePreferences": [
+            {
+                "route": "police",
+                "preference": "loves",
+                "reason": "Law and order protect the innocent",
+                "fareModifier": 1.3,
+                "stressModifier": -0.2,
+                "specialDialogue": "The police route. Law and order protect the innocent.",
+                "triggerChance": 0.8
+            },
+            {
+                "route": "normal",
+                "preference": "likes",
+                "reason": "The righteous path is clear",
+                "fareModifier": 1.1,
+                "stressModifier": -0.1,
+                "specialDialogue": "The normal route. The righteous path is always clear.",
+                "triggerChance": 0.6
+            },
+            {
+                "route": "scenic",
+                "preference": "neutral",
+                "reason": "God's creation is beautiful",
+                "fareModifier": 1,
+                "stressModifier": 0,
+                "specialDialogue": "God's creation is beautiful, even at night.",
+                "triggerChance": 0.4
+            },
+            {
+                "route": "shortcut",
+                "preference": "dislikes",
+                "reason": "Shortcuts often lead to sin",
+                "fareModifier": 0.8,
+                "stressModifier": 0.1,
+                "specialDialogue": "Shortcuts often lead to sin, child.",
+                "triggerChance": 0.6
+            }
+        ]
+    },
+    {
+        "id": 14,
+        "name": "Detective Morrison",
+        "emoji": "🕵️‍♂️",
+        "description": "Tired detective with case files and coffee stains",
+        "pickup": "Police Station",
+        "destination": "Crime Scene",
+        "personalRule": "Asks probing questions about other passengers - answering reveals rule violations",
+        "supernatural": "Living detective investigating supernatural crimes",
+        "fare": 35,
+        "rarity": "rare",
+        "items": [
+            "case files",
+            "crime scene photos",
+            "detective badge"
+        ],
+        "dialogue": [
+            "Strange things happen on the night shift",
+            "I've seen some unexplainable cases",
+            "Every taxi driver has stories"
+        ],
+        "relationships": [
+            8
+        ],
+        "backstoryUnlocked": false,
+        "backstoryDetails": "Detective Morrison specializes in cases other officers won't touch - missing persons who were never really missing...",
+        "routePreferences": [
+            {
+                "route": "police",
+                "preference": "loves",
+                "reason": "Professional courtesy",
+                "fareModifier": 1.3,
+                "stressModifier": -0.2,
+                "specialDialogue": "Police route. Professional courtesy, you understand.",
+                "triggerChance": 0.8
+            },
+            {
+                "route": "normal",
+                "preference": "likes",
+                "reason": "By the book",
+                "fareModifier": 1.1,
+                "stressModifier": -0.1,
+                "specialDialogue": "Normal route. By the book, as it should be.",
+                "triggerChance": 0.6
+            },
+            {
+                "route": "shortcut",
+                "preference": "neutral",
+                "reason": "Sometimes necessary",
+                "fareModifier": 1,
+                "stressModifier": 0,
+                "specialDialogue": "A shortcut. Sometimes necessary in this line of work.",
+                "triggerChance": 0.4
+            },
+            {
+                "route": "scenic",
+                "preference": "dislikes",
+                "reason": "Time is evidence",
+                "fareModifier": 0.8,
+                "stressModifier": 0.1,
+                "specialDialogue": "Scenic route wastes time. Time is evidence.",
+                "triggerChance": 0.5
+            }
+        ]
+    },
+    {
+        "id": 15,
+        "name": "The Midnight Mayor",
+        "emoji": "🎩",
+        "description": "Impossibly tall figure in formal attire from another era",
+        "pickup": "City Hall",
+        "destination": "Private Estate",
+        "personalRule": "Commands you to break specific rules - obeying leads to immediate consequences",
+        "supernatural": "Ancient entity that governs the supernatural side of the city",
+        "fare": 100,
+        "rarity": "legendary",
+        "items": [
+            "mayoral seal",
+            "ancient key",
+            "binding contract"
+        ],
+        "dialogue": [
+            "Welcome to my city",
+            "Rules are made to serve those who matter",
+            "Your compliance is... appreciated"
+        ],
+        "relationships": [
+            5,
+            11,
+            16
+        ],
+        "backstoryUnlocked": false,
+        "backstoryDetails": "The Midnight Mayor has ruled the supernatural side of the city since its founding, making deals and collecting debts...",
+        "ruleModification": {
+            "canModify": true,
+            "type": "add_temporary",
+            "description": "The Midnight Mayor can impose a new rule during your shift",
+            "newRule": {
+                "id": 99,
+                "title": "Mayor's Decree",
+                "description": "Follow all commands from city officials without question",
+                "difficulty": "nightmare",
+                "temporary": true,
+                "duration": 3
+            }
+        },
+        "routePreferences": [
+            {
+                "route": "scenic",
+                "preference": "loves",
+                "reason": "I built these streets, I'll enjoy them",
+                "fareModifier": 1.4,
+                "stressModifier": -0.2,
+                "specialDialogue": "The scenic route. I built these streets, I shall enjoy them.",
+                "triggerChance": 0.9
+            },
+            {
+                "route": "police",
+                "preference": "likes",
+                "reason": "My servants patrol well",
+                "fareModifier": 1.2,
+                "stressModifier": -0.1,
+                "specialDialogue": "Police route. My servants patrol well.",
+                "triggerChance": 0.7
+            },
+            {
+                "route": "normal",
+                "preference": "neutral",
+                "reason": "All roads are mine",
+                "fareModifier": 1,
+                "stressModifier": 0,
+                "specialDialogue": "All roads in this city are mine, driver.",
+                "triggerChance": 0.4
+            },
+            {
+                "route": "shortcut",
+                "preference": "dislikes",
+                "reason": "Haste shows disrespect",
+                "fareModifier": 0.8,
+                "stressModifier": 0.1,
+                "specialDialogue": "A shortcut? Haste shows disrespect.",
+                "triggerChance": 0.6
+            }
+        ]
+    },
+    {
+        "id": 16,
+        "name": "Death's Taxi Driver",
+        "emoji": "☠️",
+        "description": "Figure in dark robes who speaks in whispers",
+        "pickup": "Crossroads",
+        "destination": "End of the Line",
+        "personalRule": "Offers to trade places with you - accepting ends the game immediately",
+        "supernatural": "The reaper who collects souls of failed night shift drivers",
+        "fare": 0,
+        "rarity": "legendary",
+        "items": [
+            "list of names",
+            "hourglass",
+            "scythe pendant"
+        ],
+        "dialogue": [
+            "Your shift is almost over",
+            "Every driver meets me eventually",
+            "Some debts can only be paid with time"
+        ],
+        "relationships": [
+            5,
+            11,
+            15
+        ],
+        "backstoryUnlocked": false,
+        "backstoryDetails": "The previous night shift taxi driver, who failed the rules one too many times and now serves as death's chauffeur...",
+        "routePreferences": [
+            {
+                "route": "shortcut",
+                "preference": "loves",
+                "reason": "The shortest path to the end",
+                "fareModifier": 1.3,
+                "stressModifier": -0.2,
+                "specialDialogue": "The shortcut. The shortest path to the end.",
+                "triggerChance": 0.8
+            },
+            {
+                "route": "scenic",
+                "preference": "likes",
+                "reason": "I have all eternity",
+                "fareModifier": 1.1,
+                "stressModifier": -0.1,
+                "specialDialogue": "The scenic route. I have all eternity, after all.",
+                "triggerChance": 0.6
+            },
+            {
+                "route": "normal",
+                "preference": "neutral",
+                "reason": "All roads lead to me eventually",
+                "fareModifier": 1,
+                "stressModifier": 0,
+                "specialDialogue": "All roads lead to me eventually, driver.",
+                "triggerChance": 0.4
+            },
+            {
+                "route": "police",
+                "preference": "neutral",
+                "reason": "They cannot stop death",
+                "fareModifier": 1,
+                "stressModifier": 0,
+                "specialDialogue": "Police cannot stop death.",
+                "triggerChance": 0.3
+            }
+        ]
+    }
+]

@@ -1,0 +1,87 @@
+{
+  "meta": {
+    "language": "English",
+    "code": "en",
+    "version": "1.0.0"
+  },
+  "ui": {
+    "mainMenu": {
+      "title": "NIGHTMARE SHIFT",
+      "subtitle": "Drive through the night. Follow the rules. Survive until dawn.",
+      "playButton": "Start Shift",
+      "continueButton": "Continue",
+      "quitButton": "Quit"
+    },
+    "briefing": {
+      "title": "SHIFT BRIEFING",
+      "minimumEarnings": "Minimum Earnings",
+      "shiftDuration": "Shift Duration",
+      "currentRules": "Current Rules",
+      "startButton": "Begin Shift"
+    },
+    "game": {
+      "lookingForPassengers": "Looking for passengers...",
+      "newPassenger": "New Passenger",
+      "acceptRide": "Accept",
+      "declineRide": "Decline",
+      "chooseRoute": "Choose Route",
+      "continue": "Continue",
+      "dropOff": {
+        "title": "Ride Complete",
+        "fareEarned": "Fare Earned",
+        "itemReceived": "Item Received",
+        "backstoryUnlocked": "Backstory Unlocked"
+      }
+    },
+    "gameOver": {
+      "title": "SHIFT FAILED",
+      "reason": "Reason",
+      "stats": {
+        "earned": "Earned",
+        "rides": "Rides Completed",
+        "violations": "Rules Violated"
+      },
+      "returnButton": "Return to Menu"
+    },
+    "success": {
+      "title": "SHIFT COMPLETE",
+      "subtitle": "You survived until dawn",
+      "survivalBonus": "Survival Bonus",
+      "stats": {
+        "totalEarnings": "Total Earnings",
+        "rides": "Rides Completed",
+        "score": "Score"
+      },
+      "returnButton": "Return to Menu"
+    },
+    "statusBar": {
+      "fuel": "Fuel",
+      "earnings": "Earnings",
+      "time": "Time",
+      "rides": "Rides"
+    },
+    "routes": {
+      "normal": {
+        "name": "Normal Route",
+        "description": "The standard route, safe and familiar"
+      },
+      "shortcut": {
+        "name": "Shortcut",
+        "description": "Faster but riskier path"
+      },
+      "scenic": {
+        "name": "Scenic Route",
+        "description": "Longer but peaceful drive"
+      },
+      "police": {
+        "name": "Police Route",
+        "description": "Safest but most monitored path"
+      }
+    }
+  },
+  "system": {
+    "loading": "Loading...",
+    "saving": "Saving...",
+    "error": "An error occurred"
+  }
+}

@@ -1,0 +1,113 @@
+{
+  "STORAGE_KEYS": {
+    "PLAYER_STATS": "nightshift_player_stats",
+    "LEADERBOARD": "nightshift_leaderboard",
+    "SAVE_GAME": "nightshift_saved_game",
+    "BACKSTORY_PROGRESS": "nightshift_backstories"
+  },
+  "GAME_CONSTANTS": {
+    "INITIAL_FUEL": 100,
+    "INITIAL_TIME": 480,
+    "SURVIVAL_BONUS": 50,
+    "BACKSTORY_UNLOCK_FIRST": 0.2,
+    "BACKSTORY_UNLOCK_REPEAT": 0.5,
+    "MINIMUM_EARNINGS": 200,
+    "FUEL_COST_SHORTCUT": 4,
+    "FUEL_COST_NORMAL": 7,
+    "FUEL_COST_SCENIC": 12,
+    "FUEL_COST_POLICE": 10,
+    "TIME_COST_SHORTCUT": 22,
+    "TIME_COST_NORMAL": 30,
+    "TIME_COST_SCENIC": 38,
+    "TIME_COST_POLICE": 27,
+    "RISK_NORMAL": 1,
+    "RISK_SHORTCUT": 3,
+    "RISK_SCENIC": 2,
+    "RISK_POLICE": 0
+  },
+  "FUEL": {
+    "LOW_FUEL_WARNING": 20,
+    "CRITICAL_FUEL": 10,
+    "EMPTY_TANK": 0,
+    "FUEL_CHECK_MINIMUM": 5,
+    "COST_PER_PERCENT": 0.5
+  },
+  "TIMING": {
+    "RIDE_REQUEST_BASE_DELAY_MS": 2000,
+    "RIDE_REQUEST_RANDOM_DELAY_MS": 3000,
+    "PASSENGER_INTERACTION_DELAY_MS": 1500,
+    "DIALOGUE_DISPLAY_DELAY_MS": 1000,
+    "GAME_START_DELAY_MS": 2000,
+    "SHIFT_END_WARNING_THRESHOLD": 60,
+    "CRITICAL_TIME_THRESHOLD": 15
+  },
+  "PROBABILITIES": {
+    "SUPERNATURAL_ENCOUNTER": 0.3,
+    "HIGH_RISK_ENCOUNTER": 0.3,
+    "ITEM_DROP": 0.4,
+    "HIDDEN_RULE_VIOLATION": 0.3,
+    "RELATED_PASSENGER_SPAWN": 0.3,
+    "TRADE_OFFER_CHANCE": 0.3
+  },
+  "RISK": {
+    "SAFE": 0,
+    "LOW_RISK": 1,
+    "MEDIUM_RISK": 2,
+    "HIGH_RISK": 3,
+    "EXTREME_RISK": 4,
+    "MAX_RISK_LEVEL": 4,
+    "SUPERNATURAL_THRESHOLD": 2
+  },
+  "REPUTATION": {
+    "TRUSTED_RATIO": 0.8,
+    "FRIENDLY_RATIO": 0.6,
+    "HOSTILE_RATIO": 0.3,
+    "MINIMUM_INTERACTIONS_FOR_TRUSTED": 3,
+    "TRUSTED_FARE_MULT": 1.5,
+    "FRIENDLY_FARE_MULT": 1.2,
+    "HOSTILE_FARE_MULT": 0.7,
+    "DEFAULT_FARE_MULT": 1.0,
+    "TRUSTED_RISK_MOD": -1,
+    "HOSTILE_RISK_MOD": 2
+  },
+  "ROUTE_FARES": {
+    "SHORTCUT": 0.85,
+    "NORMAL": 1.0,
+    "SCENIC": 1.30,
+    "POLICE": 1.10
+  },
+  "CONSECUTIVE_ROUTE": {
+    "WARNING_THRESHOLD": 4,
+    "VIOLATION_THRESHOLD": 999,
+    "PENALTY_PER_REPEAT": 0.10,
+    "RISK_INCREASE_PER_REPEAT": 1
+  },
+  "ROUTE_VARIATIONS": {
+    "MINIMUM_FUEL_COST": 3,
+    "MINIMUM_TIME_COST": 3
+  },
+  "SCORING": {
+    "TIME_BONUS_MULTIPLIER": 2,
+    "RIDE_BONUS": 10,
+    "RULE_VIOLATION_PENALTY": 10,
+    "MAX_DIFFICULTY": 4,
+    "EXPERIENCE_PER_LEVEL": 10,
+    "SURVIVAL_BONUS": 50
+  },
+  "RARITY_WEIGHTS": {
+    "common": 70,
+    "uncommon": 25,
+    "rare": 4,
+    "legendary": 1
+  },
+  "SCREENS": {
+    "LOADING": "loading",
+    "LEADERBOARD": "leaderboard",
+    "BRIEFING": "briefing",
+    "GAME": "game",
+    "GAME_OVER": "gameOver",
+    "SUCCESS": "success",
+    "SKILL_TREE": "skillTree",
+    "ALMANAC": "almanac"
+  }
+}

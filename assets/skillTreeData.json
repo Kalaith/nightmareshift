@@ -1,0 +1,72 @@
+[
+    {
+        "id": "fuel_efficiency_1",
+        "name": "Hybrid Injection",
+        "description": "Improves fuel efficiency by 10%.",
+        "cost": 500,
+        "icon": "⛽",
+        "category": "survival",
+        "prerequisites": [],
+        "effect": { "type": "stat_boost", "target": "fuel_consumption", "value": 0.9 }
+    },
+    {
+        "id": "fuel_tank_1",
+        "name": "Expanded Tank",
+        "description": "Increases maximum fuel capacity by 10.",
+        "cost": 800,
+        "icon": "🛢️",
+        "category": "survival",
+        "prerequisites": ["fuel_efficiency_1"],
+        "effect": { "type": "stat_boost", "target": "max_fuel", "value": 10 }
+    },
+    {
+        "id": "hull_reinforcement",
+        "name": "Reinforced Chassis",
+        "description": "Reduces damage from environmental hazards.",
+        "cost": 1200,
+        "icon": "🛡️",
+        "category": "survival",
+        "prerequisites": ["fuel_tank_1"],
+        "effect": { "type": "passive_bonus", "target": "hazard_damage", "value": 0.8 }
+    },
+    {
+        "id": "third_eye_1",
+        "name": "Glimpse",
+        "description": "5% chance to reveal a hidden rule at the start of a ride.",
+        "cost": 600,
+        "icon": "👁️",
+        "category": "occult",
+        "prerequisites": [],
+        "effect": { "type": "mechanic_unlock", "target": "reveal_hidden_chance", "value": 0.05 }
+    },
+    {
+        "id": "warding_charm",
+        "name": "Basic Warding",
+        "description": "Reduces the sanity drain from supernatural events.",
+        "cost": 1000,
+        "icon": "🧿",
+        "category": "occult",
+        "prerequisites": ["third_eye_1"],
+        "effect": { "type": "stat_boost", "target": "sanity_resistance", "value": 0.1 }
+    },
+    {
+        "id": "silver_tongue_1",
+        "name": "Silver Tongue",
+        "description": "Increases tips from passengers by 10%.",
+        "cost": 400,
+        "icon": "🗣️",
+        "category": "efficiency",
+        "prerequisites": [],
+        "effect": { "type": "stat_boost", "target": "tip_multiplier", "value": 1.1 }
+    },
+    {
+        "id": "negotiator",
+        "name": "Negotiator",
+        "description": "Reduces the cost of items in shops by 15%.",
+        "cost": 900,
+        "icon": "🤝",
+        "category": "efficiency",
+        "prerequisites": ["silver_tongue_1"],
+        "effect": { "type": "stat_boost", "target": "shop_discount", "value": 0.15 }
+    }
+]
