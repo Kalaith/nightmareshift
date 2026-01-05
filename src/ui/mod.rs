@@ -9,7 +9,6 @@ pub use components::*;
 // Re-export toolkit modules
 pub use macroquad_toolkit::ui::*;
 pub use macroquad_toolkit::input;
-pub use macroquad_toolkit::colors;
 
 /// Actions triggered by UI interactions
 #[derive(Debug, Clone, PartialEq, Eq)]

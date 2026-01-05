@@ -8,6 +8,15 @@ use std::collections::HashMap;
 /// Passenger selection service
 pub struct PassengerService;
 
+/// Context for passenger selection
+pub struct PassengerSelectionContext<'a> {
+    pub difficulty_level: u32,
+    pub weather: &'a WeatherCondition,
+    pub time_of_day: &'a TimeOfDay,
+    pub season: &'a Season,
+    pub constants: &'a ConstantsData,
+}
+
 impl PassengerService {
     /// Get rarity weights adjusted for difficulty
     fn get_adjusted_weights(difficulty_level: u32, constants: &ConstantsData) -> HashMap<Rarity, u32> {
@@ -38,11 +47,7 @@ impl PassengerService {
     pub fn select_weather_aware_passenger(
         passengers: &[Passenger],
         used_passengers: &[u32],
-        difficulty_level: u32,
-        weather: &WeatherCondition,
-        time_of_day: &TimeOfDay,
-        season: &Season,
-        constants: &ConstantsData,
+        context: &PassengerSelectionContext,
     ) -> Option<Passenger> {
         let available: Vec<&Passenger> = passengers.iter()
             .filter(|p| !used_passengers.contains(&p.id))
@@ -52,39 +57,34 @@ impl PassengerService {
             // Reset pool if all used
             return Self::select_weather_aware_from_pool(
                 &passengers.iter().collect::<Vec<_>>(),
-                difficulty_level,
-                weather,
-                time_of_day,
-                season,
-                constants,
+                context,
             );
         }
 
-        Self::select_weather_aware_from_pool(&available, difficulty_level, weather, time_of_day, season, constants)
+        Self::select_weather_aware_from_pool(&available, context)
     }
 
     /// Internal selection with all environmental factors
     fn select_weather_aware_from_pool(
         passengers: &[&Passenger],
-        difficulty_level: u32,
-        weather: &WeatherCondition,
-        time_of_day: &TimeOfDay,
-        season: &Season,
-        constants: &ConstantsData,
+        context: &PassengerSelectionContext,
     ) -> Option<Passenger> {
         let mut rng = rand::thread_rng();
 
         // Calculate weights with environmental modifiers
         let weighted: Vec<(Passenger, f32)> = passengers.iter().map(|p| {
-            let base_weight = Self::get_base_rarity_weight(p.rarity, difficulty_level, constants);
-            let weather_mod = Self::get_weather_modifier(p.id, weather);
-            let time_mod = Self::get_time_modifier(p.id, time_of_day);
-            let season_mod = Self::get_seasonal_modifier(p.id, season);
-            let special_mod = Self::get_special_behavior_modifier(p.id, weather, time_of_day);
+            let base_weight = Self::get_base_rarity_weight(p.rarity, context.difficulty_level, context.constants);
+            let weather_mod = Self::get_weather_modifier(p.id, context.weather);
+            let time_mod = Self::get_time_modifier(p.id, context.time_of_day);
+            let season_mod = Self::get_seasonal_modifier(p.id, context.season);
+            let special_mod = Self::get_special_behavior_modifier(p.id, context.weather, context.time_of_day);
 
             let final_weight = base_weight * weather_mod * time_mod * season_mod * special_mod;
             ((*p).clone(), final_weight.max(0.1))
         }).collect();
+        
+        // ... rest of function ...
+
 
         // Weighted random selection
         let total_weight: f32 = weighted.iter().map(|(_, w)| w).sum();

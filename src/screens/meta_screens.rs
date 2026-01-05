@@ -5,7 +5,7 @@ use macroquad_toolkit::ui::button;
 
 use crate::data::GameData;
 use crate::state::PlayerStats;
-use crate::ui::UiAction;
+use crate::ui::{UiAction, colors};
 
 /// Draw the skill tree screen
 pub fn draw_skill_tree(player_stats: &PlayerStats, game_data: Option<&GameData>) -> UiAction {
@@ -20,7 +20,7 @@ pub fn draw_skill_tree(player_stats: &PlayerStats, game_data: Option<&GameData>)
         center_x - title_width / 2.0,
         60.0,
         title_size,
-        Color::from_hex(0x4ecdc4),
+        colors::ACCENT_PRIMARY,
     );
 
     // Bank balance
@@ -31,7 +31,7 @@ pub fn draw_skill_tree(player_stats: &PlayerStats, game_data: Option<&GameData>)
         center_x - balance_width / 2.0,
         100.0,
         20.0,
-        Color::from_hex(0xffd700),
+        colors::ACCENT_GOLD,
     );
 
     if let Some(data) = game_data {
@@ -46,7 +46,7 @@ pub fn draw_skill_tree(player_stats: &PlayerStats, game_data: Option<&GameData>)
                 50.0,
                 y,
                 24.0,
-                Color::from_hex(0xf39c12),
+                colors::ACCENT_WARNING,
             );
             y += 35.0;
 
@@ -58,11 +58,11 @@ pub fn draw_skill_tree(player_stats: &PlayerStats, game_data: Option<&GameData>)
                     && player_stats.bank_balance >= skill.cost;
 
                 let color = if is_unlocked {
-                    Color::from_hex(0x44ff44) // Green - unlocked
+                    colors::FUEL_GOOD // Green - unlocked
                 } else if can_unlock {
-                    Color::from_hex(0x4ecdc4) // Cyan - can afford
+                    colors::ACCENT_PRIMARY // Cyan - can afford
                 } else {
-                    Color::from_hex(0x888888) // Gray - locked
+                    colors::TEXT_MUTED // Gray - locked
                 };
 
                 let status = if is_unlocked {
@@ -76,7 +76,7 @@ pub fn draw_skill_tree(player_stats: &PlayerStats, game_data: Option<&GameData>)
                 y += 25.0;
 
                 // Description
-                draw_text(&skill.description, 90.0, y, 14.0, Color::from_hex(0xaaaaaa));
+                draw_text(&skill.description, 90.0, y, 14.0, colors::TEXT_SECONDARY);
                 y += 25.0;
 
                 // Purchase button if can unlock
@@ -118,7 +118,7 @@ pub fn draw_almanac(player_stats: &PlayerStats, game_data: Option<&GameData>) ->
         center_x - title_width / 2.0,
         60.0,
         title_size,
-        Color::from_hex(0x4ecdc4),
+        colors::ACCENT_PRIMARY,
     );
 
     // Lore fragments
@@ -129,7 +129,7 @@ pub fn draw_almanac(player_stats: &PlayerStats, game_data: Option<&GameData>) ->
         center_x - fragments_width / 2.0,
         100.0,
         20.0,
-        Color::from_hex(0xffd700),
+        colors::ACCENT_GOLD,
     );
 
     if let Some(data) = game_data {
@@ -142,7 +142,7 @@ pub fn draw_almanac(player_stats: &PlayerStats, game_data: Option<&GameData>) ->
                 .unwrap_or("Unknown");
 
             let color = if entry.encountered {
-                Color::from_hex(0x4ecdc4)
+                colors::ACCENT_PRIMARY
             } else {
                 Color::from_hex(0x555555)
             };
@@ -164,9 +164,9 @@ pub fn draw_almanac(player_stats: &PlayerStats, game_data: Option<&GameData>) ->
 
                 let button_text = format!("Upgrade (Cost: {} fragments)", cost);
                 let button_color = if can_afford {
-                    Color::from_hex(0x44ff44)
+                    colors::FUEL_GOOD
                 } else {
-                    Color::from_hex(0x888888)
+                    colors::TEXT_MUTED
                 };
 
                 if can_afford && button(70.0, y - 20.0, 200.0, 30.0, &button_text) {
@@ -213,7 +213,7 @@ pub fn draw_leaderboard(player_stats: &PlayerStats) -> UiAction {
         center_x - title_width / 2.0,
         60.0,
         title_size,
-        Color::from_hex(0x4ecdc4),
+        colors::ACCENT_PRIMARY,
     );
 
     // Leaderboard section
@@ -223,7 +223,7 @@ pub fn draw_leaderboard(player_stats: &PlayerStats) -> UiAction {
         50.0,
         110.0,
         20.0,
-        Color::from_hex(0xf39c12),
+        colors::ACCENT_WARNING,
     );
 
     let mut y = 140.0;
@@ -236,22 +236,22 @@ pub fn draw_leaderboard(player_stats: &PlayerStats) -> UiAction {
             center_x - msg_width / 2.0,
             y + 50.0,
             18.0,
-            Color::from_hex(0x888888),
+            colors::TEXT_MUTED,
         );
     } else {
         for (idx, entry) in player_stats.leaderboard.iter().enumerate() {
             let rank_color = match idx {
-                0 => Color::from_hex(0xffd700), // Gold
-                1 => Color::from_hex(0xc0c0c0), // Silver
-                2 => Color::from_hex(0xcd7f32), // Bronze
+                0 => colors::ACCENT_GOLD, // Gold
+                1 => WHITE, // Silver (Simplified)
+                2 => colors::ACCENT_WARNING, // Bronze (Simplified)
                 _ => WHITE,
             };
 
             let status_icon = if entry.survived { "✓" } else { "✗" };
             let status_color = if entry.survived {
-                Color::from_hex(0x44ff44)
+                colors::FUEL_GOOD
             } else {
-                Color::from_hex(0xff4444)
+                colors::FUEL_CRITICAL
             };
 
             // Rank and score
@@ -271,7 +271,7 @@ pub fn draw_leaderboard(player_stats: &PlayerStats) -> UiAction {
                 entry.rules_violated,
                 entry.date
             );
-            draw_text(&details, 70.0, y, 14.0, Color::from_hex(0xaaaaaa));
+            draw_text(&details, 70.0, y, 14.0, colors::TEXT_SECONDARY);
 
             y += 30.0;
         }
@@ -286,15 +286,15 @@ pub fn draw_leaderboard(player_stats: &PlayerStats) -> UiAction {
         achievements_x,
         achievements_y,
         20.0,
-        Color::from_hex(0xf39c12),
+        colors::ACCENT_WARNING,
     );
     achievements_y += 30.0;
 
     for achievement in &player_stats.achievements {
         let color = if achievement.unlocked {
-            Color::from_hex(0x44ff44)
+            colors::FUEL_GOOD
         } else {
-            Color::from_hex(0x555555)
+            colors::TEXT_MUTED // Using MUTED for locked instead of custom dark grey
         };
 
         let status = if achievement.unlocked { "✓" } else { "✗" };
@@ -303,7 +303,7 @@ pub fn draw_leaderboard(player_stats: &PlayerStats) -> UiAction {
         achievements_y += 20.0;
 
         // Description
-        draw_text(&achievement.description, achievements_x + 15.0, achievements_y, 12.0, Color::from_hex(0x888888));
+        draw_text(&achievement.description, achievements_x + 15.0, achievements_y, 12.0, colors::TEXT_MUTED);
         achievements_y += 25.0;
     }
 
