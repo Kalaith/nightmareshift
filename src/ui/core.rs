@@ -2,10 +2,17 @@
 
 use macroquad::prelude::*;
 
-/// Theme colors for the game
+// Re-export toolkit colors for standard UI elements
+pub use macroquad_toolkit::colors::dark;
+
+/// Theme colors for the game (game-specific, extends toolkit colors)
 pub mod colors {
     use macroquad::prelude::Color;
 
+    // Standard UI colors - prefer using toolkit's dark:: palette:
+    // dark::BACKGROUND, dark::PANEL, dark::TEXT, dark::ACCENT, etc.
+    
+    // Game-specific colors
     pub const PANEL_BG: Color = Color::new(0.176, 0.176, 0.267, 1.0); // #2d2d44
     pub const SUCCESS_BG: Color = Color::new(0.176, 0.302, 0.176, 1.0); // #2d4d2d
     
