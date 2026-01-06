@@ -136,6 +136,7 @@ impl ItemService {
         passenger: &Passenger,
         inventory: &[InventoryItem],
         constants: &ConstantsData,
+        current_time: f64,
     ) -> Option<TradeOffer> {
         // Only some passengers trade
         if !passenger.wants_trade {
@@ -149,7 +150,6 @@ impl ItemService {
 
         if wanted_item.is_some() || rand::random::<f32>() < constants.probabilities.trade_offer_chance {
             // Generate a trade offer
-            let current_time = 0.0; // Will be filled in by caller
             let offered_item = Self::select_item_for_passenger(passenger, current_time);
 
             return Some(TradeOffer {
@@ -159,6 +159,103 @@ impl ItemService {
         }
 
         None
+    }
+
+    /// Apply effects of an item
+    pub fn apply_item_effect(effect: &ItemEffect, state: &mut GameState) {
+        match effect.effect_type {
+            ItemEffectType::FuelBonus => {
+                let bonus = effect.value as f32;
+                state.fuel = (state.fuel + bonus).min(100.0);
+            }
+            ItemEffectType::TimeBonus => {
+                state.time_remaining += effect.value as u32;
+            }
+            ItemEffectType::RuleImmunity => {
+                state.rule_immunity_charges += effect.value as u32;
+            }
+            ItemEffectType::SupernaturalProtection => {
+                state.supernatural_protection += effect.value as u32;
+            }
+            ItemEffectType::FuelDrain => {
+                let drain = effect.value as f32;
+                state.fuel = (state.fuel - drain).max(0.0);
+            }
+            ItemEffectType::TimePenalty => {
+                let penalty = effect.value as u32;
+                state.time_remaining = state.time_remaining.saturating_sub(penalty);
+            }
+            ItemEffectType::ReputationModifier => {
+                // Applied to current passenger if exists
+                if let Some(passenger_id) = state.current_passenger.as_ref().map(|p| p.id) {
+                    if let Some(rep) = state.passenger_reputation.get_mut(&passenger_id) {
+                        if effect.value > 0 {
+                            rep.positive_choices += effect.value.abs() as u32;
+                        } else {
+                            rep.negative_choices += effect.value.abs() as u32;
+                        }
+                    }
+                }
+            }
+            ItemEffectType::RuleTrigger => {
+                // Rule triggering effects (TODO: implement if needed)
+            }
+        }
+    }
+
+    /// Use an item from inventory
+    /// Returns true if the item was successfully used
+    pub fn use_item(state: &mut GameState, idx: usize) -> bool {
+        if idx >= state.inventory.len() {
+            return false;
+        }
+
+        // We need to clone the item to use it while mutating state
+        let item = state.inventory[idx].clone();
+        
+        if !item.can_use {
+            return false;
+        }
+
+        // Apply item effects
+        for effect in &item.effects {
+            Self::apply_item_effect(effect, state);
+        }
+
+        // Handle durability/consumable logic
+        if item.item_type == ItemType::Consumable {
+            state.inventory.remove(idx);
+        } else {
+            // Decrease durability for other usable items
+             if let Some(stored_item) = state.inventory.get_mut(idx) {
+                if let Some(durability) = stored_item.durability {
+                    if durability > 0 {
+                        stored_item.durability = Some(durability - 1);
+                        if durability <= 1 {
+                             state.inventory.remove(idx);
+                        }
+                    }
+                }
+             }
+        }
+        
+        true
+    }
+
+    /// Updated item states (deterioration, curses)
+    pub fn update_items(state: &mut GameState, current_time: f64) {
+        // Apply curse penalties
+        // Need to clone inventory to allow mutation of state
+        let inventory_snapshot = state.inventory.clone();
+        Self::apply_curse_penalties(&inventory_snapshot, state, current_time);
+
+        // Apply item deterioration
+        for item in &mut state.inventory {
+            item.apply_deterioration(current_time);
+        }
+
+        // Remove broken items
+        state.inventory.retain(|item| !item.is_broken());
     }
 
     /// Apply curse penalties from all cursed items

@@ -7,6 +7,7 @@ pub mod loader;
 pub mod location;
 pub mod passenger;
 pub mod rules;
+pub mod localization;
 pub mod skill_tree;
 
 pub use constants::*;
@@ -17,3 +18,4 @@ pub use location::*;
 pub use passenger::*;
 pub use rules::*;
 pub use skill_tree::*;
+pub use localization::*;

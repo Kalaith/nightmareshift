@@ -2,24 +2,10 @@ use macroquad::prelude::*;
 
 use crate::data::{self, GameData, RouteType, PreferenceLevel, ConsequenceType};
 use crate::engine::*;
-use crate::screens::{menu_screens, game_screens, meta_screens};
+use crate::screens::{menu_screens, game_screens, meta_screens, Screen};
 use crate::state::*;
 use crate::ui::*;
 use crate::ui::{StatusBar, layout}; // Import layout explicitly just in case, or rely on ui::*
-
-/// Main screen enum
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Screen {
-    Loading,
-    MainMenu,
-    Briefing,
-    Game,
-    GameOver,
-    Success,
-    SkillTree,
-    Almanac,
-    Leaderboard,
-}
 
 /// Main game structure
 pub struct Game {
@@ -117,32 +103,7 @@ impl Game {
     fn spawn_passenger(&mut self) {
         if let Some(ref data) = self.game_data {
             let current_time = get_time();
-            
-            // Select passenger
-            let context = PassengerSelectionContext {
-                difficulty_level: self.game_state.difficulty_level,
-                weather: &self.game_state.current_weather,
-                time_of_day: &self.game_state.time_of_day,
-                season: &self.game_state.season,
-                constants: &data.constants,
-            };
-
-            let passenger = PassengerService::select_weather_aware_passenger(
-                &data.passengers,
-                &self.game_state.used_passengers,
-                &context,
-            );
-            
-            if let Some(p) = passenger {
-                self.game_state.used_passengers.push(p.id);
-                self.game_state.current_passenger_need_state =
-                    PassengerNeedState::from_passenger(&p, current_time);
-                // Select dialogue once and store it
-                self.game_state.current_passenger_dialogue = p.random_dialogue().map(|s| s.to_string());
-                self.game_state.current_passenger = Some(p);
-                self.game_state.game_phase = GamePhase::RideRequest;
-            } else {
-                // End shift if no passengers
+            if !RideService::spawn_passenger(&mut self.game_state, data, current_time) {
                 self.end_shift(true);
             }
         }
@@ -150,24 +111,15 @@ impl Game {
 
     /// Accept current ride
     fn accept_ride(&mut self) {
-        if self.game_state.fuel < layout::MINIMUM_FUEL_FOR_RIDE {
+        if let Err(reason) = RideService::accept_ride(&mut self.game_state) {
             self.end_shift(false);
-            self.game_state.game_over_reason = Some(
-                "You ran out of fuel with a passenger in the car.".to_string()
-            );
-            return;
+            self.game_state.game_over_reason = Some(reason);
         }
-
-        self.game_state.game_phase = GamePhase::Driving;
-        self.game_state.driving_phase = Some(DrivingPhase::Pickup);
     }
 
     /// Decline current ride
     fn decline_ride(&mut self) {
-        self.game_state.current_passenger = None;
-        self.game_state.current_passenger_dialogue = None;
-        self.game_state.current_passenger_need_state = None;
-        self.game_state.game_phase = GamePhase::Waiting;
+        RideService::decline_ride(&mut self.game_state);
         self.spawn_passenger();
     }
 
@@ -176,164 +128,18 @@ impl Game {
         if let Some(ref data) = self.game_data {
             let current_time = get_time();
             
-            // Extract passenger info we need before mutating state
-            let passenger_id = self.game_state.current_passenger.as_ref().map(|p| p.id);
-            let passenger_risk = self.game_state.current_passenger.as_ref()
-                .and_then(|p| data.get_location(&p.pickup).map(|l| l.risk_level))
-                .unwrap_or(1);
-            
-            // Calculate route costs
-            let costs = RouteService::calculate_route_costs(
+            match RideService::choose_route(
+                &mut self.game_state,
+                data,
+                &mut self.player_stats,
                 route,
-                &data.constants,
-                passenger_risk,
-                Some(&self.game_state.current_weather),
-                Some(&self.game_state.time_of_day),
-                &self.game_state.environmental_hazards,
-                &self.game_state.route_mastery,
-                self.game_state.current_passenger.as_ref(),
-            );
-
-            // Check resources
-            if (self.game_state.fuel as u32) < costs.fuel {
-                self.end_shift(false);
-                self.game_state.game_over_reason = Some(
-                    "Not enough fuel for this route.".to_string()
-                );
-                return;
-            }
-
-            if self.game_state.time_remaining < costs.time {
-                self.end_shift(false);
-                self.game_state.game_over_reason = Some(
-                    "Not enough time for this route.".to_string()
-                );
-                return;
-            }
-
-            // Check rule violations for shortcuts
-            if route == RouteType::Shortcut {
-                // First check visible rules
-                let violation = GameEngine::check_rule_violation(
-                    &self.game_state.current_rules,
-                    "take_shortcut",
-                    self.game_state.current_passenger.as_ref(),
-                    self.game_state.current_passenger_need_state.as_ref(),
-                );
-
-                if violation.violation {
-                    self.end_shift(false);
-                    self.game_state.game_over_reason = violation.message;
-                    return;
-                }
-
-                // Check hidden rules - these get revealed on violation
-                let hidden_violation = GameEngine::check_rule_violation(
-                    &self.game_state.hidden_rules,
-                    "take_shortcut",
-                    self.game_state.current_passenger.as_ref(),
-                    self.game_state.current_passenger_need_state.as_ref(),
-                );
-
-                if hidden_violation.violation {
-                    // Reveal the hidden rule
-                    if let Some(violated_rule) = self.game_state.hidden_rules.iter()
-                        .find(|r| r.forbids_action("take_shortcut"))
-                        .cloned()
-                    {
-                        self.game_state.revealed_hidden_rules.push(violated_rule.clone());
-                        self.game_state.hidden_rules.retain(|r| r.id != violated_rule.id);
-                        self.game_state.current_rules.push(violated_rule);
-                    }
-
-                    // Apply penalty
-                    self.game_state.rules_violated += 1;
-                    self.end_shift(false);
-                    self.game_state.game_over_reason = Some(format!(
-                        "Hidden Rule Violated!\n{}",
-                        hidden_violation.message.unwrap_or_else(|| "You broke an unknown rule...".to_string())
-                    ));
-                    return;
-                }
-            }
-
-            // Apply costs
-            self.game_state.fuel -= costs.fuel as f32;
-            self.game_state.time_remaining = self.game_state.time_remaining.saturating_sub(costs.time);
-
-            // Update route tracking
-            self.game_state.increment_route_mastery(route);
-            self.game_state.update_route_streak(route);
-
-            // Record history
-            let driving_phase = self.game_state.driving_phase.unwrap_or(DrivingPhase::Pickup);
-            self.game_state.route_history.push(RouteHistoryEntry {
-                route_type: route,
-                driving_phase,
-                fuel_cost: costs.fuel,
-                time_cost: costs.time,
-                risk_level: costs.risk,
-                passenger_id,
-                timestamp: current_time,
-            });
-
-            // Update passenger state machine
-            if let (Some(state), Some(passenger)) = (
-                self.game_state.current_passenger_need_state.as_mut(),
-                self.game_state.current_passenger.as_ref()
+                current_time
             ) {
-                // use crate::engine::PassengerStateMachine; // Already imported
-                let triggered_tells = PassengerStateMachine::apply_route_choice(
-                    state,
-                    passenger,
-                    route,
-                    None, // No rule evaluation result for now
-                    current_time,
-                );
-
-                // Store triggered tells
-                for triggered in triggered_tells {
-                    self.game_state.detected_tells.push(DetectedTell {
-                        tell: triggered.tell,
-                        passenger_id: passenger.id,
-                        detection_time: current_time,
-                        player_noticed: false,
-                        related_guideline: triggered.related_guideline_id,
-                        exception_id: triggered.exception_id,
-                    });
+                RouteOutcome::GameOver(reason) => {
+                    self.end_shift(false);
+                    self.game_state.game_over_reason = Some(reason);
                 }
-            }
-
-            // Check if we should trigger a guideline decision
-            let should_check_guidelines = !self.game_state.current_guidelines.is_empty()
-                && !self.game_state.detected_tells.is_empty()
-                && self.game_state.driving_phase == Some(DrivingPhase::Destination);
-
-            if should_check_guidelines {
-                // Find a guideline that has detected tells
-                if let Some(guideline) = self.game_state.current_guidelines.iter()
-                    .find(|g| self.game_state.detected_tells.iter()
-                        .any(|t| t.related_guideline == Some(g.id)))
-                    .cloned()
-                {
-                    // Enter guideline decision phase
-                    self.game_state.active_guideline = Some(guideline);
-                    self.game_state.guideline_decision_start_time = Some(current_time);
-                    self.game_state.guideline_time_remaining = 30.0;
-                    self.game_state.game_phase = GamePhase::GuidelineDecision;
-                    return;
-                }
-            }
-
-            // Progress to next phase
-            match self.game_state.driving_phase {
-                Some(DrivingPhase::Pickup) => {
-                    self.game_state.game_phase = GamePhase::Interaction;
-                }
-                Some(DrivingPhase::Destination) => {
-                    self.complete_ride(route);
-                }
-                None => {}
+                _ => {}
             }
         }
     }
@@ -347,78 +153,14 @@ impl Game {
     /// Complete the current ride
     fn complete_ride(&mut self, route: RouteType) {
         if let Some(ref data) = self.game_data {
-            if let Some(ref passenger) = self.game_state.current_passenger.clone() {
-                let current_time = get_time();
-
-                // Calculate fare
-                let reputation = self.game_state.passenger_reputation.get(&passenger.id);
-                let fare = GameEngine::calculate_fare(
-                    passenger.fare,
-                    route,
-                    passenger,
-                    self.game_state.consecutive_route_streak.as_ref(),
-                    reputation,
-                    &data.constants,
-                );
-
-                // Add earnings
-                self.game_state.earnings += fare;
-                self.game_state.rides_completed += 1;
-
-                // Check backstory unlock
-                let backstory_unlocked = if PassengerService::check_backstory_unlock(
-                    passenger.id,
-                    &self.player_stats,
-                    &data.constants,
-                ) {
-                    self.player_stats.unlock_backstory(passenger.id);
-                    Some((passenger.name.clone(), passenger.backstory_details.clone()))
-                } else {
-                    None
-                };
-
-                // Record encounter
-                self.player_stats.record_passenger_encounter(passenger.id);
-
-                // Update reputation
-                let is_positive = passenger.get_route_preference(route)
-                    .map(|p| matches!(p.preference, PreferenceLevel::Loves | PreferenceLevel::Likes))
-                    .unwrap_or(false);
-                self.game_state.get_passenger_reputation(passenger.id)
-                    .update(is_positive, current_time, &data.constants.reputation);
-
-                // Generate item drop
-                let mut items_received = Vec::new();
-                if let Some(drop) = ItemService::generate_drop(
-                    passenger,
-                    route,
-                    backstory_unlocked.is_some(),
-                    current_time,
-                    &data.constants,
-                ) {
-                    items_received.push(drop.item.clone());
-                    self.game_state.inventory.push(drop.item);
-                }
-
-                // Check for trade offer
-                if let Some(trade) = ItemService::check_trade_offer(
-                    passenger,
-                    &self.game_state.inventory,
-                    &data.constants,
-                ) {
-                    self.game_state.pending_trade = Some((trade.passenger_name.clone(), trade.offered_item.clone()));
-                }
-
-                // Create completion data
-                self.game_state.last_ride_completion = Some(RideCompletion {
-                    passenger: passenger.clone(),
-                    fare_earned: fare,
-                    items_received,
-                    backstory_unlocked,
-                });
-
-                self.game_state.game_phase = GamePhase::DropOff;
-            }
+            let current_time = get_time();
+            RideService::complete_ride(
+                &mut self.game_state,
+                data,
+                &mut self.player_stats,
+                route,
+                current_time
+            );
         }
     }
 
@@ -469,79 +211,9 @@ impl Game {
 
     /// Use an item from inventory
     fn use_item(&mut self, idx: usize) {
-        if idx >= self.game_state.inventory.len() {
-            return;
+        if ItemService::use_item(&mut self.game_state, idx) {
+            self.show_inventory = false;
         }
-
-        let item = &self.game_state.inventory[idx];
-        if !item.can_use {
-            return;
-        }
-
-        // Apply item effects
-        use crate::data::ItemEffectType;
-        for effect in &item.effects {
-            match effect.effect_type {
-                ItemEffectType::FuelBonus => {
-                    let bonus = effect.value as f32;
-                    self.game_state.fuel = (self.game_state.fuel + bonus).min(100.0);
-                }
-                ItemEffectType::TimeBonus => {
-                    self.game_state.time_remaining += effect.value as u32;
-                }
-                ItemEffectType::RuleImmunity => {
-                    self.game_state.rule_immunity_charges += effect.value as u32;
-                }
-                ItemEffectType::SupernaturalProtection => {
-                    self.game_state.supernatural_protection += effect.value as u32;
-                }
-                ItemEffectType::FuelDrain => {
-                    let drain = effect.value as f32;
-                    self.game_state.fuel = (self.game_state.fuel - drain).max(0.0);
-                }
-                ItemEffectType::TimePenalty => {
-                    let penalty = effect.value as u32;
-                    self.game_state.time_remaining = self.game_state.time_remaining.saturating_sub(penalty);
-                }
-                ItemEffectType::ReputationModifier => {
-                    // Applied to current passenger if exists
-                    if let Some(passenger_id) = self.game_state.current_passenger.as_ref().map(|p| p.id) {
-                        if let Some(rep) = self.game_state.passenger_reputation.get_mut(&passenger_id) {
-                            if effect.value > 0 {
-                                rep.positive_choices += effect.value.abs() as u32;
-                            } else {
-                                rep.negative_choices += effect.value.abs() as u32;
-                            }
-                        }
-                    }
-                }
-                ItemEffectType::RuleTrigger => {
-                    // Rule triggering effects (TODO: implement if needed)
-                }
-            }
-        }
-
-        // Remove consumable items
-        if item.item_type == crate::data::ItemType::Consumable {
-            self.game_state.inventory.remove(idx);
-        } else {
-            // Decrease durability for other usable items
-            if let Some(item) = self.game_state.inventory.get_mut(idx) {
-                if let Some(durability) = item.durability {
-                    if durability > 0 {
-                        item.durability = Some(durability - 1);
-                        if durability <= 1 {
-                            // Item breaks
-                            self.game_state.inventory.remove(idx);
-                            return; // Exit early since we removed the item
-                        }
-                    }
-                }
-            }
-        }
-
-        // Close inventory after use
-        self.show_inventory = false;
     }
 
     /// Evaluate a guideline decision
@@ -772,42 +444,7 @@ impl Game {
             }
 
             // Proactive tell detection during rides
-            if matches!(self.game_state.game_phase, GamePhase::Driving | GamePhase::Interaction) {
-                if let Some(passenger) = self.game_state.current_passenger.as_ref() {
-                    // Analyze passenger for tells every update
-                    let mut new_tells = GuidelineEngine::analyze_passenger(
-                        passenger,
-                        &self.game_state,
-                        &self.game_state.current_guidelines,
-                        current_time
-                    );
-
-                    // Introduce false tells for experienced players
-                    if GuidelineEngine::should_introduce_false_tells(&self.game_state) {
-                        // Generate a false tell (inverted truth)
-                        if let Some(real_tell) = new_tells.first().cloned() {
-                            let false_tell = DetectedTell {
-                                tell: real_tell.tell.clone(),
-                                passenger_id: real_tell.passenger_id,
-                                detection_time: current_time,
-                                player_noticed: false,
-                                related_guideline: real_tell.related_guideline,
-                                exception_id: real_tell.exception_id,
-                            };
-                            new_tells.push(false_tell);
-                        }
-                    }
-
-                    // Merge new tells with existing ones (avoid duplicates)
-                    for tell in new_tells {
-                        if !self.game_state.detected_tells.iter().any(|t|
-                            t.tell.description == tell.tell.description && t.passenger_id == tell.passenger_id
-                        ) {
-                            self.game_state.detected_tells.push(tell);
-                        }
-                    }
-                }
-            }
+            GuidelineEngine::update_detection(&mut self.game_state, current_time);
 
             // Dynamic weather updates
             if let Some(shift_start) = self.game_state.shift_start_time {
@@ -824,25 +461,8 @@ impl Game {
                 );
             }
 
-            // Apply curse penalties periodically (every 5 seconds of real time)
-            let curse_check_interval = 5.0;
-            if current_time - self.last_frame_time as f64 >= curse_check_interval {
-                // Clone inventory to avoid borrow checker conflict
-                let inventory_snapshot = self.game_state.inventory.clone();
-                ItemService::apply_curse_penalties(
-                    &inventory_snapshot,
-                    &mut self.game_state,
-                    current_time
-                );
-            }
-
-            // Apply item deterioration
-            for item in &mut self.game_state.inventory {
-                item.apply_deterioration(current_time);
-            }
-
-            // Remove broken items
-            self.game_state.inventory.retain(|item| !item.is_broken());
+            // Update items (curses, deterioration)
+            ItemService::update_items(&mut self.game_state, current_time);
         }
     }
 
@@ -855,24 +475,25 @@ impl Game {
 
         // Draw main content - delegate to screen modules
         let action = match self.screen {
-            Screen::Loading => menu_screens::draw_loading(),
-            Screen::MainMenu => menu_screens::draw_main_menu(&self.player_stats),
-            Screen::Briefing => menu_screens::draw_briefing(&self.game_state),
+            Screen::Loading => menu_screens::draw_loading(self.game_data.as_ref()),
+            Screen::MainMenu => menu_screens::draw_main_menu(&self.player_stats, self.game_data.as_ref()),
+            Screen::Briefing => menu_screens::draw_briefing(&self.game_state, self.game_data.as_ref()),
             Screen::Game => self.draw_game_phase(),
             Screen::GameOver => menu_screens::draw_game_over(&self.game_state, self.game_data.as_ref()),
             Screen::Success => menu_screens::draw_success(&self.game_state, self.game_data.as_ref()),
             Screen::SkillTree => meta_screens::draw_skill_tree(&self.player_stats, self.game_data.as_ref()),
             Screen::Almanac => meta_screens::draw_almanac(&self.player_stats, self.game_data.as_ref()),
-            Screen::Leaderboard => meta_screens::draw_leaderboard(&self.player_stats),
+            Screen::Leaderboard => meta_screens::draw_leaderboard(&self.player_stats, self.game_data.as_ref()),
         };
 
         // Draw overlays if toggled on during game
         if self.screen == Screen::Game {
+            let game_data_ref = self.game_data.as_ref();
             if self.show_rules {
-                game_screens::draw_rules_panel(&self.game_state);
+                game_screens::draw_rules_panel(&self.game_state, game_data_ref);
             }
             if self.show_inventory {
-                game_screens::draw_inventory_modal(&self.game_state);
+                game_screens::draw_inventory_modal(&self.game_state, game_data_ref);
             }
         }
 
@@ -903,7 +524,7 @@ impl Game {
     fn draw_game_phase(&self) -> UiAction {
         // Draw status bar
         if let Some(ref data) = self.game_data {
-            StatusBar::draw(&self.game_state, &data.constants);
+            StatusBar::draw(&self.game_state, &data.constants, self.game_data.as_ref());
         }
         
         // Delegate to game_screens module
@@ -914,79 +535,9 @@ impl Game {
 
     /// Handle input
     pub fn handle_input(&mut self) {
-        match self.screen {
-            Screen::MainMenu => {
-                if is_key_pressed(KeyCode::Space) {
-                    self.start_game();
-                }
-            }
-            Screen::Briefing => {
-                if is_key_pressed(KeyCode::Space) {
-                    self.start_shift();
-                }
-            }
-            Screen::Game => {
-                // Toggle rules with R key (works in all game phases)
-                if is_key_pressed(KeyCode::R) {
-                    self.show_rules = !self.show_rules;
-                }
-                // Toggle inventory with I key
-                if is_key_pressed(KeyCode::I) {
-                    self.show_inventory = !self.show_inventory;
-                }
-
-                match self.game_state.game_phase {
-                    GamePhase::Waiting => {
-                        if is_key_pressed(KeyCode::Space) {
-                            self.spawn_passenger();
-                        }
-                    }
-                    GamePhase::RideRequest => {
-                        if is_key_pressed(KeyCode::Space) {
-                            self.accept_ride();
-                        }
-                        if is_key_pressed(KeyCode::Escape) {
-                            self.decline_ride();
-                        }
-                    }
-                    GamePhase::Driving => {
-                        if is_key_pressed(KeyCode::Key1) {
-                            self.choose_route(RouteType::Normal);
-                        }
-                        if is_key_pressed(KeyCode::Key2) {
-                            self.choose_route(RouteType::Shortcut);
-                        }
-                        if is_key_pressed(KeyCode::Key3) {
-                            self.choose_route(RouteType::Scenic);
-                        }
-                        if is_key_pressed(KeyCode::Key4) {
-                            self.choose_route(RouteType::Police);
-                        }
-                    }
-                    GamePhase::Interaction => {
-                        if is_key_pressed(KeyCode::Space) {
-                            self.continue_to_destination();
-                        }
-                    }
-                    GamePhase::DropOff => {
-                        if is_key_pressed(KeyCode::Space) {
-                            self.continue_from_dropoff();
-                        }
-                    }
-                    _ => {}
-                }
-            }
-            Screen::GameOver | Screen::Success => {
-                if is_key_pressed(KeyCode::Space) {
-                    self.return_to_menu();
-                }
-            }
-            Screen::SkillTree | Screen::Almanac | Screen::Leaderboard => {
-                if is_key_pressed(KeyCode::Escape) {
-                    self.return_to_menu();
-                }
-            }
-            _ => {}
+        let actions = InputService::capture_input(self.screen, self.game_state.game_phase);
+        for action in actions {
+            self.handle_ui_action(action);
         }
     }
 

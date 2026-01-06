@@ -12,3 +12,17 @@ pub mod meta_screens;
 pub use menu_screens::*;
 pub use game_screens::*;
 pub use meta_screens::*;
+
+/// Main screen enum
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Screen {
+    Loading,
+    MainMenu,
+    Briefing,
+    Game,
+    GameOver,
+    Success,
+    SkillTree,
+    Almanac,
+    Leaderboard,
+}

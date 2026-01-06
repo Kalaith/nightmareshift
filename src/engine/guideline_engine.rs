@@ -18,7 +18,8 @@ impl GuidelineEngine {
     /// Analyze passenger for active tells based on guidelines
     pub fn analyze_passenger(
         passenger: &Passenger,
-        state: &GameState,
+        weather: &WeatherCondition,
+        player_trust: f32,
         guidelines: &[Guideline],
         current_time: f64,
     ) -> Vec<DetectedTell> {
@@ -32,13 +33,13 @@ impl GuidelineEngine {
                 }
 
                 // Check if conditions are met
-                if !Self::check_exception_conditions(exception, &state.current_weather, passenger) {
+                if !Self::check_exception_conditions(exception, weather, passenger) {
                     continue;
                 }
 
                 // Add detected tells
                 for tell in &exception.tells {
-                    let player_noticed = Self::calculate_detection_probability(tell, state.player_trust);
+                    let player_noticed = Self::calculate_detection_probability(tell, player_trust);
                     detected.push(DetectedTell {
                         tell: tell.clone(),
                         passenger_id: passenger.id,
@@ -52,6 +53,50 @@ impl GuidelineEngine {
         }
 
         detected
+    }
+
+    /// Update detection cycle for game loop
+    pub fn update_detection(state: &mut GameState, current_time: f64) {
+        if matches!(state.game_phase, GamePhase::Driving | GamePhase::Interaction) {
+            let passenger_opt = state.current_passenger.clone();
+            if let Some(passenger) = passenger_opt {
+                let weather = state.current_weather.clone();
+                let player_trust = state.player_trust;
+                let guidelines = state.current_guidelines.clone();
+
+                let mut new_tells = Self::analyze_passenger(
+                    &passenger,
+                    &weather,
+                    player_trust,
+                    &guidelines,
+                    current_time
+                );
+
+                // Introduce false tells for experienced players
+                if Self::should_introduce_false_tells(state) {
+                     if let Some(real_tell) = new_tells.first().cloned() {
+                        let false_tell = DetectedTell {
+                            tell: real_tell.tell.clone(),
+                            passenger_id: real_tell.passenger_id,
+                            detection_time: current_time,
+                            player_noticed: false,
+                            related_guideline: real_tell.related_guideline,
+                            exception_id: real_tell.exception_id,
+                        };
+                        new_tells.push(false_tell);
+                    }
+                }
+                
+                // Merge
+                for tell in new_tells {
+                    if !state.detected_tells.iter().any(|t|
+                        t.tell.description == tell.tell.description && t.passenger_id == tell.passenger_id
+                    ) {
+                        state.detected_tells.push(tell);
+                    }
+                }
+            }
+        }
     }
 
     /// Check if passenger matches an exception

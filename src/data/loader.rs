@@ -11,6 +11,7 @@ pub struct GameData {
     pub skills: Vec<Skill>,
     pub almanac: AlmanacData,
     pub guidelines: Vec<Guideline>,
+    pub localization: Localization,
 }
 
 impl GameData {
@@ -24,6 +25,7 @@ impl GameData {
             skills: load_skill_tree(),
             almanac: load_almanac(),
             guidelines: load_guidelines(),
+            localization: load_localization(),
         }
     }
 
@@ -94,4 +96,10 @@ pub fn load_guidelines() -> Vec<Guideline> {
         eprintln!("Failed to parse guidelines: {}", e);
         Vec::new()
     })
+}
+
+/// Load localization from embedded JSON
+pub fn load_localization() -> Localization {
+    let json = include_str!("../../assets/localization/en.json");
+    serde_json::from_str(json).expect("Failed to parse localization/en.json - this is critical")
 }

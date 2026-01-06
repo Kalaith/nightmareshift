@@ -8,6 +8,8 @@ pub mod weather_service;
 pub mod guideline_engine;
 pub mod item_service;
 pub mod effects;
+pub mod input_service;
+pub mod ride_service;
 
 pub use game_engine::*;
 pub use passenger_service::*;
@@ -17,3 +19,5 @@ pub use weather_service::*;
 pub use guideline_engine::*;
 pub use item_service::*;
 pub use effects::*;
+pub use input_service::*;
+pub use ride_service::*;

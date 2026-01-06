@@ -1,0 +1,158 @@
+{
+    "ui_main_menu_bg": {
+        "prompt": "A spooky urban city skyline at night with neon lights and fog, pixel art style, high contrast, dark atmosphere",
+        "filename": "ui_main_menu_bg.png",
+        "width": 640,
+        "height": 368
+    },
+    "ui_logo": {
+        "prompt": "Text 'NIGHTMARE SHIFT' in dripping horror font, neon red and purple, pixel art style",
+        "filename": "ui_logo.png",
+        "width": 320,
+        "height": 128
+    },
+    "icon_fuel": {
+        "prompt": "A retro gas pump icon, pixel art style, white and transparent",
+        "filename": "icon_fuel.png",
+        "width": 32,
+        "height": 32
+    },
+    "icon_money": {
+        "prompt": "Dollar sign or coin stack icon, pixel art style, gold and transparent",
+        "filename": "icon_money.png",
+        "width": 32,
+        "height": 32
+    },
+    "icon_time": {
+        "prompt": "Clock or stopwatch icon, pixel art style, white and transparent",
+        "filename": "icon_time.png",
+        "width": 32,
+        "height": 32
+    },
+    "passenger_mrs_chen": {
+        "prompt": "Portrait of an elderly chinese woman, ghostly pale, sad expression, wearing old sweater, pixel art style",
+        "filename": "passenger_mrs_chen.png",
+        "width": 128,
+        "height": 128
+    },
+    "passenger_jake_morrison": {
+        "prompt": "Portrait of a young professional man, extremely pale skin, wearing a suit, dark circles under eyes, pixel art style",
+        "filename": "passenger_jake_morrison.png",
+        "width": 128,
+        "height": 128
+    },
+    "passenger_sarah_woods": {
+        "prompt": "Portrait of a young woman with disheveled hair and dirt on face, frightened expression, casual clothes, pixel art style",
+        "filename": "passenger_sarah_woods.png",
+        "width": 128,
+        "height": 128
+    },
+    "passenger_dr_hollow": {
+        "prompt": "Portrait of an older doctor with glasses, stern expression, wearing a lab coat, holding a medical bag, pixel art style",
+        "filename": "passenger_dr_hollow.png",
+        "width": 128,
+        "height": 128
+    },
+    "passenger_the_collector": {
+        "prompt": "Portrait of a mysterious man in a sharp suit, face in shadow, holding a briefcase, ominous aura, pixel art style",
+        "filename": "passenger_the_collector.png",
+        "width": 128,
+        "height": 128
+    },
+    "passenger_tommy_sullivan": {
+        "prompt": "Portrait of a young schoolboy in uniform, looking lost and scared, retro 80s style, pixel art style",
+        "filename": "passenger_tommy_sullivan.png",
+        "width": 128,
+        "height": 128
+    },
+    "passenger_elena_vasquez": {
+        "prompt": "Portrait of a 1940s dancer woman, wearing a vintage dress, slight burn marks, elegant but ghostly, pixel art style",
+        "filename": "passenger_elena_vasquez.png",
+        "width": 128,
+        "height": 128
+    },
+    "passenger_marcus_thompson": {
+        "prompt": "Portrait of a male jogger in athletic gear, sweating, looking paranoid over shoulder, pixel art style",
+        "filename": "passenger_marcus_thompson.png",
+        "width": 128,
+        "height": 128
+    },
+    "passenger_nurse_catherine": {
+        "prompt": "Portrait of a female nurse in stained scrubs, exhausted expression, dark eyes, pixel art style",
+        "filename": "passenger_nurse_catherine.png",
+        "width": 128,
+        "height": 128
+    },
+    "passenger_old_pete": {
+        "prompt": "Portrait of an old fisherman with a beard, wearing a yellow raincoat, dripping wet, pixel art style",
+        "filename": "passenger_old_pete.png",
+        "width": 128,
+        "height": 128
+    },
+    "passenger_madame_zelda": {
+        "prompt": "Portrait of a fortune teller woman with headscarf and crystal jewelry, intense staring eyes, pixel art style",
+        "filename": "passenger_madame_zelda.png",
+        "width": 128,
+        "height": 128
+    },
+    "passenger_frank_pianist": {
+        "prompt": "Portrait of a jazz musician man in a tuxedo, bandaged hands, melancholy expression, pixel art style",
+        "filename": "passenger_frank_pianist.png",
+        "width": 128,
+        "height": 128
+    },
+    "passenger_sister_agnes": {
+        "prompt": "Portrait of a nun in habit, holding an old book, worried expression, pixel art style",
+        "filename": "passenger_sister_agnes.png",
+        "width": 128,
+        "height": 128
+    },
+    "passenger_detective_morrison": {
+        "prompt": "Portrait of a noir detective man, fedora hat, unshaven, holding a file, tired expression, pixel art style",
+        "filename": "passenger_detective_morrison.png",
+        "width": 128,
+        "height": 128
+    },
+    "passenger_midnight_mayor": {
+        "prompt": "Portrait of an unnaturally tall man in a top hat and tails, face obscured or skeletal, imposing, pixel art style",
+        "filename": "passenger_midnight_mayor.png",
+        "width": 128,
+        "height": 128
+    },
+    "passenger_deaths_driver": {
+        "prompt": "Portrait of a hooded figure, face hidden in deep shadow, faint skeletal features, dark robes, pixel art style",
+        "filename": "passenger_deaths_driver.png",
+        "width": 128,
+        "height": 128
+    },
+    "item_generic": {
+        "prompt": "A generic mystery item in a burlap sack, pixel art style",
+        "filename": "item_generic.png",
+        "width": 32,
+        "height": 32
+    },
+    "item_locket": {
+        "prompt": "An old brass locket, tarnished, pixel art style",
+        "filename": "item_locket.png",
+        "width": 32,
+        "height": 32
+    },
+    "bg_driving_city": {
+        "prompt": "View from inside a taxi looking out at a dark city street at night, rain on windshield, pixel art style",
+        "filename": "bg_driving_city.png",
+        "width": 640,
+        "height": 368
+    },
+    "bg_driving_forest": {
+        "prompt": "View from inside a taxi looking out at a dark forest road, spooky trees, headlights illuminating path, pixel art style",
+        "filename": "bg_driving_forest.png",
+        "width": 640,
+        "height": 368
+    },
+    "bg_driving_industrial": {
+        "prompt": "View from inside a taxi looking out at an industrial district, factories, steam, dark and gritty, pixel art style",
+        "filename": "bg_driving_industrial.png",
+        "width": 640,
+        "height": 368
+    }
+}
