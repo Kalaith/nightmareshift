@@ -141,9 +141,9 @@ impl Particle {
     }
 
     pub fn draw(&self) {
-        let alpha = (self.life / self.max_life).clamp(0.0, 1.0);
+        let lifecycle_alpha = (self.life / self.max_life).clamp(0.0, 1.0);
         let mut color = self.color;
-        color.a = alpha;
+        color.a *= lifecycle_alpha;
         draw_circle(self.x, self.y, self.size, color);
     }
 }

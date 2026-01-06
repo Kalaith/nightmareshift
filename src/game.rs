@@ -110,10 +110,13 @@ impl Game {
     }
 
     /// Accept current ride
+    /// Accept current ride
     fn accept_ride(&mut self) {
-        if let Err(reason) = RideService::accept_ride(&mut self.game_state) {
-            self.end_shift(false);
-            self.game_state.game_over_reason = Some(reason);
+        if let Some(ref data) = self.game_data {
+            if let Err(reason) = RideService::accept_ride(&mut self.game_state, data) {
+                self.end_shift(false);
+                self.game_state.game_over_reason = Some(reason);
+            }
         }
     }
 
@@ -528,7 +531,7 @@ impl Game {
         }
         
         // Delegate to game_screens module
-        game_screens::draw_game(&self.game_state, self.game_data.as_ref())
+        game_screens::draw_game(&self.game_state, self.game_data.as_ref(), &self.player_stats)
     }
 
 
@@ -565,9 +568,16 @@ impl Game {
                      3 => RouteType::Police,
                      _ => RouteType::Normal,
                  };
-                 if self.screen == Screen::Game { self.choose_route(route_type); }
-            }
-            UiAction::Continue => {
+                  if self.screen == Screen::Game { self.choose_route(route_type); }
+             }
+             UiAction::SelectEventChoice(idx) => {
+                 if self.screen == Screen::Game {
+                     if let Some(ref data) = self.game_data {
+                         RideService::resolve_event_choice(&mut self.game_state, data, idx);
+                     }
+                 }
+             }
+             UiAction::Continue => {
                 if self.screen == Screen::Game {
                     match self.game_state.game_phase {
                          GamePhase::Waiting => self.spawn_passenger(),

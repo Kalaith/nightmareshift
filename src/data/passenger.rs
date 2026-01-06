@@ -233,6 +233,10 @@ pub struct Passenger {
     pub wanted_items: Vec<String>,
     #[serde(rename = "isSupernatural", default)]
     pub is_supernatural: bool,
+
+    // NEW traits field
+    #[serde(default)]
+    pub traits: Vec<String>,
 }
 
 impl Passenger {

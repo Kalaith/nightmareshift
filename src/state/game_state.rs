@@ -274,6 +274,7 @@ pub struct GameState {
     pub current_passenger: Option<Passenger>,
     pub current_passenger_dialogue: Option<String>,
     pub current_ride: Option<CurrentRide>,
+    pub current_event: Option<MidRideEvent>, // Mid-ride event
     pub game_phase: GamePhase,
     pub driving_phase: Option<DrivingPhase>,
     pub used_passengers: Vec<u32>,
@@ -337,6 +338,7 @@ impl GameState {
             current_passenger: None,
             current_passenger_dialogue: None,
             current_ride: None,
+            current_event: None,
             game_phase: GamePhase::Loading,
             driving_phase: None,
             used_passengers: Vec::new(),
@@ -384,6 +386,7 @@ impl GameState {
         self.current_passenger = None;
         self.current_passenger_dialogue = None;
         self.current_ride = None;
+        self.current_event = None;
         self.game_phase = GamePhase::Waiting;
         self.driving_phase = None;
         self.used_passengers.clear();

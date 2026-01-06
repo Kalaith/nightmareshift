@@ -2,13 +2,17 @@
 
 use crate::data::*;
 use std::collections::HashMap;
+use rand::seq::SliceRandom;
+use rand::SeedableRng;
+use rand::rngs::StdRng;
 
 /// Calculated route costs
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 pub struct RouteCosts {
     pub fuel: u32,
     pub time: u32,
     pub risk: u32,
+    pub risk_tags: Vec<RiskTag>,
 }
 
 /// Route calculation service
@@ -115,10 +119,106 @@ impl RouteService {
             risk = (risk - risk_reduction).max(0.0);
         }
 
+
+        let risk_tags = Self::generate_risk_tags(route, weather, time_of_day, passenger, None);
+
         RouteCosts {
             fuel: fuel.round() as u32,
             time: time.round() as u32,
             risk: risk.round().clamp(0.0, 5.0) as u32,
+            risk_tags,
         }
+    }
+
+    /// Generate 3 risk tags for a route context
+    pub fn generate_risk_tags(
+        route: RouteType,
+        weather: Option<&WeatherCondition>,
+        time_of_day: Option<&TimeOfDay>,
+        _passenger: Option<&Passenger>,
+        seed: Option<u64>,
+    ) -> Vec<RiskTag> {
+        let mut potential_risks = Vec::new();
+        
+        // Base risks by route type
+        match route {
+            RouteType::Normal => {
+                potential_risks.push(RiskTag::HighTraffic);
+                potential_risks.push(RiskTag::RoadConstruction);
+                potential_risks.push(RiskTag::PolicePatrol);
+            },
+            RouteType::Shortcut => {
+                potential_risks.push(RiskTag::Potholes);
+                potential_risks.push(RiskTag::GangActivity);
+                potential_risks.push(RiskTag::StrangeNoises);
+            },
+            RouteType::Scenic => {
+                potential_risks.push(RiskTag::SlipperyRoads);
+                potential_risks.push(RiskTag::SpiritualDisturbance);
+                potential_risks.push(RiskTag::DenseFog);
+            },
+            RouteType::Police => {
+                potential_risks.push(RiskTag::HighTraffic);
+                potential_risks.push(RiskTag::SpiritualDisturbance); // Escort duty?
+                potential_risks.push(RiskTag::PolicePatrol);
+            },
+        }
+
+        // Weather risks
+        if let Some(w) = weather {
+            match w.weather_type {
+                WeatherType::Rain | WeatherType::Thunderstorm => {
+                    potential_risks.push(RiskTag::SlipperyRoads);
+                    potential_risks.push(RiskTag::FlashFloods);
+                },
+                WeatherType::Fog => potential_risks.push(RiskTag::DenseFog),
+                _ => {}
+            }
+        }
+
+        // Time risks
+        if let Some(t) = time_of_day {
+            if matches!(t.phase, TimePhase::Night | TimePhase::Latenight) {
+                potential_risks.push(RiskTag::StrangeNoises);
+                potential_risks.push(RiskTag::SpiritualDisturbance);
+            }
+        }
+
+        // Fill with generic risks if not enough
+        let generics = [
+            RiskTag::HighTraffic, 
+            RiskTag::RoadConstruction, 
+            RiskTag::Potholes
+        ];
+        
+        for r in generics.iter() {
+            if !potential_risks.contains(r) {
+                potential_risks.push(*r);
+            }
+        }
+
+        // Shuffle and pick 3
+        let mut rng: Box<dyn rand::RngCore> = if let Some(s) = seed {
+             Box::new(StdRng::seed_from_u64(s))
+        } else {
+             Box::new(rand::thread_rng())
+        };
+        
+        potential_risks.shuffle(&mut rng);
+        
+        // Ensure unique
+        let mut selected = Vec::new();
+        for r in potential_risks {
+            if !selected.contains(&r) && selected.len() < 3 {
+                selected.push(r);
+            }
+        }
+        
+        // Fallback if still < 3 (shouldn't happen with generics adding)
+        while selected.len() < 3 {
+             selected.push(RiskTag::HighTraffic); // Safe fallback
+        }
+
+        selected
     }
 }

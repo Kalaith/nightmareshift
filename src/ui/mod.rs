@@ -18,6 +18,7 @@ pub enum UiAction {
     AcceptRide,
     DeclineRide,
     SelectRoute(usize),
+    SelectEventChoice(usize), // New action for mid-ride events
     Continue,
     ReturnToMenu,
     TryAgain,

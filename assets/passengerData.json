@@ -21,7 +21,11 @@
             "Why won't you look at me, dear?"
         ],
         "relationships": [],
-        "backstoryUnlocked": false,
+        "traits": [
+            "Perceptive",
+            "Calm"
+        ],
+        "backstoryUnlocked": true,
         "backstoryDetails": "Mrs. Chen was a regular taxi passenger for 40 years before her accident on this very route...",
         "tells": [
             {
@@ -152,7 +156,11 @@
         "relationships": [
             4
         ],
-        "backstoryUnlocked": false,
+        "traits": [
+            "Night Vision",
+            "Strong"
+        ],
+        "backstoryUnlocked": true,
         "backstoryDetails": "Jake works the night shift at a blood bank, though his employment records don't seem to exist...",
         "tells": [
             {
@@ -281,6 +289,9 @@
         ],
         "relationships": [
             8
+        ],
+        "traits": [
+            "Wilderness Survival"
         ],
         "backstoryUnlocked": false,
         "backstoryDetails": "Sarah was part of a hiking group that went missing three years ago. She was the only one who 'returned'...",

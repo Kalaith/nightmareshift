@@ -13,13 +13,14 @@ use crate::ui::{
     CompletionSummary,
 };
 
-/// Draw the game screen router (determines which phase to show)
-pub fn draw_game(game_state: &GameState, game_data: Option<&GameData>) -> UiAction {
+
+// Update signatures to accept player_stats
+pub fn draw_game(game_state: &GameState, game_data: Option<&GameData>, player_stats: &crate::state::PlayerStats) -> UiAction {
     match game_state.game_phase {
         GamePhase::Waiting => draw_waiting(game_state, game_data),
         GamePhase::RideRequest => draw_ride_request(game_state, game_data),
-        GamePhase::Driving => draw_driving(game_state, game_data),
-        GamePhase::Interaction => draw_interaction(game_state, game_data),
+        GamePhase::Driving => draw_driving(game_state, game_data, player_stats),
+        GamePhase::Interaction => draw_interaction(game_state, game_data, player_stats),
         GamePhase::DropOff => draw_dropoff(game_state, game_data),
         GamePhase::GuidelineDecision => draw_guideline_decision(game_state, game_data),
         _ => UiAction::None,
@@ -155,7 +156,7 @@ pub fn draw_ride_request(game_state: &GameState, game_data: Option<&GameData>) -
 }
 
 /// Draw the driving/route selection screen
-pub fn draw_driving(game_state: &GameState, game_data: Option<&GameData>) -> UiAction {
+pub fn draw_driving(game_state: &GameState, game_data: Option<&GameData>, _player_stats: &crate::state::PlayerStats) -> UiAction {
     let center_x = screen_width() / 2.0;
     let y = 80.0;
     
@@ -278,7 +279,7 @@ pub fn draw_driving(game_state: &GameState, game_data: Option<&GameData>) -> UiA
                 draw_text(name, center_x - 140.0, route_y + 25.0, 18.0, WHITE);
                 draw_text(desc, center_x - 140.0, route_y + 45.0, 14.0, Color::from_hex(0x888888));
 
-                // Show passenger preference
+                // Show passenger preference (Header for right side)
                 if let Some(pref) = preference {
                     let pref_text = match pref.preference {
                         PreferenceLevel::Loves => "❤️ LOVES",
@@ -295,14 +296,48 @@ pub fn draw_driving(game_state: &GameState, game_data: Option<&GameData>) -> UiA
                             PreferenceLevel::Dislikes => colors::ACCENT_WARNING,
                             PreferenceLevel::Fears => colors::FUEL_CRITICAL,
                         };
-                        draw_text(pref_text, center_x + 100.0, route_y + 25.0, 14.0, pref_color);
+                        // Draw preference at top right
+                        draw_text(pref_text, center_x + 60.0, route_y + 25.0, 14.0, pref_color);
                     }
                 }
 
-                // Weather warning
+                // Weather warning (Left side, below desc)
                 if !weather_warning.is_empty() {
                     draw_text(&weather_warning, center_x - 140.0, route_y + 70.0, 12.0, colors::ACCENT_WARNING);
                 }
+            }
+
+            // Draw risk tags (Right side, below preference)
+            // Logic:
+            // 1. Generate stable risks using seed
+            // 2. Check mastery level for visibility
+            use crate::engine::RouteService;
+            let seed = game_state.rides_completed as u64 + game_state.current_passenger.as_ref().map(|p| p.id as u64).unwrap_or(0) + i as u64;
+            let risk_tags = RouteService::generate_risk_tags(
+                *route_type,
+                Some(&game_state.current_weather),
+                Some(&game_state.time_of_day),
+                game_state.current_passenger.as_ref(), // Pass passenger for context
+                Some(seed)
+            );
+
+            // Determine visibility based on route mastery
+            let mastery = game_state.get_route_mastery(*route_type);
+            let visible_count = if mastery >= 5 { 3 } else if mastery >= 3 { 2 } else if mastery >= 1 { 1 } else { 0 };
+
+            let tag_x = center_x + 60.0;
+            let tag_y = route_y + 45.0; // Start below preference
+            
+            for (tag_idx, tag) in risk_tags.iter().enumerate() {
+                let is_visible = tag_idx < visible_count;
+                let (text, color) = if is_visible {
+                    (tag.name(), colors::ACCENT_WARNING) 
+                } else {
+                    ("???", colors::TEXT_MUTED)
+                };
+                
+                // Draw tag
+                draw_text(text, tag_x, tag_y + (tag_idx as f32 * 18.0), 12.0, color);
             }
 
             route_y += 110.0;
@@ -312,9 +347,63 @@ pub fn draw_driving(game_state: &GameState, game_data: Option<&GameData>) -> UiA
     UiAction::None
 }
 
-/// Draw the interaction screen
-pub fn draw_interaction(game_state: &GameState, game_data: Option<&GameData>) -> UiAction {
-    if let Some(ref passenger) = game_state.current_passenger {
+/// Draw the interaction screen (Mid-Ride Event)
+pub fn draw_interaction(game_state: &GameState, _game_data: Option<&GameData>, player_stats: &crate::state::PlayerStats) -> UiAction {
+    if let Some(event) = &game_state.current_event {
+         let rect = UiRect::centered_x(100.0, 600.0, 500.0);
+         draw_panel(rect, colors::PANEL_BG);
+         
+         let inner = rect.inset(spacing::PADDING_MD);
+         let mut y = inner.y;
+
+         // Title
+         draw_text(&event.title, inner.x, y + 24.0, fonts::SIZE_LG, colors::ACCENT_WARNING);
+         y += 50.0;
+
+         // Description
+         draw_text(&event.description, inner.x, y + 16.0, fonts::SIZE_MD, colors::TEXT_PRIMARY);
+         y += 60.0; // Space for choices
+
+         // Choices
+         for (i, choice) in event.choices.iter().enumerate() {
+             let btn_h = 60.0;
+             let _btn_rect = UiRect::new(inner.x, y, inner.w, btn_h);
+             
+             
+             // Check traits for hints
+             let mut hint_text = None;
+             if let Some(req_trait) = &choice.required_trait {
+                 if let Some(passenger) = &game_state.current_passenger {
+                     // Check if passenger has trait AND backstory is unlocked
+                     if passenger.traits.contains(req_trait) {
+                         // Check unlock (assuming player_stats check matches logic)
+                         // Wait, player_stats.is_backstory_unlocked(id)
+                         if player_stats.is_backstory_unlocked(passenger.id) {
+                            hint_text = Some(format!("{}'s {} helps!", passenger.name, req_trait));
+                         }
+                     }
+                 }
+             }
+
+             if button(inner.x, y, inner.w, btn_h, &choice.description) {
+                 return UiAction::SelectEventChoice(i);
+             }
+             
+             // Draw hint if available (overlay on button or next to it)
+             if let Some(hint) = hint_text {
+                 draw_text(&hint, inner.x + 10.0, y - 5.0, 12.0, colors::FUEL_GOOD);
+             }
+
+             y += btn_h + 20.0;
+         }
+
+    } else if let Some(ref passenger) = game_state.current_passenger {
+        // Fallback or legacy interaction (START of ride dialogue if any?)
+        // Currently `Interaction` phase is reused for start pickup too? 
+        // No, Pickup phase transitions to Interaction.
+        // My implementation in RideService sets current_event when transitioning to Interaction.
+        // So `current_event` SHOULD be present.
+        // But if I want to support legacy behavior just in case:
         let rect = UiRect::centered_x(150.0, 500.0, 150.0);
         draw_panel(rect, colors::PANEL_BG);
 
@@ -340,18 +429,12 @@ pub fn draw_interaction(game_state: &GameState, game_data: Option<&GameData>) ->
         }
 
         // Continue Button
-        let btn_label = if let Some(d) = game_data {
-            d.localization.ui.common.continue_space.clone()
-        } else {
-            "Continue (SPACE)".to_string()
-        };
-        
         if button(
             screen_width() / 2.0 - 100.0,
             rect.bottom() + 40.0,
             200.0,
             50.0,
-            &btn_label
+            "Continue"
         ) {
             return UiAction::Continue;
         }
@@ -362,7 +445,7 @@ pub fn draw_interaction(game_state: &GameState, game_data: Option<&GameData>) ->
 /// Draw the dropoff screen
 pub fn draw_dropoff(game_state: &GameState, game_data: Option<&GameData>) -> UiAction {
     if let Some(ref completion) = game_state.last_ride_completion {
-        let rect = UiRect::centered_x(100.0, 400.0, 240.0);
+        let rect = UiRect::centered_x(100.0, 500.0, 500.0);
         // CompletionSummary now needs game_data
         let completion_action = CompletionSummary::draw(completion, rect, game_data);
 

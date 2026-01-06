@@ -254,13 +254,33 @@ impl CompletionSummary {
             // Passenger feedback
             if !completion.passenger.dialogue.is_empty() {
                 let feedback = &completion.passenger.dialogue[0];
-                let feedback_preview = if feedback.len() > 50 {
-                    format!("\"{}...\"", &feedback[..50])
-                } else {
-                    format!("\"{}\"", feedback)
-                };
-                draw_text(&feedback_preview, inner.x, y, fonts::SIZE_SM, colors::TEXT_MUTED);
-                y += 30.0;
+                let formatted_feedback = format!("\"{}\"", feedback);
+                
+                // Wrap text
+                let max_width = inner.w;
+                let words: Vec<&str> = formatted_feedback.split_whitespace().collect();
+                let mut current_line = String::new();
+                
+                for word in words {
+                    let test_line = if current_line.is_empty() {
+                        word.to_string()
+                    } else {
+                        format!("{} {}", current_line, word)
+                    };
+                    
+                    let dims = measure_text(&test_line, None, fonts::SIZE_SM as u16, 1.0);
+                    if dims.width <= max_width {
+                        current_line = test_line;
+                    } else {
+                        draw_text(&current_line, inner.x, y, fonts::SIZE_SM, colors::TEXT_MUTED);
+                        y += 20.0;
+                        current_line = word.to_string();
+                    }
+                }
+                if !current_line.is_empty() {
+                    draw_text(&current_line, inner.x, y, fonts::SIZE_SM, colors::TEXT_MUTED);
+                    y += 30.0;
+                }
             }
 
             // Fare earned
@@ -310,13 +330,31 @@ impl CompletionSummary {
                 );
                 y += 25.0;
 
-                // Show snippet of backstory
-                let backstory_snippet = if backstory.len() > 60 {
-                    format!("   {}...", &backstory[..60])
-                } else {
-                    format!("   {}", backstory)
-                };
-                draw_text(&backstory_snippet, inner.x, y, fonts::SIZE_SM, colors::TEXT_MUTED);
+                // Show full backstory with wrapping
+                let max_width = inner.w;
+                let words: Vec<&str> = backstory.split_whitespace().collect();
+                let mut current_line = String::new();
+                
+                for word in words {
+                    let test_line = if current_line.is_empty() {
+                        word.to_string()
+                    } else {
+                        format!("{} {}", current_line, word)
+                    };
+                    
+                    let dims = measure_text(&test_line, None, fonts::SIZE_SM as u16, 1.0);
+                    if dims.width <= max_width {
+                        current_line = test_line;
+                    } else {
+                        draw_text(&current_line, inner.x, y, fonts::SIZE_SM, colors::TEXT_MUTED);
+                        y += 20.0; // Line height
+                        current_line = word.to_string();
+                    }
+                }
+                if !current_line.is_empty() {
+                    draw_text(&current_line, inner.x, y, fonts::SIZE_SM, colors::TEXT_MUTED);
+                }
+                // Ensure space for button? Y is updated.
             }
 
             // Continue Button

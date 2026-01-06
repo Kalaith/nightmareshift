@@ -9,13 +9,15 @@ pub mod passenger;
 pub mod rules;
 pub mod localization;
 pub mod skill_tree;
+pub mod event;
 
 pub use constants::*;
 pub use environment::*;
 pub use inventory::*;
 pub use loader::*;
+pub use localization::*;
 pub use location::*;
 pub use passenger::*;
 pub use rules::*;
 pub use skill_tree::*;
-pub use localization::*;
+pub use event::*;
