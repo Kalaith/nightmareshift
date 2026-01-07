@@ -7,7 +7,11 @@
         "icon": "⛽",
         "category": "survival",
         "prerequisites": [],
-        "effect": { "type": "stat_boost", "target": "fuel_consumption", "value": 0.9 }
+        "effect": {
+            "type": "stat_boost",
+            "target": "fuel_consumption",
+            "value": 0.9
+        }
     },
     {
         "id": "fuel_tank_1",
@@ -16,8 +20,14 @@
         "cost": 800,
         "icon": "🛢️",
         "category": "survival",
-        "prerequisites": ["fuel_efficiency_1"],
-        "effect": { "type": "stat_boost", "target": "max_fuel", "value": 10 }
+        "prerequisites": [
+            "fuel_efficiency_1"
+        ],
+        "effect": {
+            "type": "stat_boost",
+            "target": "max_fuel",
+            "value": 10
+        }
     },
     {
         "id": "hull_reinforcement",
@@ -26,8 +36,14 @@
         "cost": 1200,
         "icon": "🛡️",
         "category": "survival",
-        "prerequisites": ["fuel_tank_1"],
-        "effect": { "type": "passive_bonus", "target": "hazard_damage", "value": 0.8 }
+        "prerequisites": [
+            "fuel_tank_1"
+        ],
+        "effect": {
+            "type": "passive_bonus",
+            "target": "hazard_damage",
+            "value": 0.8
+        }
     },
     {
         "id": "third_eye_1",
@@ -37,7 +53,11 @@
         "icon": "👁️",
         "category": "occult",
         "prerequisites": [],
-        "effect": { "type": "mechanic_unlock", "target": "reveal_hidden_chance", "value": 0.05 }
+        "effect": {
+            "type": "mechanic_unlock",
+            "target": "reveal_hidden_chance",
+            "value": 0.05
+        }
     },
     {
         "id": "warding_charm",
@@ -46,8 +66,14 @@
         "cost": 1000,
         "icon": "🧿",
         "category": "occult",
-        "prerequisites": ["third_eye_1"],
-        "effect": { "type": "stat_boost", "target": "sanity_resistance", "value": 0.1 }
+        "prerequisites": [
+            "third_eye_1"
+        ],
+        "effect": {
+            "type": "stat_boost",
+            "target": "sanity_resistance",
+            "value": 0.1
+        }
     },
     {
         "id": "silver_tongue_1",
@@ -57,7 +83,11 @@
         "icon": "🗣️",
         "category": "efficiency",
         "prerequisites": [],
-        "effect": { "type": "stat_boost", "target": "tip_multiplier", "value": 1.1 }
+        "effect": {
+            "type": "stat_boost",
+            "target": "tip_multiplier",
+            "value": 1.1
+        }
     },
     {
         "id": "negotiator",
@@ -66,7 +96,85 @@
         "cost": 900,
         "icon": "🤝",
         "category": "efficiency",
-        "prerequisites": ["silver_tongue_1"],
-        "effect": { "type": "stat_boost", "target": "shop_discount", "value": 0.15 }
+        "prerequisites": [
+            "silver_tongue_1"
+        ],
+        "effect": {
+            "type": "stat_boost",
+            "target": "shop_discount",
+            "value": 0.15
+        }
+    },
+    {
+        "id": "night_vision",
+        "name": "Night Vision",
+        "description": "Utilize passengers' night vision abilities during events.",
+        "cost": 750,
+        "icon": "🌙",
+        "category": "occult",
+        "prerequisites": [
+            "third_eye_1"
+        ],
+        "effect": {
+            "type": "ability_unlock",
+            "target": "night_vision",
+            "value": 1
+        }
+    },
+    {
+        "id": "perceptive",
+        "name": "Perceptive",
+        "description": "Utilize passengers' perceptive abilities during events.",
+        "cost": 500,
+        "icon": "👀",
+        "category": "occult",
+        "prerequisites": [],
+        "effect": {
+            "type": "ability_unlock",
+            "target": "perceptive",
+            "value": 1
+        }
+    },
+    {
+        "id": "calm",
+        "name": "Calm",
+        "description": "Utilize passengers' calming influence during events.",
+        "cost": 400,
+        "icon": "😌",
+        "category": "occult",
+        "prerequisites": [],
+        "effect": {
+            "type": "ability_unlock",
+            "target": "calm",
+            "value": 1
+        }
+    },
+    {
+        "id": "wilderness_survival",
+        "name": "Wilderness Survival",
+        "description": "Utilize passengers' survival knowledge during events.",
+        "cost": 600,
+        "icon": "🌲",
+        "category": "survival",
+        "prerequisites": [],
+        "effect": {
+            "type": "ability_unlock",
+            "target": "wilderness_survival",
+            "value": 1
+        }
+    },
+    {
+        "id": "strong",
+        "name": "Strong",
+        "description": "Utilize passengers' strength abilities during events.",
+        "cost": 550,
+        "icon": "💪",
+        "category": "survival",
+        "prerequisites": [],
+        "effect": {
+            "type": "ability_unlock",
+            "target": "strong",
+            "value": 1
+        }
     }
 ]

@@ -33,6 +33,10 @@ impl InputService {
                 if is_key_pressed(KeyCode::I) {
                     actions.push(UiAction::ToggleInventory);
                 }
+                // ESC for pause menu (except during RideRequest where ESC declines)
+                if is_key_pressed(KeyCode::Escape) && game_phase != GamePhase::RideRequest {
+                    actions.push(UiAction::TogglePauseMenu);
+                }
 
                 // Phase specific input
                 match game_phase {

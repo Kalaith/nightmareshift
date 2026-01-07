@@ -26,6 +26,7 @@ pub enum UiAction {
     RefuelPartial,
     ToggleRules,
     ToggleInventory,
+    TogglePauseMenu, // ESC pause menu
     UseItem(usize),
     // Meta-progression screens
     OpenSkillTree,

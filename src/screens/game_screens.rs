@@ -15,10 +15,10 @@ use crate::ui::{
 
 /// Get a pulsing color for warning text (slow, gentle pulse)
 fn pulsing_warning_color() -> Color {
-    // Slow pulse: 1.5 second cycle (lower frequency = slower)
-    let pulse = (get_time() * 2.0 * std::f64::consts::PI / 1.5).sin() as f32;
-    // Pulse between 0.6 and 1.0 alpha (subtle, not jarring)  
-    let alpha = 0.6 + pulse * 0.2 + 0.2;
+    // 3 second full cycle (0% -> 100% -> 0%)
+    let pulse = (get_time() * 2.0 * std::f64::consts::PI / 3.0).sin() as f32;
+    // Map from [-1, 1] to [0, 1] for full transparency range
+    let alpha = (pulse + 1.0) / 2.0;
     Color::new(colors::ACCENT_WARNING.r, colors::ACCENT_WARNING.g, colors::ACCENT_WARNING.b, alpha)
 }
 

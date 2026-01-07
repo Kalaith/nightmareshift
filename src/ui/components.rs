@@ -10,7 +10,7 @@ use crate::state::*;
 pub struct StatusBar;
 
 impl StatusBar {
-    pub fn draw(state: &GameState, constants: &ConstantsData, game_data: Option<&GameData>) {
+    pub fn draw(state: &GameState, constants: &ConstantsData, game_data: Option<&GameData>) -> UiAction {
         if let Some(data) = game_data {
             let bar_rect = UiRect::new(0.0, 0.0, screen_width(), layout::STATUS_BAR_HEIGHT);
             draw_panel(bar_rect, colors::PANEL_BG);
@@ -21,14 +21,12 @@ impl StatusBar {
 
             // Fuel gauge with icon
             let fuel_color = get_fuel_color(state.fuel);
-            // "⛽ {}%"
             let fuel_text = data.localization.ui.game.status_bar.fuel
                 .replace("{}", &(state.fuel as u32).to_string());
             draw_text(&fuel_text, x, y, fonts::SIZE_LG, fuel_color);
             x += layout::STATUS_ITEM_SPACING;
 
             // Earnings
-            // "💰 ${}"
             let earnings_text = data.localization.ui.game.status_bar.earnings
                 .replace("{}", &state.earnings.to_string());
             draw_text(&earnings_text, x, y, fonts::SIZE_LG, colors::ACCENT_GOLD);
@@ -42,74 +40,50 @@ impl StatusBar {
             };
             let hours = state.time_remaining / 60;
             let mins = state.time_remaining % 60;
-            // "⏰ {}:{:02}" - we need to handle padding manually or use format! if supported by replace
-            // Localization string is likely "⏰ {}:{}" or similar.
-            // Let's format the time first then replace ONE placeholder, or replace carefully.
-            // Json says "⏰ {}:{:02}" which is rust format syntax, but we can't use it directly on runtime string easily.
-            // Assumption: The JSON string might just be "⏰ {}" and we format the time ourselves?
-            // Or we treat it as "⏰ {}:{}" and do replace.
-            
-            // Re-checking json I wrote: "time": "⏰ {}:{:02}"
-            // Wait, standard .replace doesn't handle {:02}.
-            // I should have written "{}:{}" in json or handle formatted string.
-            // Let's assume I change JSON or handle it here.
-            // Best approach: Format keys in Rust, then insert into template if template has distinct keys.
-            // Given current constraints, I'll format the time string manually and replace the whole time block if possible,
-            // OR use a standard format string.
-            // The JSON has "⏰ {}:{:02}", which implies I intended to use it with format!, but that requires a compile time string literal.
-            // Workaround: Ignore the {:02} in JSON key logic and just format value.
-            // Better: Load "time": "⏰ {}" and format "HH:mm".
-            // Since I can't easily change JSON right now without another step, let's try to be smart.
-            // I'll format the time string `MM:SS` and if the json has `⏰ {}` I replace it.
-            // But json has `⏰ {}:{:02}`.
-            
-            // Let's just hardcode the icon + formatted time if the pattern is too complex, OR rely on a simpler key.
-            // Let's try to match the intent.
-            // Actually, I can construct the string `format!("⏰ {}:{:02}", hours, mins)` directly if I ignore the json pattern for the sophisticated format part
-            // and just use the label from json if it were separated.
-            // But I want to use the JSON.
-            // I will assume for now I can just reconstruct it or replace key parts.
-            // Actually, simplest is to treat the whole string as a format string for `rt_format` crate if I had it.
-            // I don't.
-            
-            // Hack: Just reconstruct it using known symbols from common.currency etc if needed, but here:
-            // I will use format! with the hardcoded emoji if needed, OR try to parse existing string.
-            // Let's manually double-replace: replace "{}" with hours, then "{:02}" ... wait replace won't match "{:02}".
-            
-            // Let's just override the logic: 
-            // The JSON string is only useful if I can use it.
-            // I'll format the time as "H:MM" and look for a placeholder "{}" in the json string if I modify it,
-            // or just use a fixed format for now and note to fix JSON later to be simpler like "Time: {}"
-            
-            // "⏰ {}:{:02}" -> this is effectively useless for runtime replacement without a proper formatter.
-            // I will assume the JSON is just "Time: {}" (which I can replace) or I ignore it and use:
             let time_str = format!("⏰ {}:{:02}", hours, mins); 
             draw_text(&time_str, x, y, fonts::SIZE_LG, time_color);
             x += layout::STATUS_ITEM_SPACING;
 
             // Rides completed
-            // "🚕 {} rides"
             let rides_text = data.localization.ui.game.status_bar.rides
                 .replace("{}", &state.rides_completed.to_string());
             draw_text(&rides_text, x, y, fonts::SIZE_LG, colors::TEXT_PRIMARY);
 
-            // Weather on right side
-            // "{} {:?}" - icon + type
+            // Right side buttons and weather
+            let right_x = screen_width() - padding;
+            
+            // Weather display
             let weather_text = format!(
                 "{} {:?}",
                 state.current_weather.icon,
                 state.current_weather.weather_type
             );
-            
             let weather_dims = measure_text(&weather_text, None, fonts::SIZE_LG as u16, 1.0);
+            let weather_x = right_x - weather_dims.width - 160.0; // Leave room for buttons
             draw_text(
                 &weather_text,
-                screen_width() - weather_dims.width - padding,
+                weather_x,
                 y,
                 fonts::SIZE_LG,
                 colors::ACCENT_SKY,
             );
+
+            // Inventory button (🎒)
+            let inv_btn_w = 70.0;
+            let inv_btn_h = 35.0;
+            let inv_btn_x = right_x - inv_btn_w;
+            let inv_btn_y = (layout::STATUS_BAR_HEIGHT - inv_btn_h) / 2.0;
+            if button(inv_btn_x, inv_btn_y, inv_btn_w, inv_btn_h, "🎒 Inv") {
+                return UiAction::ToggleInventory;
+            }
+
+            // Rules button (📜)
+            let rules_btn_x = inv_btn_x - inv_btn_w - 8.0;
+            if button(rules_btn_x, inv_btn_y, inv_btn_w, inv_btn_h, "📜 Rules") {
+                return UiAction::ToggleRules;
+            }
         }
+        UiAction::None
     }
 }
 

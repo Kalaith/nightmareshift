@@ -15,6 +15,7 @@ pub struct Game {
     player_stats: PlayerStats,
     show_rules: bool,
     show_inventory: bool,
+    show_pause_menu: bool,
     transition: ScreenTransition,
     particles: ParticleSystem,
     screen_shake: ScreenShake,
@@ -43,6 +44,7 @@ impl Game {
             player_stats,
             show_rules: false,
             show_inventory: false,
+            show_pause_menu: false,
             transition: ScreenTransition::new(),
             particles: ParticleSystem::new(),
             screen_shake: ScreenShake::new(),
@@ -503,11 +505,44 @@ impl Game {
         // Draw weather particles
         self.particles.draw();
 
-        // Draw fog overlay for foggy weather
+        // Draw atmospheric overlays during gameplay
         if self.screen == Screen::Game {
             use crate::data::WeatherType;
+            use crate::engine::effects::{draw_danger_overlay, draw_tension_vignette};
+            
+            // Fog weather overlay
             if self.game_state.current_weather.weather_type == WeatherType::Fog {
                 draw_fog_overlay(0.12);
+            }
+            
+            // Danger overlay - based on accumulated route risk and passenger state
+            // Calculate danger from route history and current passenger stress
+            let route_danger = self.game_state.route_history.iter()
+                .rev()
+                .take(3) // Last 3 routes
+                .map(|r| r.risk_level as f32)
+                .sum::<f32>() / 15.0; // Normalize (max 5 risk * 3 routes = 15)
+            
+            // Add danger from passenger distress
+            let passenger_danger = self.game_state.current_passenger_need_state.as_ref()
+                .map(|ns| {
+                    // High stability = low danger, low stability = high danger
+                    (1.0 - ns.stability) * 0.5
+                })
+                .unwrap_or(0.0);
+            
+            let total_danger = (route_danger + passenger_danger).clamp(0.0, 1.0);
+            if total_danger > 0.1 {
+                draw_danger_overlay(total_danger);
+            }
+            
+            // Tension vignette - based on passenger stress level
+            let tension = self.game_state.current_passenger_need_state.as_ref()
+                .map(|ns| ns.level as f32 / 100.0) // Normalize level (0-100 to 0-1)
+                .unwrap_or(0.0);
+            
+            if tension > 0.3 {
+                draw_tension_vignette((tension - 0.3) * 1.5); // Scale up after threshold
             }
         }
 
@@ -515,6 +550,42 @@ impl Game {
         if self.screen == Screen::GameOver {
             let glitch_intensity = (get_time() % 2.0) as f32 / 2.0;
             draw_glitch_effect(glitch_intensity * 0.5);
+        }
+
+        // Draw pause menu overlay if active
+        if self.show_pause_menu && self.screen == Screen::Game {
+            use macroquad_toolkit::ui::button;
+            
+            // Dim background
+            draw_rectangle(0.0, 0.0, screen_width(), screen_height(), Color::new(0.0, 0.0, 0.0, 0.7));
+            
+            // Pause menu panel
+            let panel_w = 300.0;
+            let panel_h = 200.0;
+            let panel_x = (screen_width() - panel_w) / 2.0;
+            let panel_y = (screen_height() - panel_h) / 2.0;
+            
+            draw_rectangle(panel_x, panel_y, panel_w, panel_h, Color::from_hex(0x2d2d44));
+            draw_rectangle_lines(panel_x, panel_y, panel_w, panel_h, 2.0, Color::from_hex(0x4ecdc4));
+            
+            // Title
+            let title = "⏸️ PAUSED";
+            let title_dims = measure_text(title, None, 28, 1.0);
+            draw_text(title, panel_x + (panel_w - title_dims.width) / 2.0, panel_y + 40.0, 28.0, WHITE);
+            
+            // Resume button
+            let btn_w = 200.0;
+            let btn_h = 40.0;
+            let btn_x = panel_x + (panel_w - btn_w) / 2.0;
+            
+            if button(btn_x, panel_y + 70.0, btn_w, btn_h, "Resume (ESC)") {
+                return UiAction::TogglePauseMenu;
+            }
+            
+            // Return to Menu button
+            if button(btn_x, panel_y + 120.0, btn_w, btn_h, "🏠 Return to Menu") {
+                return UiAction::ReturnToMenu;
+            }
         }
 
         // Draw transition overlay (always on top)
@@ -525,9 +596,16 @@ impl Game {
 
     /// Draw the current game phase (during active gameplay)
     fn draw_game_phase(&self) -> UiAction {
-        // Draw status bar
-        if let Some(ref data) = self.game_data {
-            StatusBar::draw(&self.game_state, &data.constants, self.game_data.as_ref());
+        // Draw status bar and capture any action from it
+        let status_action = if let Some(ref data) = self.game_data {
+            StatusBar::draw(&self.game_state, &data.constants, self.game_data.as_ref())
+        } else {
+            UiAction::None
+        };
+        
+        // If status bar returned an action, use it
+        if status_action != UiAction::None {
+            return status_action;
         }
         
         // Delegate to game_screens module
@@ -592,7 +670,9 @@ impl Game {
                      || self.screen == Screen::Success
                      || self.screen == Screen::SkillTree
                      || self.screen == Screen::Almanac
-                     || self.screen == Screen::Leaderboard {
+                     || self.screen == Screen::Leaderboard
+                     || (self.screen == Screen::Game && self.show_pause_menu) {
+                     self.show_pause_menu = false;
                      self.return_to_menu();
                  }
             }
@@ -620,6 +700,16 @@ impl Game {
             UiAction::ToggleInventory => {
                 if self.screen == Screen::Game {
                     self.show_inventory = !self.show_inventory;
+                }
+            }
+            UiAction::TogglePauseMenu => {
+                if self.screen == Screen::Game {
+                    self.show_pause_menu = !self.show_pause_menu;
+                    // Close other overlays when opening pause menu
+                    if self.show_pause_menu {
+                        self.show_rules = false;
+                        self.show_inventory = false;
+                    }
                 }
             }
             UiAction::UseItem(idx) => {

@@ -450,48 +450,56 @@ impl RideService {
             }
         };
 
-        // Standard choice (uses first risk tag)
+        // Standard choice - safe but costs fuel (extra caution)
         let risk1 = risk_tags.first().copied().unwrap_or(RiskTag::HighTraffic);
-        choices.push(make_choice("Proceed carefully", risk1, EventConsequence::Fuel(5.0), None));
+        choices.push(make_choice("Proceed carefully", risk1, EventConsequence::Fuel(3.0), None));
 
-        // Risky choice
+        // Risky choice - fast but increases danger
         let risk2 = risk_tags.get(1).copied().unwrap_or(RiskTag::Potholes);
-        choices.push(make_choice("Speed through it", risk2, EventConsequence::Risk(1), None));
+        choices.push(make_choice("Speed through it", risk2, EventConsequence::Risk(2), None));
 
-        // Trait Choice (if passenger has one AND it is unlocked)
+        // Trait Choice (if passenger has one AND player has the skill unlocked)
         if let Some(p) = &state.current_passenger {
-            // Check unlock status (Requires Almanac Level >= 1)
-            let is_unlocked = stats.get_almanac_entry(p.id).knowledge_level >= 1;
+            // Check both conditions:
+            // 1. Almanac knowledge level >= 1 (know about the passenger's abilities)
+            // 2. Player has the skill unlocked in skill tree (can use the ability)
+            let almanac_unlocked = stats.get_almanac_entry(p.id).knowledge_level >= 1;
             
-            if is_unlocked {
-                if let Some(trait_name) = p.traits.first() {
-                    // Use the FIRST trait for now.
-                    // We fake a "Good" outcome possibility if the trait is present
-                    println!("[DEBUG] Generating Trait Choice for trait: {}", trait_name);
+            if let Some(trait_name) = p.traits.first() {
+                // Convert trait name to skill ID format (e.g., "Night Vision" -> "night_vision")
+                let skill_id = trait_name.to_lowercase().replace(' ', "_");
+                let skill_unlocked = stats.is_skill_unlocked(&skill_id);
+                
+                if almanac_unlocked && skill_unlocked {
+                    // Player has both knowledge AND the skill - show the ability option (BEST choice)
+                    println!("[DEBUG] Generating Trait Choice for trait: {} (skill '{}' is UNLOCKED)", trait_name, skill_id);
                     choices.push(make_choice(
                         &format!("Utilize {} ability", trait_name), 
                         RiskTag::SpiritualDisturbance, 
-                        EventConsequence::Stress(-10), 
+                        EventConsequence::Stress(-10), // Positive effect - reduces stress
                         Some(trait_name.clone())
                     ));
                 } else {
-                     // Fallback if no traits (shouldn't happen if unlocked logic is sound, but safe fallback)
-                     choices.push(make_choice("Ignore it", RiskTag::StrangeNoises, EventConsequence::None, None));
+                    // Skill not unlocked - "Ignore it" causes passenger stress (unresolved tension)
+                    if !skill_unlocked {
+                        println!("[DEBUG] Trait '{}' requires skill '{}' which is NOT UNLOCKED.", trait_name, skill_id);
+                    }
+                    if !almanac_unlocked {
+                        println!("[DEBUG] Almanac knowledge for passenger {} is too low.", p.id);
+                    }
+                    choices.push(make_choice("Ignore it", RiskTag::StrangeNoises, EventConsequence::Stress(5), None));
                 }
             } else {
-                 // Ability locked or no traits
-                 if let Some(trait_name) = p.traits.first() {
-                     println!("[DEBUG] Trait '{}' exists but is LOCKED (Knowledge Level < 1).", trait_name);
-                 }
-                 choices.push(make_choice("Ignore it", RiskTag::StrangeNoises, EventConsequence::None, None));
+                // No traits on passenger - ignoring still causes mild stress
+                choices.push(make_choice("Ignore it", RiskTag::StrangeNoises, EventConsequence::Stress(5), None));
             }
         } else {
-             choices.push(make_choice("Ignore it", RiskTag::StrangeNoises, EventConsequence::None, None));
+            choices.push(make_choice("Ignore it", RiskTag::StrangeNoises, EventConsequence::Stress(5), None));
         }
 
-        // 4th random choice
+        // 4th choice - safe detour but costs time
         let risk3 = risk_tags.get(2).copied().unwrap_or(RiskTag::DenseFog);
-        choices.push(make_choice("Take a detour", risk3, EventConsequence::Time(10), None));
+        choices.push(make_choice("Take a detour", risk3, EventConsequence::Time(8), None));
 
         // Shuffle choices so the trait one isn't always 3rd
         choices.shuffle(&mut rng);
