@@ -609,21 +609,6 @@ impl RideService {
                  &state.environmental_hazards,
                  &state.route_mastery,
                  state.current_passenger.as_ref(), // Pass passenger
-                 // We don't have seed in calculate_route_costs?
-                 // Wait, I saw calculate_route_costs using seed? 
-                 // Let's check view_file of route_service earlier? 
-                 // Step 26: "generate_risk_tags" uses seed. "calculate_route_costs" calls it contextually?
-                 // Ah, calculate_route_costs signature usually doesn't take seed unless I changed it.
-                 // Step 26 says: "Integrated it into calculate_route_costs".
-                 // BUT wait, my previous knowledge Step 26 says: "Modified generate_risk_tags to accept optional seed... and updated its call site".
-                 // It did NOT explicitly say I updated `calculate_route_costs` signature to take seed.
-                 // So `calculate_route_costs` probably uses default random or internal seed?
-                 // Wait, if I want deterministic debug, I need to know how it works.
-                 // Let's just call it. if it takes seed, compiler will tell me or I check file.
-                 // Checking line 172 in THIS file: 
-                 // It calls `RouteService::calculate_route_costs` and DOES NOT pass seed.
-                 // It passes `route`, `constants`, `passenger_risk`, `weather`, `time`, `hazards`, `mastery`, `passenger`.
-                 // So I will replicate that call.
              );
              
              // Base Fare Modifier (approximate)

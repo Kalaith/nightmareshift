@@ -21,6 +21,20 @@ impl Default for WeatherType {
     }
 }
 
+impl WeatherType {
+    /// Get display name for weather type
+    pub fn name(&self) -> &'static str {
+        match self {
+            WeatherType::Clear => "Clear",
+            WeatherType::Rain => "Rain",
+            WeatherType::Fog => "Fog",
+            WeatherType::Snow => "Snow",
+            WeatherType::Thunderstorm => "Thunderstorm",
+            WeatherType::Wind => "Wind",
+        }
+    }
+}
+
 /// Weather intensity
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]

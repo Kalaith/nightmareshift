@@ -52,6 +52,19 @@ impl Default for PreferenceLevel {
     }
 }
 
+impl PreferenceLevel {
+    /// Get display text with icon for UI
+    pub fn display_text(&self) -> &'static str {
+        match self {
+            PreferenceLevel::Loves => "❤️ LOVES",
+            PreferenceLevel::Likes => "👍 Likes",
+            PreferenceLevel::Neutral => "",
+            PreferenceLevel::Dislikes => "👎 Dislikes",
+            PreferenceLevel::Fears => "😨 FEARS",
+        }
+    }
+}
+
 /// Type of behavioral tell
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]

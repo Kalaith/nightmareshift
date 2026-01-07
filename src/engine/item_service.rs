@@ -198,7 +198,7 @@ impl ItemService {
                 }
             }
             ItemEffectType::RuleTrigger => {
-                // Rule triggering effects (TODO: implement if needed)
+                // Reserved for future use - would trigger rule checks
             }
         }
     }
@@ -275,7 +275,7 @@ impl ItemService {
                             state.curse_danger_bonus += curse.penalty_value as u32;
                         }
                         CursePenalty::ForcedChoices => {
-                            // TODO: Implement forced route choices
+                            // Reserved for future use - would limit player route options
                         }
                     }
                 }

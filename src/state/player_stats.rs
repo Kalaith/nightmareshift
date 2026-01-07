@@ -55,21 +55,12 @@ pub struct PlayerStats {
     pub passenger_encounters: HashMap<u32, u32>,
     /// Unlocked skills by ID
     pub unlocked_skills: Vec<String>,
-    /// Available skill points (deprecated, use bank_balance)
-    #[serde(default)]
-    pub skill_points: u32,
     /// Bank balance for purchasing skills
     #[serde(default)]
     pub bank_balance: u32,
-    /// Almanac levels by passenger ID (deprecated, use almanac_progress)
-    #[serde(default)]
-    pub almanac_levels: HashMap<u32, u32>,
     /// Almanac progress by passenger ID
     #[serde(default)]
     pub almanac_progress: HashMap<u32, AlmanacEntry>,
-    /// Lore points available (deprecated, use lore_fragments)
-    #[serde(default)]
-    pub lore_points: u32,
     /// Lore fragments for upgrading almanac knowledge
     #[serde(default)]
     pub lore_fragments: u32,
@@ -143,36 +134,9 @@ impl PlayerStats {
         self.get_encounter_count(passenger_id) == 0
     }
 
-    /// Unlock a skill if affordable
-    pub fn unlock_skill(&mut self, skill_id: &str, cost: u32) -> bool {
-        if self.skill_points >= cost && !self.unlocked_skills.contains(&skill_id.to_string()) {
-            self.skill_points -= cost;
-            self.unlocked_skills.push(skill_id.to_string());
-            true
-        } else {
-            false
-        }
-    }
-
     /// Check if skill is unlocked
     pub fn is_skill_unlocked(&self, skill_id: &str) -> bool {
         self.unlocked_skills.contains(&skill_id.to_string())
-    }
-
-    /// Upgrade almanac level for a passenger
-    pub fn upgrade_almanac(&mut self, passenger_id: u32, cost: u32) -> bool {
-        if self.lore_points >= cost {
-            self.lore_points -= cost;
-            *self.almanac_levels.entry(passenger_id).or_insert(0) += 1;
-            true
-        } else {
-            false
-        }
-    }
-
-    /// Get almanac level for a passenger
-    pub fn get_almanac_level(&self, passenger_id: u32) -> u32 {
-        self.almanac_levels.get(&passenger_id).copied().unwrap_or(0)
     }
 
     /// Record route usage

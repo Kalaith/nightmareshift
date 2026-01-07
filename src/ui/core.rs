@@ -30,10 +30,8 @@ pub mod colors {
 
 /// Standard spacing values
 pub mod spacing {
-    pub const PADDING_SM: f32 = 8.0;
     pub const PADDING_MD: f32 = 16.0;
     pub const PADDING_LG: f32 = 24.0;
-    pub const PADDING_XL: f32 = 32.0;
 }
 
 /// Layout constants for consistent UI positioning
@@ -44,18 +42,7 @@ pub mod layout {
     pub const STATUS_ITEM_SPACING: f32 = 100.0;
     pub const STATUS_EARNINGS_SPACING: f32 = 120.0;
     
-    // Buttons
-    pub const BUTTON_WIDTH_SM: f32 = 100.0;
-    pub const BUTTON_WIDTH_MD: f32 = 150.0;
-    pub const BUTTON_WIDTH_LG: f32 = 200.0;
-    pub const BUTTON_HEIGHT: f32 = 40.0;
-    pub const BUTTON_SPACING: f32 = 20.0;
-    
-    // Cards and panels
-    pub const CARD_WIDTH: f32 = 400.0;
-    pub const CARD_HEIGHT: f32 = 350.0;
-    pub const PANEL_MIN_WIDTH: f32 = 300.0;
-    
+
     // Game timing defaults
     pub const DEFAULT_START_HOUR: u32 = 20; // 8 PM
     pub const DEFAULT_MONTH: u32 = 10; // October

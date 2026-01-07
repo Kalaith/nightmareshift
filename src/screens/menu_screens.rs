@@ -176,14 +176,12 @@ pub fn draw_briefing(game_state: &GameState, game_data: Option<&GameData>) -> Ui
 
         // Weather
         y += 20.0;
-        // LOCALIZATION TODO: Weather description localization
-        // For now, construct manually but using "Weather:" label
         let weather_label = &data.localization.ui.briefing.weather_title;
         let weather_text = format!(
             "{} {} {} - {}",
             weather_label,
             game_state.current_weather.icon,
-            format!("{:?}", game_state.current_weather.weather_type),
+            game_state.current_weather.weather_type.name(),
             game_state.current_weather.description
         );
         draw_text(&weather_text, 50.0, y, 18.0, colors::ACCENT_SKY);

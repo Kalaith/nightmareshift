@@ -13,6 +13,15 @@ use crate::ui::{
     CompletionSummary,
 };
 
+/// Get a pulsing color for warning text (slow, gentle pulse)
+fn pulsing_warning_color() -> Color {
+    // Slow pulse: 1.5 second cycle (lower frequency = slower)
+    let pulse = (get_time() * 2.0 * std::f64::consts::PI / 1.5).sin() as f32;
+    // Pulse between 0.6 and 1.0 alpha (subtle, not jarring)  
+    let alpha = 0.6 + pulse * 0.2 + 0.2;
+    Color::new(colors::ACCENT_WARNING.r, colors::ACCENT_WARNING.g, colors::ACCENT_WARNING.b, alpha)
+}
+
 
 // Update signatures to accept player_stats
 pub fn draw_game(game_state: &GameState, game_data: Option<&GameData>, player_stats: &crate::state::PlayerStats) -> UiAction {
@@ -203,18 +212,15 @@ pub fn draw_driving(game_state: &GameState, game_data: Option<&GameData>, _playe
             if matches!(game_state.current_weather.intensity, data::WeatherIntensity::Heavy)
                 && *route_type == RouteType::Shortcut {
                 // "⚠️ {} weather!"
-                let w_type = format!("{:?}", game_state.current_weather.weather_type); // Localization TODO
+                let w_type = game_state.current_weather.weather_type.name();
                 weather_warning = data.localization.ui.game.driving.weather_warning
-                    .replace("{}", &w_type);
+                    .replace("{}", w_type);
             }
             if matches!(game_state.time_of_day.phase, TimePhase::Night | TimePhase::Latenight)
                 && *route_type == RouteType::Shortcut {
                 if !weather_warning.is_empty() {
-                    // Append hardcoded " Night!" or rely on localization.
-                    // Json: "nightWarning": "⚠️ Night driving!"
-                    // This logic is: if weather already warned, add night. Complex.
-                    // For now, simple logic:
-                    weather_warning.push_str(" + Night!");
+                    // Combine weather and night warnings
+                    weather_warning.push_str(" + 🌙 Night");
                 } else {
                     weather_warning = data.localization.ui.game.driving.night_warning.clone();
                 }
@@ -281,13 +287,7 @@ pub fn draw_driving(game_state: &GameState, game_data: Option<&GameData>, _playe
 
                 // Show passenger preference (Header for right side)
                 if let Some(pref) = preference {
-                    let pref_text = match pref.preference {
-                        PreferenceLevel::Loves => "❤️ LOVES",
-                        PreferenceLevel::Likes => "👍 Likes",
-                        PreferenceLevel::Neutral => "",
-                        PreferenceLevel::Dislikes => "👎 Dislikes",
-                        PreferenceLevel::Fears => "😨 FEARS",
-                    };
+                    let pref_text = pref.preference.display_text();
                     if !pref_text.is_empty() {
                         let pref_color = match pref.preference {
                             PreferenceLevel::Loves => colors::FUEL_GOOD,
@@ -301,9 +301,9 @@ pub fn draw_driving(game_state: &GameState, game_data: Option<&GameData>, _playe
                     }
                 }
 
-                // Weather warning (Left side, below desc)
+                // Weather warning (Left side, below desc) - with slow pulse
                 if !weather_warning.is_empty() {
-                    draw_text(&weather_warning, center_x - 140.0, route_y + 70.0, 12.0, colors::ACCENT_WARNING);
+                    draw_text(&weather_warning, center_x - 140.0, route_y + 70.0, 12.0, pulsing_warning_color());
                 }
             }
 

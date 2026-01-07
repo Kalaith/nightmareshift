@@ -306,7 +306,6 @@ pub struct GameState {
     pub rule_immunity_charges: u32,
     pub supernatural_protection: u32,
     pub curse_danger_bonus: u32,
-    pub pending_item_drop: Option<InventoryItem>,
     pub pending_trade: Option<(String, InventoryItem)>, // (passenger_name, offered_item)
     
     // UI state
@@ -360,7 +359,6 @@ impl GameState {
             rule_immunity_charges: 0,
             supernatural_protection: 0,
             curse_danger_bonus: 0,
-            pending_item_drop: None,
             pending_trade: None,
             current_dialogue: None,
             pending_route_dialogue: None,
@@ -399,7 +397,6 @@ impl GameState {
         self.rule_immunity_charges = 0;
         self.supernatural_protection = 0;
         self.curse_danger_bonus = 0;
-        self.pending_item_drop = None;
         self.pending_trade = None;
         self.current_dialogue = None;
         self.pending_route_dialogue = None;
