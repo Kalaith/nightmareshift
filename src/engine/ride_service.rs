@@ -5,7 +5,7 @@ use crate::state::*;
 use crate::engine::{PassengerService, PassengerSelectionContext, GameEngine, ItemService, RouteService, PassengerStateMachine, RouteCosts};
 use crate::ui::layout; // For constants like MINIMUM_FUEL_FOR_RIDE
 use crate::data::event::{MidRideEvent, EventChoice, RiskTag, EventConsequence};
-use rand::seq::SliceRandom; // Added for random selection
+
 
 /// Outcome of a route choice
 #[derive(Debug, PartialEq, Eq)]
@@ -404,7 +404,8 @@ impl RideService {
 
     /// Generate a random mid-ride event
     fn generate_mid_ride_event(state: &GameState, stats: &PlayerStats, route: RouteType) -> MidRideEvent {
-        let mut rng = rand::thread_rng();
+        // let mut rng = macroquad_toolkit::rng::rand();
+
 
         // 1. Determine potential risks based on route costs (which has the risk tags)
         // We need to re-calculate or retrieve the risk tags for this route.
@@ -429,7 +430,7 @@ impl RideService {
         ];
         
         // Pick a template
-        let (title, desc) = templates.choose(&mut rng).unwrap();
+        let (title, desc) = *macroquad_toolkit::rng::choose(&templates).unwrap();
 
         // 3. Generate Choices
         let mut choices = Vec::new();
@@ -502,7 +503,7 @@ impl RideService {
         choices.push(make_choice("Take a detour", risk3, EventConsequence::Time(8), None));
 
         // Shuffle choices so the trait one isn't always 3rd
-        choices.shuffle(&mut rng);
+        macroquad_toolkit::rng::shuffle(&mut choices);
 
         println!("[DEBUG] --- EVENT GENERATED: {} ---", title);
         println!("[DEBUG] Description: {}", desc);

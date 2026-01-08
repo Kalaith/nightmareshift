@@ -2,7 +2,7 @@
 
 use crate::data::*;
 use crate::state::*;
-use rand::prelude::*;
+
 
 /// Result of generating shift rules
 #[derive(Debug, Clone)]
@@ -41,7 +41,7 @@ impl GameEngine {
     /// Generate shift rules based on player experience
     pub fn generate_shift_rules(experience: u32, all_rules: &[Rule], constants: &ConstantsData) -> ShiftRules {
         let difficulty_level = (experience / constants.scoring.experience_per_level).min(constants.scoring.max_difficulty);
-        let mut rng = rand::thread_rng();
+
 
         // Separate rules by type
         let basic_rules: Vec<&Rule> = all_rules.iter()
@@ -54,16 +54,20 @@ impl GameEngine {
         let mut selected_rules = Vec::new();
 
         // Select 2-3 basic rules
-        let num_basic = 2 + rng.gen_range(0..2);
-        let shuffled_basic: Vec<&Rule> = basic_rules.choose_multiple(&mut rng, num_basic.min(basic_rules.len())).cloned().collect();
+        let num_basic = 2 + macroquad_toolkit::rng::gen_range(0, 2);
+        let mut basic_rules_clone = basic_rules.clone();
+        macroquad_toolkit::rng::shuffle(&mut basic_rules_clone);
+        let shuffled_basic = basic_rules_clone.into_iter().take(num_basic.min(basic_rules.len()));
         for rule in shuffled_basic {
             selected_rules.push(rule.clone());
         }
 
         // Add conditional rules based on difficulty
         if difficulty_level >= 1 {
-            let num_conditional = 1 + rng.gen_range(0..2);
-            let shuffled_conditional: Vec<&Rule> = conditional_rules.choose_multiple(&mut rng, num_conditional.min(conditional_rules.len())).cloned().collect();
+            let num_conditional = 1 + macroquad_toolkit::rng::gen_range(0, 2);
+            let mut conditional_rules_clone = conditional_rules.clone();
+            macroquad_toolkit::rng::shuffle(&mut conditional_rules_clone);
+            let shuffled_conditional = conditional_rules_clone.into_iter().take(num_conditional.min(conditional_rules.len()));
             for rule in shuffled_conditional {
                 selected_rules.push(rule.clone());
             }
@@ -157,7 +161,7 @@ impl GameEngine {
         reputation: Option<&PassengerReputation>,
         constants: &ConstantsData,
     ) -> u32 {
-        let mut rng = rand::thread_rng();
+
 
         // Route fare multiplier
         let route_mult = match route {
@@ -190,7 +194,7 @@ impl GameEngine {
         let fare = base_fare as f32 * route_mult * pref_mult * streak_mult * rep_mult;
 
         // Add variation (±$5)
-        let variation = rng.gen_range(-5.0..5.0);
+        let variation = macroquad_toolkit::rng::gen_range(-5.0, 5.0);
         
         (fare + variation).max(5.0) as u32
     }

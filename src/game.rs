@@ -362,11 +362,18 @@ impl Game {
 
         // Add leaderboard entry
         if let Some(ref data) = self.game_data {
-            use chrono::Local;
+            #[cfg(not(target_arch = "wasm32"))]
+            let date_str = {
+                use chrono::Local;
+                Local::now().format("%Y-%m-%d %H:%M").to_string()
+            };
+            #[cfg(target_arch = "wasm32")]
+            let date_str = "Session".to_string(); // Simple fallback for WASM
+
             let score = self.game_state.calculate_score(&data.constants);
             let entry = LeaderboardEntry {
                 score,
-                date: Local::now().format("%Y-%m-%d %H:%M").to_string(),
+                date: date_str,
                 survived: actually_successful,
                 passengers_transported: self.game_state.rides_completed,
                 difficulty_level: self.game_state.difficulty_level,

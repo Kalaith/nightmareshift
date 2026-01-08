@@ -258,8 +258,7 @@ impl Passenger {
         if self.dialogue.is_empty() {
             None
         } else {
-            use rand::seq::SliceRandom;
-            self.dialogue.choose(&mut rand::thread_rng()).map(|s| s.as_str())
+            macroquad_toolkit::rng::choose(&self.dialogue).map(|s| s.as_str())
         }
     }
 

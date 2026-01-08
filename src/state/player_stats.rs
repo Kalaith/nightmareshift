@@ -270,8 +270,13 @@ impl PlayerStats {
 
     /// Check and unlock achievements based on current stats
     pub fn check_achievements(&mut self, shift_earnings: u32, shift_survived: bool, shift_violations: u32) {
-        use chrono::Local;
-        let now = Local::now().format("%Y-%m-%d").to_string();
+        #[cfg(not(target_arch = "wasm32"))]
+        let now = {
+            use chrono::Local;
+            Local::now().format("%Y-%m-%d").to_string()
+        };
+        #[cfg(target_arch = "wasm32")]
+        let now = "Today".to_string();
 
         // First shift
         if self.total_shifts_completed >= 1 {

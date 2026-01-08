@@ -2,7 +2,7 @@
 
 use crate::data::*;
 use crate::state::PlayerStats;
-use rand::prelude::*;
+
 use std::collections::HashMap;
 
 /// Passenger selection service
@@ -69,7 +69,7 @@ impl PassengerService {
         passengers: &[&Passenger],
         context: &PassengerSelectionContext,
     ) -> Option<Passenger> {
-        let mut rng = rand::thread_rng();
+
 
         // Calculate weights with environmental modifiers
         let weighted: Vec<(Passenger, f32)> = passengers.iter().map(|p| {
@@ -92,7 +92,7 @@ impl PassengerService {
             return passengers.first().map(|p| (*p).clone());
         }
 
-        let mut random = rng.gen::<f32>() * total_weight;
+        let mut random = macroquad_toolkit::rng::rand() * total_weight;
         for (passenger, weight) in weighted {
             random -= weight;
             if random <= 0.0 {
@@ -265,6 +265,6 @@ impl PassengerService {
             constants.game_constants.backstory_unlock_repeat
         };
 
-        rand::thread_rng().gen::<f32>() < chance
+        macroquad_toolkit::rng::rand() < chance
     }
 }

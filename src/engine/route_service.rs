@@ -2,9 +2,7 @@
 
 use crate::data::*;
 use std::collections::HashMap;
-use rand::seq::SliceRandom;
-use rand::SeedableRng;
-use rand::rngs::StdRng;
+
 
 /// Calculated route costs
 #[derive(Debug, Clone)]
@@ -110,9 +108,9 @@ impl RouteService {
 
         // Route mastery bonuses
         if let Some(&mastery) = route_mastery.get(&route) {
-            let fuel_reduction = (mastery / 3).min(4) as f32;
-            let time_reduction = (mastery / 2).min(6) as f32;
-            let risk_reduction = (mastery / 10).min(1) as f32;
+            let fuel_reduction = (mastery / 3).min(4u32) as f32;
+            let time_reduction = (mastery / 2).min(6u32) as f32;
+            let risk_reduction = (mastery / 10).min(1u32) as f32;
             
             fuel = (fuel - fuel_reduction).max(constants.route_variations.minimum_fuel_cost as f32);
             time = (time - time_reduction).max(constants.route_variations.minimum_time_cost as f32);
@@ -198,13 +196,7 @@ impl RouteService {
         }
 
         // Shuffle and pick 3
-        let mut rng: Box<dyn rand::RngCore> = if let Some(s) = seed {
-             Box::new(StdRng::seed_from_u64(s))
-        } else {
-             Box::new(rand::thread_rng())
-        };
-        
-        potential_risks.shuffle(&mut rng);
+        macroquad_toolkit::rng::shuffle(&mut potential_risks);
         
         // Ensure unique
         let mut selected = Vec::new();

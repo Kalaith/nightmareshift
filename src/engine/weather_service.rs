@@ -1,7 +1,7 @@
 //! Weather and environment service.
 
 use crate::data::*;
-use rand::prelude::*;
+
 
 /// Weather generation and update service
 pub struct WeatherService;
@@ -9,9 +9,8 @@ pub struct WeatherService;
 impl WeatherService {
     /// Generate initial weather for a shift
     pub fn generate_initial_weather(season: &Season, current_time: f64) -> WeatherCondition {
-        let mut rng = rand::thread_rng();
         let weather_types = Self::get_seasonal_weather_types(season);
-        let weather_type = *weather_types.choose(&mut rng).unwrap_or(&WeatherType::Clear);
+        let weather_type = *macroquad_toolkit::rng::choose(&weather_types).unwrap_or(&WeatherType::Clear);
 
         Self::create_weather_condition(weather_type, season, current_time)
     }
@@ -55,7 +54,7 @@ impl WeatherService {
             return WeatherIntensity::Light;
         }
 
-        let rand: f32 = rand::random();
+        let rand = macroquad_toolkit::rng::rand();
         if rand < 0.5 {
             WeatherIntensity::Light
         } else if rand < 0.8 {
@@ -262,13 +261,13 @@ impl WeatherService {
         // Check if weather should change
         if elapsed >= duration_secs {
             let change_chance: f32 = 0.3;
-            if rand::random::<f32>() < change_chance {
+            if macroquad_toolkit::rng::chance(change_chance) {
                 return Self::generate_initial_weather(season, current_time);
             }
         }
 
         // Check for intensity change
-        if rand::random::<f32>() < 0.1 {
+        if macroquad_toolkit::rng::chance(0.1) {
             let new_intensity = Self::get_random_intensity(current.weather_type);
             if new_intensity != current.intensity {
                 return WeatherCondition {
@@ -368,22 +367,21 @@ impl WeatherService {
         current_time: f64,
     ) -> Vec<EnvironmentalHazard> {
         let mut hazards = Vec::new();
-        let mut rng = rand::thread_rng();
 
         let hazard_chance = Self::calculate_hazard_chance(weather, time_of_day, season);
 
-        if rng.gen::<f32>() < hazard_chance {
+        if macroquad_toolkit::rng::chance(hazard_chance) {
             let hazard_type = Self::select_hazard_type(weather, time_of_day);
             hazards.push(Self::create_hazard(hazard_type, weather, current_time));
         }
 
         // Weather-specific hazards
         if weather.intensity == WeatherIntensity::Heavy {
-            if weather.weather_type == WeatherType::Rain && rng.gen::<f32>() < 0.4 {
+            if weather.weather_type == WeatherType::Rain && macroquad_toolkit::rng::chance(0.4) {
                 hazards.push(Self::create_weather_hazard("flooding", weather, current_time));
-            } else if weather.weather_type == WeatherType::Snow && rng.gen::<f32>() < 0.5 {
+            } else if weather.weather_type == WeatherType::Snow && macroquad_toolkit::rng::chance(0.5) {
                 hazards.push(Self::create_weather_hazard("ice_roads", weather, current_time));
-            } else if weather.weather_type == WeatherType::Fog && rng.gen::<f32>() < 0.3 {
+            } else if weather.weather_type == WeatherType::Fog && macroquad_toolkit::rng::chance(0.3) {
                 hazards.push(Self::create_weather_hazard("visibility", weather, current_time));
             }
         }
@@ -413,7 +411,6 @@ impl WeatherService {
     }
 
     fn select_hazard_type(weather: &WeatherCondition, time_of_day: &TimeOfDay) -> HazardType {
-        let mut rng = rand::thread_rng();
         let mut types = vec![HazardType::Construction, HazardType::Accident, HazardType::RoadClosure];
 
         if weather.weather_type == WeatherType::Thunderstorm || time_of_day.supernatural_activity > 70 {
@@ -424,20 +421,19 @@ impl WeatherService {
             types.push(HazardType::PoliceCheckpoint);
         }
 
-        *types.choose(&mut rng).unwrap_or(&HazardType::Construction)
+        *macroquad_toolkit::rng::choose(&types).unwrap_or(&HazardType::Construction)
     }
 
     fn create_hazard(hazard_type: HazardType, weather: &WeatherCondition, current_time: f64) -> EnvironmentalHazard {
-        let mut rng = rand::thread_rng();
         let locations = [
             "Downtown Bridge", "Highway 101", "Industrial District", "Cemetery Road",
             "Forest Route", "Waterfront Drive", "University Avenue", "Hospital District",
         ];
-        let location = locations.choose(&mut rng).unwrap_or(&"Unknown").to_string();
+        let location = macroquad_toolkit::rng::choose(&locations).unwrap_or(&"Unknown").to_string();
         
-        let severity = if rng.gen::<f32>() < 0.1 {
+        let severity = if macroquad_toolkit::rng::chance(0.1) {
             HazardSeverity::Extreme
-        } else if rng.gen::<f32>() < 0.3 {
+        } else if macroquad_toolkit::rng::chance(0.3) {
             HazardSeverity::Major
         } else {
             HazardSeverity::Minor

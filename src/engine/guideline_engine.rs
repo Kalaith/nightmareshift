@@ -178,7 +178,7 @@ impl GuidelineEngine {
         };
 
         let final_prob = base_prob * intensity_mult * (0.5 + player_trust * 0.5);
-        rand::random::<f32>() < final_prob
+        macroquad_toolkit::rng::rand() < final_prob
     }
 
     /// Evaluate a guideline choice
@@ -313,11 +313,11 @@ impl GuidelineEngine {
         };
 
         if total_rides > 20 && skill_level > 0.7 {
-            return rand::random::<f32>() < 0.3;
+            return macroquad_toolkit::rng::rand() < 0.3;
         }
 
         if total_rides > 35 && skill_level > 0.6 {
-            return rand::random::<f32>() < 0.5;
+            return macroquad_toolkit::rng::rand() < 0.5;
         }
 
         false

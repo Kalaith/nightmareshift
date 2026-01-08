@@ -2,7 +2,7 @@
 
 use crate::data::*;
 use crate::state::*;
-use rand::Rng;
+
 
 /// Item drop result
 #[derive(Debug, Clone)]
@@ -67,7 +67,7 @@ impl ItemService {
     ) -> Option<ItemDrop> {
         let drop_chance = Self::calculate_drop_chance(passenger, route_type, backstory_unlocked, constants);
         
-        if rand::random::<f32>() > drop_chance {
+        if macroquad_toolkit::rng::rand() > drop_chance {
             return None;
         }
 
@@ -83,7 +83,7 @@ impl ItemService {
     fn select_item_for_passenger(passenger: &Passenger, current_time: f64) -> InventoryItem {
         // Check if passenger has specific drop items
         if !passenger.drop_items.is_empty() {
-            let idx = rand::thread_rng().gen_range(0..passenger.drop_items.len());
+            let idx = macroquad_toolkit::rng::gen_range(0, passenger.drop_items.len());
             let item_name = &passenger.drop_items[idx];
             return ItemDatabase::create_item(item_name, &passenger.name, current_time);
         }
@@ -103,32 +103,32 @@ impl ItemService {
 
     fn random_ghost_item() -> String {
         let items = ["Old Locket", "Withered Flowers", "Faded Photograph", "Dusty Mirror"];
-        items[rand::thread_rng().gen_range(0..items.len())].to_string()
+        items[macroquad_toolkit::rng::gen_range(0, items.len())].to_string()
     }
 
     fn random_vampire_item() -> String {
         let items = ["Blood Vial", "Ancient Coin", "Velvet Cloak Scrap", "Ornate Ring"];
-        items[rand::thread_rng().gen_range(0..items.len())].to_string()
+        items[macroquad_toolkit::rng::gen_range(0, items.len())].to_string()
     }
 
     fn random_demon_item() -> String {
         let items = ["Sulfur Crystal", "Burning Coal", "Contract Fragment", "Cursed Dice"];
-        items[rand::thread_rng().gen_range(0..items.len())].to_string()
+        items[macroquad_toolkit::rng::gen_range(0, items.len())].to_string()
     }
 
     fn random_occult_item() -> String {
         let items = ["Crystal Pendant", "Tarot Card", "Incense Bundle", "Rune Stone"];
-        items[rand::thread_rng().gen_range(0..items.len())].to_string()
+        items[macroquad_toolkit::rng::gen_range(0, items.len())].to_string()
     }
 
     fn random_holy_item() -> String {
         let items = ["Blessed Medallion", "Holy Water Vial", "Prayer Beads", "Saint's Icon"];
-        items[rand::thread_rng().gen_range(0..items.len())].to_string()
+        items[macroquad_toolkit::rng::gen_range(0, items.len())].to_string()
     }
 
     fn random_common_item() -> String {
         let items = ["Forgotten Wallet", "Lost Phone", "Crumpled Note", "Old Key"];
-        items[rand::thread_rng().gen_range(0..items.len())].to_string()
+        items[macroquad_toolkit::rng::gen_range(0, items.len())].to_string()
     }
 
     /// Check if a passenger wants to trade
@@ -148,7 +148,7 @@ impl ItemService {
             passenger.wanted_items.contains(&item.name) && item.can_trade
         });
 
-        if wanted_item.is_some() || rand::random::<f32>() < constants.probabilities.trade_offer_chance {
+        if wanted_item.is_some() || macroquad_toolkit::rng::chance(constants.probabilities.trade_offer_chance) {
             // Generate a trade offer
             let offered_item = Self::select_item_for_passenger(passenger, current_time);
 

@@ -109,8 +109,7 @@ impl PassengerStateMachine {
         state.profile.dialogue_by_stage.as_ref()
             .and_then(|map| map.get(stage_key))
             .and_then(|lines| {
-                use rand::seq::SliceRandom;
-                lines.choose(&mut rand::thread_rng()).cloned()
+                macroquad_toolkit::rng::choose(lines).cloned()
             })
     }
 
