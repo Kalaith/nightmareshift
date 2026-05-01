@@ -1,7 +1,7 @@
 //! Inventory item types matching the item system.
 
-use serde::{Deserialize, Serialize};
 use super::passenger::Rarity;
+use serde::{Deserialize, Serialize};
 
 /// Type of inventory item
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -182,7 +182,8 @@ impl ItemDatabase {
             "crystal pendant" => ItemTemplate {
                 item_type: ItemType::Protective,
                 rarity: Rarity::Rare,
-                description: "A shimmering crystal that wards off supernatural influence".to_string(),
+                description: "A shimmering crystal that wards off supernatural influence"
+                    .to_string(),
                 can_use: true,
                 can_trade: true,
                 max_durability: None,
@@ -224,7 +225,8 @@ impl ItemDatabase {
             "soul protection ward" => ItemTemplate {
                 item_type: ItemType::Protective,
                 rarity: Rarity::Legendary,
-                description: "A ward crafted by The Collector, protecting your very essence".to_string(),
+                description: "A ward crafted by The Collector, protecting your very essence"
+                    .to_string(),
                 can_use: true,
                 can_trade: false,
                 max_durability: None,
@@ -240,7 +242,8 @@ impl ItemDatabase {
             "withered flowers" => ItemTemplate {
                 item_type: ItemType::Story,
                 rarity: Rarity::Common,
-                description: "Flowers that never truly die, holding memories of the past".to_string(),
+                description: "Flowers that never truly die, holding memories of the past"
+                    .to_string(),
                 can_use: false,
                 can_trade: false,
                 max_durability: Some(50),

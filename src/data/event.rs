@@ -1,6 +1,5 @@
 use serde::{Deserialize, Serialize};
 
-
 /// Tags representing potential risks on a route
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum RiskTag {

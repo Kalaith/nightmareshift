@@ -1,5 +1,5 @@
 //! Game constants loaded from JSON.
-//! 
+//!
 //! All game balance values are loaded from assets/constants.json.
 //! Do not hardcode values - add them to the JSON file instead.
 
@@ -49,6 +49,8 @@ pub struct GameConstants {
     pub time_cost_scenic: u32,
     #[serde(rename = "TIME_COST_POLICE")]
     pub time_cost_police: u32,
+    #[serde(rename = "ROUTE_PREFERENCE_STRESS_SCALE")]
+    pub route_preference_stress_scale: f32,
     #[serde(rename = "RISK_NORMAL")]
     pub risk_normal: u32,
     #[serde(rename = "RISK_SHORTCUT")]

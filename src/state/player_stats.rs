@@ -1,5 +1,6 @@
 //! Player statistics tracking across sessions.
 
+use crate::data::RouteType;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
@@ -68,6 +69,7 @@ pub struct PlayerStats {
     #[serde(default)]
     pub leaderboard: Vec<LeaderboardEntry>,
     /// Route usage counts
+    #[serde(default)]
     pub route_usage: HashMap<String, u32>,
     /// Unlocked achievements
     #[serde(default)]
@@ -94,16 +96,22 @@ impl PlayerStats {
     }
 
     /// Record a completed shift
-    pub fn record_shift_completion(&mut self, earnings: u32, rides: u32, survived: bool, play_time: u32) {
+    pub fn record_shift_completion(
+        &mut self,
+        earnings: u32,
+        rides: u32,
+        survived: bool,
+        play_time: u32,
+    ) {
         self.total_shifts_completed += 1;
         self.total_rides_completed += rides;
         self.total_earnings += earnings;
         self.total_play_time += play_time;
-        
+
         if earnings > self.highest_shift_earnings {
             self.highest_shift_earnings = earnings;
         }
-        
+
         if survived {
             self.survival_bonuses += 1;
         }
@@ -121,12 +129,18 @@ impl PlayerStats {
 
     /// Check if backstory is unlocked
     pub fn is_backstory_unlocked(&self, passenger_id: u32) -> bool {
-        self.unlocked_backstories.get(&passenger_id).copied().unwrap_or(false)
+        self.unlocked_backstories
+            .get(&passenger_id)
+            .copied()
+            .unwrap_or(false)
     }
 
     /// Get encounter count for a passenger
     pub fn get_encounter_count(&self, passenger_id: u32) -> u32 {
-        self.passenger_encounters.get(&passenger_id).copied().unwrap_or(0)
+        self.passenger_encounters
+            .get(&passenger_id)
+            .copied()
+            .unwrap_or(0)
     }
 
     /// Check if this is first encounter with a passenger
@@ -139,9 +153,46 @@ impl PlayerStats {
         self.unlocked_skills.contains(&skill_id.to_string())
     }
 
-    /// Record route usage
-    pub fn record_route_usage(&mut self, route: &str) {
-        *self.route_usage.entry(route.to_string()).or_insert(0) += 1;
+    /// Stable key used for persisted route familiarity.
+    pub fn route_key(route: RouteType) -> &'static str {
+        match route {
+            RouteType::Normal => "Normal",
+            RouteType::Shortcut => "Shortcut",
+            RouteType::Scenic => "Scenic",
+            RouteType::Police => "Police",
+        }
+    }
+
+    /// Record route usage across runs.
+    pub fn record_route_usage(&mut self, route: RouteType) {
+        *self
+            .route_usage
+            .entry(Self::route_key(route).to_string())
+            .or_insert(0) += 1;
+    }
+
+    /// Get persistent familiarity for a route.
+    pub fn get_route_usage(&self, route: RouteType) -> u32 {
+        self.route_usage
+            .get(Self::route_key(route))
+            .copied()
+            .unwrap_or(0)
+    }
+
+    /// Build a route mastery map for services that still operate on RouteType keys.
+    pub fn route_mastery_map(&self) -> HashMap<RouteType, u32> {
+        [
+            RouteType::Normal,
+            RouteType::Shortcut,
+            RouteType::Scenic,
+            RouteType::Police,
+        ]
+        .into_iter()
+        .filter_map(|route| {
+            let usage = self.get_route_usage(route);
+            (usage > 0).then_some((route, usage))
+        })
+        .collect()
     }
 
     /// Add a leaderboard entry and sort (keep top 10)
@@ -153,7 +204,8 @@ impl PlayerStats {
 
     /// Get almanac entry for a passenger (or default)
     pub fn get_almanac_entry(&self, passenger_id: u32) -> AlmanacEntry {
-        self.almanac_progress.get(&passenger_id)
+        self.almanac_progress
+            .get(&passenger_id)
             .cloned()
             .unwrap_or(AlmanacEntry {
                 passenger_id,
@@ -164,22 +216,28 @@ impl PlayerStats {
 
     /// Mark passenger as encountered
     pub fn mark_passenger_encountered(&mut self, passenger_id: u32) {
-        let entry = self.almanac_progress.entry(passenger_id).or_insert(AlmanacEntry {
-            passenger_id,
-            encountered: false,
-            knowledge_level: 0,
-        });
+        let entry = self
+            .almanac_progress
+            .entry(passenger_id)
+            .or_insert(AlmanacEntry {
+                passenger_id,
+                encountered: false,
+                knowledge_level: 0,
+            });
         entry.encountered = true;
     }
 
     /// Upgrade almanac knowledge level
     pub fn upgrade_almanac_knowledge(&mut self, passenger_id: u32, cost: u32) -> bool {
         if self.lore_fragments >= cost {
-            let entry = self.almanac_progress.entry(passenger_id).or_insert(AlmanacEntry {
-                passenger_id,
-                encountered: true,
-                knowledge_level: 0,
-            });
+            let entry = self
+                .almanac_progress
+                .entry(passenger_id)
+                .or_insert(AlmanacEntry {
+                    passenger_id,
+                    encountered: true,
+                    knowledge_level: 0,
+                });
 
             if entry.knowledge_level < 3 {
                 self.lore_fragments -= cost;
@@ -253,7 +311,11 @@ impl PlayerStats {
 
     /// Unlock an achievement
     pub fn unlock_achievement(&mut self, achievement_id: &str, date: String) -> bool {
-        if let Some(achievement) = self.achievements.iter_mut().find(|a| a.id == achievement_id) {
+        if let Some(achievement) = self
+            .achievements
+            .iter_mut()
+            .find(|a| a.id == achievement_id)
+        {
             if !achievement.unlocked {
                 achievement.unlocked = true;
                 achievement.unlock_date = Some(date);
@@ -265,11 +327,18 @@ impl PlayerStats {
 
     /// Check if achievement is unlocked
     pub fn is_achievement_unlocked(&self, achievement_id: &str) -> bool {
-        self.achievements.iter().any(|a| a.id == achievement_id && a.unlocked)
+        self.achievements
+            .iter()
+            .any(|a| a.id == achievement_id && a.unlocked)
     }
 
     /// Check and unlock achievements based on current stats
-    pub fn check_achievements(&mut self, shift_earnings: u32, shift_survived: bool, shift_violations: u32) {
+    pub fn check_achievements(
+        &mut self,
+        shift_earnings: u32,
+        shift_survived: bool,
+        shift_violations: u32,
+    ) {
         #[cfg(not(target_arch = "wasm32"))]
         let now = {
             use chrono::Local;
@@ -299,7 +368,11 @@ impl PlayerStats {
         }
 
         // Almanac scholar (5 passengers mastered)
-        let mastered = self.almanac_progress.values().filter(|e| e.knowledge_level >= 3).count();
+        let mastered = self
+            .almanac_progress
+            .values()
+            .filter(|e| e.knowledge_level >= 3)
+            .count();
         if mastered >= 5 {
             self.unlock_achievement("almanac_scholar", now.clone());
         }
@@ -310,4 +383,3 @@ impl PlayerStats {
         }
     }
 }
-

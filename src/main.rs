@@ -3,21 +3,25 @@
 //! Drive supernatural passengers through the night, follow mysterious rules,
 //! and try to survive until dawn.
 
+mod bot;
 mod data;
 mod engine;
+mod game;
 mod screens;
 mod state;
 mod ui;
-mod game;
 
-use macroquad::prelude::*;
 use game::Game;
+use macroquad::prelude::*;
+
+const DEFAULT_WINDOW_WIDTH: i32 = 1920;
+const DEFAULT_WINDOW_HEIGHT: i32 = 1080;
 
 fn window_conf() -> Conf {
     Conf {
         window_title: "Nightmare Shift".to_string(),
-        window_width: 800,
-        window_height: 600,
+        window_width: DEFAULT_WINDOW_WIDTH,
+        window_height: DEFAULT_WINDOW_HEIGHT,
         window_resizable: true,
         sample_count: 0,
         high_dpi: false,
@@ -34,6 +38,7 @@ async fn main() {
         game.handle_input();
         let action = game.draw();
         game.handle_ui_action(action);
+        game.handle_playtest_bot();
         next_frame().await;
     }
 }

@@ -1,10 +1,9 @@
 //! Input service for mapping user input to game actions.
 
-use macroquad::prelude::*;
-use crate::ui::UiAction;
 use crate::screens::Screen;
-use crate::state::GamePhase; // GamePhase is in state, need to ensure imports are correct in mod.rs
-use crate::data::RouteType;
+use crate::state::GamePhase;
+use crate::ui::UiAction;
+use macroquad::prelude::*; // GamePhase is in state, need to ensure imports are correct in mod.rs
 
 /// Input service structure
 pub struct InputService;
@@ -52,6 +51,7 @@ impl InputService {
                         if is_key_pressed(KeyCode::Escape) {
                             actions.push(UiAction::DeclineRide);
                         }
+                        Self::capture_cab_controls(&mut actions);
                     }
                     GamePhase::Driving => {
                         if is_key_pressed(KeyCode::Key1) || is_key_pressed(KeyCode::Kp1) {
@@ -66,16 +66,19 @@ impl InputService {
                         if is_key_pressed(KeyCode::Key4) || is_key_pressed(KeyCode::Kp4) {
                             actions.push(UiAction::SelectRoute(3)); // Police
                         }
+                        Self::capture_cab_controls(&mut actions);
                     }
                     GamePhase::Interaction => {
                         if is_key_pressed(KeyCode::Space) {
                             actions.push(UiAction::Continue);
                         }
+                        Self::capture_cab_controls(&mut actions);
                     }
                     GamePhase::DropOff => {
                         if is_key_pressed(KeyCode::Space) {
                             actions.push(UiAction::Continue);
                         }
+                        Self::capture_cab_controls(&mut actions);
                     }
                     // Guideline decisions are usually button clicks, but we could map keys here too
                     _ => {}
@@ -99,5 +102,32 @@ impl InputService {
         }
 
         actions
+    }
+
+    fn capture_cab_controls(actions: &mut Vec<UiAction>) {
+        if is_key_pressed(KeyCode::E) {
+            actions.push(UiAction::PerformRuleAction("eye_contact".to_string()));
+        }
+        if is_key_pressed(KeyCode::M) {
+            actions.push(UiAction::PerformRuleAction("play_music".to_string()));
+        }
+        if is_key_pressed(KeyCode::T) {
+            actions.push(UiAction::PerformRuleAction("accept_tip".to_string()));
+        }
+        if is_key_pressed(KeyCode::W) {
+            actions.push(UiAction::PerformRuleAction("open_window".to_string()));
+        }
+        if is_key_pressed(KeyCode::Y) {
+            actions.push(UiAction::PerformRuleAction("use_wipers".to_string()));
+        }
+        if is_key_pressed(KeyCode::H) {
+            actions.push(UiAction::PerformRuleAction("drive_dark".to_string()));
+        }
+        if is_key_pressed(KeyCode::A) {
+            actions.push(UiAction::PerformRuleAction("use_ac".to_string()));
+        }
+        if is_key_pressed(KeyCode::S) {
+            actions.push(UiAction::PerformRuleAction("stop_vehicle".to_string()));
+        }
     }
 }

@@ -1,8 +1,8 @@
 //! Passenger state machine for need level progression.
 
 use crate::data::*;
-use crate::state::*;
 use crate::engine::RuleEvaluationResult;
+use crate::state::*;
 
 /// Triggered tell with context
 #[derive(Debug, Clone)]
@@ -27,6 +27,7 @@ impl PassengerStateMachine {
         passenger: &Passenger,
         route: RouteType,
         rule_outcome: Option<&RuleEvaluationResult>,
+        route_preference_stress_scale: f32,
         current_time: f64,
     ) -> Vec<TriggeredTell> {
         let profile = &state.profile;
@@ -42,26 +43,92 @@ impl PassengerStateMachine {
             level += profile.need_change.obey;
         }
 
+        if let Some(preference) = passenger.get_route_preference(route) {
+            level += (preference.stress_modifier * route_preference_stress_scale).round() as i32;
+        }
+
         // Rule outcome adjustment
         if let Some(outcome) = rule_outcome {
             level += outcome.need_adjustment;
         }
 
-        // Clamp level
+        Self::set_level_and_collect_tells(
+            state,
+            passenger,
+            level,
+            previous_stage,
+            rule_outcome,
+            current_time,
+        )
+    }
+
+    /// Apply a rule outcome directly to the passenger need state.
+    pub fn apply_rule_outcome(
+        state: &mut PassengerNeedState,
+        passenger: &Passenger,
+        rule_outcome: &RuleEvaluationResult,
+        current_time: f64,
+    ) -> Vec<TriggeredTell> {
+        if rule_outcome.need_adjustment == 0 {
+            state.last_updated = current_time;
+            return Vec::new();
+        }
+
+        let previous_stage = state.stage;
+        let level = state.level as i32 + rule_outcome.need_adjustment;
+        Self::set_level_and_collect_tells(
+            state,
+            passenger,
+            level,
+            previous_stage,
+            Some(rule_outcome),
+            current_time,
+        )
+    }
+
+    /// Apply a raw stress delta and keep stage/stability in sync.
+    pub fn apply_stress_delta(
+        state: &mut PassengerNeedState,
+        passenger: &Passenger,
+        delta: i32,
+        current_time: f64,
+    ) -> Vec<TriggeredTell> {
+        if delta == 0 {
+            state.last_updated = current_time;
+            return Vec::new();
+        }
+
+        let previous_stage = state.stage;
+        let level = state.level as i32 + delta;
+        Self::set_level_and_collect_tells(
+            state,
+            passenger,
+            level,
+            previous_stage,
+            None,
+            current_time,
+        )
+    }
+
+    fn set_level_and_collect_tells(
+        state: &mut PassengerNeedState,
+        passenger: &Passenger,
+        level: i32,
+        previous_stage: NeedStage,
+        rule_outcome: Option<&RuleEvaluationResult>,
+        current_time: f64,
+    ) -> Vec<TriggeredTell> {
         state.level = level.clamp(0, 100) as u32;
+        let new_stage = PassengerNeedState::calculate_stage(state.level, &state.profile.thresholds);
 
-        // Calculate new stage
-        let new_stage = PassengerNeedState::calculate_stage(state.level, &profile.thresholds);
+        let triggered_tells =
+            if new_stage != previous_stage && !state.revealed_stages.contains_key(&new_stage) {
+                state.revealed_stages.insert(new_stage, true);
+                Self::collect_tells(passenger, new_stage, rule_outcome)
+            } else {
+                Vec::new()
+            };
 
-        // Collect tells if stage changed and not already revealed
-        let triggered_tells = if new_stage != previous_stage && !state.revealed_stages.contains_key(&new_stage) {
-            state.revealed_stages.insert(new_stage, true);
-            Self::collect_tells(passenger, new_stage, rule_outcome)
-        } else {
-            Vec::new()
-        };
-
-        // Update state
         state.stage = new_stage;
         state.stability = 1.0 - (state.level as f32 / 100.0);
         state.last_updated = current_time;
@@ -77,12 +144,16 @@ impl PassengerStateMachine {
     ) -> Vec<TriggeredTell> {
         let intensities = Self::get_stage_intensities(stage);
 
-        passenger.tells.iter()
+        passenger
+            .tells
+            .iter()
             .filter(|tell| intensities.contains(&tell.intensity))
             .map(|tell| TriggeredTell {
                 tell: tell.clone(),
-                exception_id: rule_outcome.and_then(|r| r.triggered_exception.as_ref().map(|e| e.id.clone())),
-                related_guideline_id: rule_outcome.and_then(|r| r.rule.as_ref().and_then(|ru| ru.related_guideline_id)),
+                exception_id: rule_outcome
+                    .and_then(|r| r.triggered_exception.as_ref().map(|e| e.id.clone())),
+                related_guideline_id: rule_outcome
+                    .and_then(|r| r.rule.as_ref().and_then(|ru| ru.related_guideline_id)),
             })
             .collect()
     }
@@ -98,7 +169,10 @@ impl PassengerStateMachine {
     }
 
     /// Get stage-specific dialogue
-    pub fn get_dialogue_for_stage(_passenger: &Passenger, state: &PassengerNeedState) -> Option<String> {
+    pub fn get_dialogue_for_stage(
+        _passenger: &Passenger,
+        state: &PassengerNeedState,
+    ) -> Option<String> {
         let stage_key = match state.stage {
             NeedStage::Calm => "calm",
             NeedStage::Warning => "warning",
@@ -106,11 +180,12 @@ impl PassengerStateMachine {
             NeedStage::Meltdown => "meltdown",
         };
 
-        state.profile.dialogue_by_stage.as_ref()
+        state
+            .profile
+            .dialogue_by_stage
+            .as_ref()
             .and_then(|map| map.get(stage_key))
-            .and_then(|lines| {
-                macroquad_toolkit::rng::choose(lines).cloned()
-            })
+            .and_then(|lines| macroquad_toolkit::rng::choose(lines).cloned())
     }
 
     /// Merge triggered tells into detected tells list

@@ -3,7 +3,6 @@
 use crate::data::*;
 use crate::state::*;
 
-
 /// Result of generating shift rules
 #[derive(Debug, Clone)]
 pub struct ShiftRules {
@@ -39,17 +38,18 @@ pub struct GameEngine;
 
 impl GameEngine {
     /// Generate shift rules based on player experience
-    pub fn generate_shift_rules(experience: u32, all_rules: &[Rule], constants: &ConstantsData) -> ShiftRules {
-        let difficulty_level = (experience / constants.scoring.experience_per_level).min(constants.scoring.max_difficulty);
-
+    pub fn generate_shift_rules(
+        experience: u32,
+        all_rules: &[Rule],
+        constants: &ConstantsData,
+    ) -> ShiftRules {
+        let difficulty_level = (experience / constants.scoring.experience_per_level)
+            .min(constants.scoring.max_difficulty);
 
         // Separate rules by type
-        let basic_rules: Vec<&Rule> = all_rules.iter()
-            .filter(|r| r.is_basic())
-            .collect();
-        let conditional_rules: Vec<&Rule> = all_rules.iter()
-            .filter(|r| r.is_conditional())
-            .collect();
+        let basic_rules: Vec<&Rule> = all_rules.iter().filter(|r| r.is_basic()).collect();
+        let conditional_rules: Vec<&Rule> =
+            all_rules.iter().filter(|r| r.is_conditional()).collect();
 
         let mut selected_rules = Vec::new();
 
@@ -57,7 +57,9 @@ impl GameEngine {
         let num_basic = 2 + macroquad_toolkit::rng::gen_range(0, 2);
         let mut basic_rules_clone = basic_rules.clone();
         macroquad_toolkit::rng::shuffle(&mut basic_rules_clone);
-        let shuffled_basic = basic_rules_clone.into_iter().take(num_basic.min(basic_rules.len()));
+        let shuffled_basic = basic_rules_clone
+            .into_iter()
+            .take(num_basic.min(basic_rules.len()));
         for rule in shuffled_basic {
             selected_rules.push(rule.clone());
         }
@@ -67,18 +69,22 @@ impl GameEngine {
             let num_conditional = 1 + macroquad_toolkit::rng::gen_range(0, 2);
             let mut conditional_rules_clone = conditional_rules.clone();
             macroquad_toolkit::rng::shuffle(&mut conditional_rules_clone);
-            let shuffled_conditional = conditional_rules_clone.into_iter().take(num_conditional.min(conditional_rules.len()));
+            let shuffled_conditional = conditional_rules_clone
+                .into_iter()
+                .take(num_conditional.min(conditional_rules.len()));
             for rule in shuffled_conditional {
                 selected_rules.push(rule.clone());
             }
         }
 
         // Separate visible and hidden rules
-        let visible_rules: Vec<Rule> = selected_rules.iter()
+        let visible_rules: Vec<Rule> = selected_rules
+            .iter()
             .filter(|r| r.visible)
             .cloned()
             .collect();
-        let hidden_rules: Vec<Rule> = selected_rules.iter()
+        let hidden_rules: Vec<Rule> = selected_rules
+            .iter()
             .filter(|r| !r.visible)
             .cloned()
             .collect();
@@ -125,6 +131,53 @@ impl GameEngine {
         RuleEvaluationResult::default()
     }
 
+    /// Check if a route choice violates weather-triggered driving rules.
+    pub fn check_weather_route_violation(
+        rules: &[Rule],
+        route: RouteType,
+        weather: &WeatherCondition,
+        time_of_day: &TimeOfDay,
+    ) -> RuleEvaluationResult {
+        for rule in rules.iter().filter(|r| r.rule_type == RuleType::Weather) {
+            if Self::weather_route_triggers(rule, route, weather, time_of_day) {
+                return RuleEvaluationResult {
+                    violation: true,
+                    rule: Some(rule.clone()),
+                    message: Some(rule.get_violation_message().to_string()),
+                    need_adjustment: rule.break_need_adjustment.unwrap_or(10),
+                    triggered_exception: None,
+                };
+            }
+        }
+
+        RuleEvaluationResult::default()
+    }
+
+    fn weather_route_triggers(
+        rule: &Rule,
+        route: RouteType,
+        weather: &WeatherCondition,
+        time_of_day: &TimeOfDay,
+    ) -> bool {
+        match rule.trigger.as_deref() {
+            Some("heavy_fog") => {
+                weather.weather_type == WeatherType::Fog
+                    && weather.intensity == WeatherIntensity::Heavy
+                    && route == RouteType::Shortcut
+            }
+            Some("snow") => {
+                weather.weather_type == WeatherType::Snow && route == RouteType::Shortcut
+            }
+            Some("latenight_badweather") => {
+                time_of_day.phase == TimePhase::Latenight
+                    && weather.weather_type != WeatherType::Clear
+                    && route == RouteType::Scenic
+            }
+            Some("low_visibility") => weather.visibility < 30 && route == RouteType::Shortcut,
+            _ => false,
+        }
+    }
+
     /// Check if passenger has an exception to a rule
     fn passenger_has_exception(
         _rule: &Rule,
@@ -161,8 +214,6 @@ impl GameEngine {
         reputation: Option<&PassengerReputation>,
         constants: &ConstantsData,
     ) -> u32 {
-
-
         // Route fare multiplier
         let route_mult = match route {
             RouteType::Shortcut => constants.route_fares.shortcut,
@@ -172,7 +223,8 @@ impl GameEngine {
         };
 
         // Passenger preference multiplier
-        let pref_mult = passenger.get_route_preference(route)
+        let pref_mult = passenger
+            .get_route_preference(route)
             .map(|p| p.fare_modifier)
             .unwrap_or(1.0);
 
@@ -188,14 +240,16 @@ impl GameEngine {
         };
 
         // Reputation multiplier
-        let rep_mult = reputation.map(|r| r.fare_multiplier(&constants.reputation)).unwrap_or(1.0);
+        let rep_mult = reputation
+            .map(|r| r.fare_multiplier(&constants.reputation))
+            .unwrap_or(1.0);
 
         // Calculate with all multipliers
         let fare = base_fare as f32 * route_mult * pref_mult * streak_mult * rep_mult;
 
         // Add variation (±$5)
         let variation = macroquad_toolkit::rng::gen_range(-5.0, 5.0);
-        
+
         (fare + variation).max(5.0) as u32
     }
 }

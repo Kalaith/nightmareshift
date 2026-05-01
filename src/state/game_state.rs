@@ -1,7 +1,7 @@
 //! Core game state structure.
 
-use std::collections::HashMap;
 use crate::data::*;
+use std::collections::HashMap;
 
 /// Current game phase
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -92,7 +92,7 @@ impl PassengerNeedState {
     pub fn from_passenger(passenger: &Passenger, current_time: f64) -> Option<Self> {
         let profile = passenger.state_profile.clone()?;
         let stage = Self::calculate_stage(profile.initial_level, &profile.thresholds);
-        
+
         Some(Self {
             level: profile.initial_level.clamp(0, 100),
             stage,
@@ -143,22 +143,23 @@ impl PassengerReputation {
     pub fn update(&mut self, positive: bool, current_time: f64, constants: &ReputationConstants) {
         self.interactions += 1;
         self.last_encounter = current_time;
-        
+
         if positive {
             self.positive_choices += 1;
         } else {
             self.negative_choices += 1;
         }
-        
+
         // Recalculate relationship level
         let ratio = if self.interactions > 0 {
             self.positive_choices as f32 / self.interactions as f32
         } else {
             0.5
         };
-        
-        self.relationship_level = if ratio >= constants.trusted_ratio 
-            && self.interactions >= constants.minimum_interactions_for_trusted {
+
+        self.relationship_level = if ratio >= constants.trusted_ratio
+            && self.interactions >= constants.minimum_interactions_for_trusted
+        {
             RelationshipLevel::Trusted
         } else if ratio >= constants.friendly_ratio {
             RelationshipLevel::Friendly
@@ -264,7 +265,7 @@ pub struct GameState {
     pub time_remaining: u32,
     pub rides_completed: u32,
     pub rules_violated: u32,
-    
+
     // Current shift
     pub current_rules: Vec<Rule>,
     pub hidden_rules: Vec<Rule>,
@@ -286,10 +287,9 @@ pub struct GameState {
     pub detected_tells: Vec<DetectedTell>,
     pub player_trust: f32,
     pub decision_history: Vec<GuidelineDecision>,
-    
+
     // Route tracking
     pub route_history: Vec<RouteHistoryEntry>,
-    pub route_mastery: HashMap<RouteType, u32>,
     pub consecutive_route_streak: Option<RouteStreak>,
 
     // Weather system
@@ -301,13 +301,13 @@ pub struct GameState {
     // Persistence
     pub passenger_reputation: HashMap<u32, PassengerReputation>,
     pub minimum_earnings: u32,
-    
+
     // Item effects tracking
     pub rule_immunity_charges: u32,
     pub supernatural_protection: u32,
     pub curse_danger_bonus: u32,
     pub pending_trade: Option<(String, InventoryItem)>, // (passenger_name, offered_item)
-    
+
     // UI state
     pub current_dialogue: Option<CurrentDialogue>,
     pub pending_route_dialogue: Option<String>,
@@ -348,7 +348,6 @@ impl GameState {
             player_trust: 0.5,
             decision_history: Vec::new(),
             route_history: Vec::new(),
-            route_mastery: HashMap::new(),
             consecutive_route_streak: None,
             current_weather: WeatherCondition::default(),
             time_of_day: TimeOfDay::default(),
@@ -373,6 +372,7 @@ impl GameState {
     /// Reset for a new shift using constants
     pub fn reset_for_new_shift(&mut self, current_time: f64, constants: &GameConstants) {
         self.fuel = constants.initial_fuel as f32;
+        self.earnings = 0;
         self.time_remaining = constants.initial_time;
         self.minimum_earnings = constants.minimum_earnings;
         self.rides_completed = 0;
@@ -394,6 +394,7 @@ impl GameState {
         self.route_history.clear();
         self.consecutive_route_streak = None;
         self.environmental_hazards.clear();
+        self.player_trust = 0.5;
         self.rule_immunity_charges = 0;
         self.supernatural_protection = 0;
         self.curse_danger_bonus = 0;
@@ -417,14 +418,25 @@ impl GameState {
         self.time_remaining <= 0 || self.fuel <= 0.0
     }
 
-    /// Get route mastery for a route type
-    pub fn get_route_mastery(&self, route: RouteType) -> u32 {
-        self.route_mastery.get(&route).copied().unwrap_or(0)
+    /// Reveal a hidden rule and move it into the active visible rules.
+    pub fn reveal_hidden_rule(&mut self, rule_id: u32) -> Option<Rule> {
+        let index = self
+            .hidden_rules
+            .iter()
+            .position(|rule| rule.id == rule_id)?;
+        let rule = self.hidden_rules.remove(index);
+        if !self.revealed_hidden_rules.iter().any(|r| r.id == rule.id) {
+            self.revealed_hidden_rules.push(rule.clone());
+        }
+        if !self.current_rules.iter().any(|r| r.id == rule.id) {
+            self.current_rules.push(rule.clone());
+        }
+        Some(rule)
     }
 
-    /// Increment route mastery
-    pub fn increment_route_mastery(&mut self, route: RouteType) {
-        *self.route_mastery.entry(route).or_insert(0) += 1;
+    /// Clamp player trust after a gameplay outcome.
+    pub fn adjust_player_trust(&mut self, delta: f32) {
+        self.player_trust = (self.player_trust + delta).clamp(0.0, 1.0);
     }
 
     /// Update consecutive route streak
@@ -433,10 +445,16 @@ impl GameState {
             if streak.route_type == route {
                 streak.count += 1;
             } else {
-                *streak = RouteStreak { route_type: route, count: 1 };
+                *streak = RouteStreak {
+                    route_type: route,
+                    count: 1,
+                };
             }
         } else {
-            self.consecutive_route_streak = Some(RouteStreak { route_type: route, count: 1 });
+            self.consecutive_route_streak = Some(RouteStreak {
+                route_type: route,
+                count: 1,
+            });
         }
     }
 
@@ -451,7 +469,7 @@ impl GameState {
         let ride_bonus = self.rides_completed * constants.scoring.ride_bonus;
         let time_bonus = self.time_remaining * constants.scoring.time_bonus_multiplier;
         let violation_penalty = self.rules_violated * constants.scoring.rule_violation_penalty;
-        
+
         (base + ride_bonus + time_bonus).saturating_sub(violation_penalty)
     }
 }

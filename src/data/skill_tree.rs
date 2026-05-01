@@ -29,7 +29,9 @@ pub struct Skill {
 impl Skill {
     /// Check if prerequisites are met
     pub fn can_unlock(&self, unlocked_skills: &[String]) -> bool {
-        self.prerequisites.iter().all(|prereq| unlocked_skills.contains(prereq))
+        self.prerequisites
+            .iter()
+            .all(|prereq| unlocked_skills.contains(prereq))
     }
 }
 

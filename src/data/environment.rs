@@ -1,7 +1,7 @@
 //! Environment data types for weather, time, and hazards.
 
-use serde::{Deserialize, Serialize};
 use super::passenger::RouteType;
+use serde::{Deserialize, Serialize};
 
 /// Weather types
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -103,7 +103,6 @@ impl Default for WeatherCondition {
         }
     }
 }
-
 
 /// Time of day phases
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -257,7 +256,8 @@ pub struct EnvironmentalHazard {
 impl EnvironmentalHazard {
     /// Check if this hazard blocks a specific route type
     pub fn blocks_route(&self, route: RouteType) -> bool {
-        self.effects.route_blocked
+        self.effects
+            .route_blocked
             .as_ref()
             .map(|blocked| blocked.contains(&route))
             .unwrap_or(false)

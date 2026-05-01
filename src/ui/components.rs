@@ -1,38 +1,84 @@
 //! Reusable UI components.
 
-use macroquad::prelude::*;
 use super::*;
-use macroquad_toolkit::ui::*;
 use crate::data::*;
 use crate::state::*;
+use macroquad::prelude::*;
+
+fn ascii_trimmed(text: String) -> String {
+    text.chars()
+        .filter(|ch| ch.is_ascii())
+        .collect::<String>()
+        .trim()
+        .to_string()
+}
 
 /// Status bar component at top of screen
 pub struct StatusBar;
 
 impl StatusBar {
-    pub fn draw(state: &GameState, constants: &ConstantsData, game_data: Option<&GameData>) -> UiAction {
+    pub fn draw(
+        state: &GameState,
+        constants: &ConstantsData,
+        game_data: Option<&GameData>,
+    ) -> UiAction {
         if let Some(data) = game_data {
             let bar_rect = UiRect::new(0.0, 0.0, screen_width(), layout::STATUS_BAR_HEIGHT);
-            draw_panel(bar_rect, colors::PANEL_BG);
+            draw_rectangle(
+                0.0,
+                0.0,
+                screen_width(),
+                layout::STATUS_BAR_HEIGHT,
+                colors::BLACK,
+            );
+            draw_glass_panel(bar_rect, colors::BORDER_DIM);
 
-            let padding = spacing::PADDING_LG;
-            let mut x = padding;
-            let y = layout::STATUS_BAR_TEXT_Y;
+            let padding = 18.0;
+            let y = 18.0;
+            let btn_h = 38.0;
+            let inv_btn_w = 78.0;
+            let inv_btn_x = screen_width() - padding - inv_btn_w;
+            let rules_btn_x = inv_btn_x - 96.0;
+            let btn_y = 17.0;
+            let stats_right = rules_btn_x - padding;
+            let stat_slot_w = ((stats_right - padding) / 5.0).max(74.0);
+            let stat_x = |idx: usize| padding + stat_slot_w * idx as f32;
+            let divider_x = |idx: usize| padding + stat_slot_w * idx as f32 - 10.0;
 
-            // Fuel gauge with icon
             let fuel_color = get_fuel_color(state.fuel);
-            let fuel_text = data.localization.ui.game.status_bar.fuel
-                .replace("{}", &(state.fuel as u32).to_string());
-            draw_text(&fuel_text, x, y, fonts::SIZE_LG, fuel_color);
-            x += layout::STATUS_ITEM_SPACING;
+            let fuel_value = ascii_trimmed(
+                data.localization
+                    .ui
+                    .game
+                    .status_bar
+                    .fuel
+                    .replace("{}", &(state.fuel as u32).to_string()),
+            );
+            draw_stat_block("F", &fuel_value, "Fuel", stat_x(0), y, fuel_color);
+            draw_divider(divider_x(1), 18.0, 38.0);
 
-            // Earnings
-            let earnings_text = data.localization.ui.game.status_bar.earnings
-                .replace("{}", &state.earnings.to_string());
-            draw_text(&earnings_text, x, y, fonts::SIZE_LG, colors::ACCENT_GOLD);
-            x += layout::STATUS_EARNINGS_SPACING;
+            let earnings_value = ascii_trimmed(
+                data.localization
+                    .ui
+                    .game
+                    .status_bar
+                    .earnings
+                    .replace(
+                        "${}",
+                        &format!("{}{}", data.localization.ui.common.currency, state.earnings),
+                    )
+                    .replace("{}", &state.earnings.to_string()),
+            );
+            draw_stat_block(
+                "$",
+                &earnings_value,
+                "Earnings",
+                stat_x(1),
+                y,
+                colors::ACCENT_GOLD,
+            );
+            draw_divider(divider_x(2), 18.0, 38.0);
 
-            // Time remaining
             let time_color = if state.is_time_critical(constants) {
                 colors::FUEL_CRITICAL
             } else {
@@ -40,47 +86,74 @@ impl StatusBar {
             };
             let hours = state.time_remaining / 60;
             let mins = state.time_remaining % 60;
-            let time_str = format!("⏰ {}:{:02}", hours, mins); 
-            draw_text(&time_str, x, y, fonts::SIZE_LG, time_color);
-            x += layout::STATUS_ITEM_SPACING;
-
-            // Rides completed
-            let rides_text = data.localization.ui.game.status_bar.rides
-                .replace("{}", &state.rides_completed.to_string());
-            draw_text(&rides_text, x, y, fonts::SIZE_LG, colors::TEXT_PRIMARY);
-
-            // Right side buttons and weather
-            let right_x = screen_width() - padding;
-            
-            // Weather display
-            let weather_text = format!(
-                "{} {:?}",
-                state.current_weather.icon,
-                state.current_weather.weather_type
+            let formatted_time = data
+                .localization
+                .ui
+                .common
+                .time_format
+                .replacen("{}", &hours.to_string(), 1)
+                .replacen("{:02}", &format!("{:02}", mins), 1);
+            let time_value = ascii_trimmed(
+                data.localization
+                    .ui
+                    .game
+                    .status_bar
+                    .time
+                    .replacen("{}", &hours.to_string(), 1)
+                    .replacen("{:02}", &format!("{:02}", mins), 1)
+                    .replace(&format!("{}:{:02}", hours, mins), &formatted_time),
             );
-            let weather_dims = measure_text(&weather_text, None, fonts::SIZE_LG as u16, 1.0);
-            let weather_x = right_x - weather_dims.width - 160.0; // Leave room for buttons
-            draw_text(
-                &weather_text,
-                weather_x,
+            draw_stat_block("T", &time_value, "Time", stat_x(2), y, time_color);
+            draw_divider(divider_x(3), 18.0, 38.0);
+
+            let rides_value = state.rides_completed.to_string();
+            let rides_label =
+                ascii_trimmed(data.localization.ui.game.status_bar.rides.replace("{}", ""));
+            let rides_label = if rides_label.is_empty() {
+                "Rides"
+            } else {
+                rides_label.as_str()
+            };
+            draw_stat_block(
+                "#",
+                &rides_value,
+                rides_label,
+                stat_x(3),
                 y,
-                fonts::SIZE_LG,
+                colors::TEXT_PRIMARY,
+            );
+            draw_divider(divider_x(4), 18.0, 38.0);
+
+            let weather_name = state.current_weather.weather_type.name();
+            let weather_label = if weather_name.len() > 8 {
+                format!("{}...", &weather_name[..8])
+            } else {
+                weather_name.to_string()
+            };
+            draw_stat_block(
+                "W",
+                &weather_label,
+                "Weather",
+                stat_x(4),
+                y,
                 colors::ACCENT_SKY,
             );
 
-            // Inventory button (🎒)
-            let inv_btn_w = 70.0;
-            let inv_btn_h = 35.0;
-            let inv_btn_x = right_x - inv_btn_w;
-            let inv_btn_y = (layout::STATUS_BAR_HEIGHT - inv_btn_h) / 2.0;
-            if button(inv_btn_x, inv_btn_y, inv_btn_w, inv_btn_h, "🎒 Inv") {
-                return UiAction::ToggleInventory;
-            }
-
-            // Rules button (📜)
-            let rules_btn_x = inv_btn_x - inv_btn_w - 8.0;
-            if button(rules_btn_x, inv_btn_y, inv_btn_w, inv_btn_h, "📜 Rules") {
+            if draw_glass_button(
+                UiRect::new(rules_btn_x, btn_y, 86.0, btn_h),
+                "R Rules",
+                colors::TEXT_SECONDARY,
+                true,
+            ) {
                 return UiAction::ToggleRules;
+            }
+            if draw_glass_button(
+                UiRect::new(inv_btn_x, btn_y, inv_btn_w, btn_h),
+                "I Inv",
+                colors::TEXT_SECONDARY,
+                true,
+            ) {
+                return UiAction::ToggleInventory;
             }
         }
         UiAction::None
@@ -91,27 +164,29 @@ impl StatusBar {
 pub struct PassengerCard;
 
 impl PassengerCard {
-    pub fn draw(passenger: &Passenger, rect: UiRect, show_controls: bool, dialogue: Option<&String>, game_data: Option<&GameData>) -> UiAction {
-        // Card background
-        draw_panel_bordered(rect, colors::PANEL_BG, colors::ACCENT_PRIMARY, 2.0);
-
+    pub fn draw(
+        passenger: &Passenger,
+        rect: UiRect,
+        show_controls: bool,
+        dialogue: Option<&String>,
+        game_data: Option<&GameData>,
+    ) -> UiAction {
+        draw_glass_panel(rect, colors::BORDER);
         let inner = rect.inset(spacing::PADDING_MD);
-        let center_x = rect.center_x();
+        let portrait_h = (rect.h * 0.38).clamp(150.0, 220.0);
+        let portrait_rect = UiRect::new(inner.x, inner.y, inner.w, portrait_h);
+        draw_passenger_portrait(portrait_rect, passenger.id);
 
-        // Emoji
-        draw_text(&passenger.emoji, center_x - 20.0, inner.y + 40.0, 48.0, colors::TEXT_PRIMARY);
-
-        // Name
-        let name_dims = measure_text(&passenger.name, None, fonts::SIZE_XL as u16, 1.0);
+        let mut y = portrait_rect.bottom() + 28.0;
         draw_text(
             &passenger.name,
-            center_x - name_dims.width / 2.0,
-            inner.y + 80.0,
+            inner.x,
+            y,
             fonts::SIZE_XL,
-            colors::ACCENT_WARNING,
+            colors::CAB_YELLOW,
         );
+        y += 22.0;
 
-        // Rarity badge
         let rarity_text = format!("{:?}", passenger.rarity);
         let rarity_color = match passenger.rarity {
             Rarity::Common => colors::TEXT_MUTED,
@@ -119,82 +194,87 @@ impl PassengerCard {
             Rarity::Rare => colors::ACCENT_SKY,
             Rarity::Legendary => colors::ACCENT_GOLD,
         };
-        let rarity_dims = measure_text(&rarity_text, None, fonts::SIZE_SM as u16, 1.0);
-        draw_text(
-            &rarity_text,
-            center_x - rarity_dims.width / 2.0,
-            inner.y + 100.0,
-            fonts::SIZE_SM,
-            rarity_color,
-        );
+        draw_small_caps(&rarity_text, inner.x, y, fonts::SIZE_XS, rarity_color);
+        y += 28.0;
 
-        // Description
-        draw_text(
+        y = draw_wrapped_text(
             &passenger.description,
             inner.x,
-            inner.y + 130.0,
-            fonts::SIZE_MD,
+            y,
+            inner.w,
+            fonts::SIZE_SM,
+            18.0,
             colors::TEXT_SECONDARY,
-        );
+            2,
+        ) + 8.0;
 
-        // Route info
         let route = format!("{} → {}", passenger.pickup, passenger.destination);
-        draw_text(&route, inner.x, inner.y + 160.0, fonts::SIZE_MD, colors::TEXT_PRIMARY);
+        y = draw_wrapped_text(
+            &route,
+            inner.x,
+            y,
+            inner.w,
+            fonts::SIZE_SM,
+            18.0,
+            colors::TEXT_PRIMARY,
+            2,
+        ) + 10.0;
 
-        // Fare
-        let fare = format!("💰 ${}", passenger.fare);
-        draw_text(&fare, inner.x, inner.y + 190.0, fonts::SIZE_LG, colors::ACCENT_GOLD);
+        let fare = format!("| ${}", passenger.fare);
+        draw_text(&fare, inner.x, y, fonts::SIZE_LG, colors::ACCENT_GOLD);
+        y += 30.0;
 
-        // Dialogue preview
         if let Some(dialogue_text) = dialogue {
-            let preview = if dialogue_text.len() > 60 {
-                format!("\"{}...\"", &dialogue_text[..60])
+            let preview = if dialogue_text.len() > 80 {
+                format!("\"{}...\"", &dialogue_text[..80])
             } else {
                 format!("\"{}\"", dialogue_text)
             };
-            draw_text(&preview, inner.x, inner.y + 230.0, fonts::SIZE_SM, colors::TEXT_MUTED);
+            draw_wrapped_text(
+                &preview,
+                inner.x,
+                y,
+                inner.w,
+                fonts::SIZE_XS,
+                16.0,
+                colors::TEXT_MUTED,
+                2,
+            );
         }
 
-        // Controls
         if show_controls {
-             let btn_w = 150.0;
-             let btn_h = 40.0;
-             let padding = 20.0;
-            
-            // Get localized button texts or defaults
             let accept_text = if let Some(d) = game_data {
                 d.localization.ui.common.accept_space.clone()
             } else {
                 "Accept (SPACE)".to_string()
             };
-            
+
             let decline_text = if let Some(d) = game_data {
                 d.localization.ui.common.decline_esc.clone()
             } else {
                 "Decline (ESC)".to_string()
             };
 
-             // Accept Button
-             if button(
-                 inner.x,
-                 rect.bottom() - btn_h - spacing::PADDING_MD,
-                 btn_w,
-                 btn_h,
-                 &accept_text
-             ) {
-                 return UiAction::AcceptRide;
-             }
-
-             // Decline Button
-             if button(
-                 inner.x + btn_w + padding,
-                 rect.bottom() - btn_h - spacing::PADDING_MD,
-                 btn_w,
-                 btn_h,
-                 &decline_text
-             ) {
-                 return UiAction::DeclineRide;
-             }
+            let btn_h = 40.0;
+            let gap = 12.0;
+            let btn_w = (inner.w - gap) / 2.0;
+            let btn_y = rect.bottom() - btn_h - spacing::PADDING_MD;
+            if draw_glass_button(
+                UiRect::new(inner.x, btn_y, btn_w, btn_h),
+                &accept_text,
+                colors::ACCENT_PRIMARY,
+                true,
+            ) {
+                return UiAction::AcceptRide;
+            }
+            if draw_glass_button(
+                UiRect::new(inner.x + btn_w + gap, btn_y, btn_w, btn_h),
+                &decline_text,
+                colors::ACCENT_DANGER,
+                true,
+            ) {
+                return UiAction::DeclineRide;
+            }
         }
         UiAction::None
     }
@@ -203,146 +283,131 @@ impl PassengerCard {
 pub struct CompletionSummary;
 
 impl CompletionSummary {
-    pub fn draw(completion: &RideCompletion, rect: UiRect, game_data: Option<&GameData>) -> UiAction {
-        draw_panel_bordered(rect, colors::SUCCESS_BG, colors::FUEL_GOOD, 3.0);
+    pub fn draw(
+        completion: &RideCompletion,
+        rect: UiRect,
+        game_data: Option<&GameData>,
+    ) -> UiAction {
+        draw_glass_panel(rect, colors::FUEL_GOOD);
 
         let inner = rect.inset(spacing::PADDING_MD);
-        let mut y = inner.y;
-        
+        let left_w = inner.w * 0.42;
+        let right_x = inner.x + left_w + 26.0;
+        let right_w = inner.w - left_w - 26.0;
+        let mut y = inner.y + 14.0;
+
         if let Some(data) = game_data {
-            // Title
+            let portrait_size = left_w.min(inner.h - 64.0).clamp(240.0, 390.0);
+            let portrait_rect = UiRect::new(inner.x, inner.y + 16.0, portrait_size, portrait_size);
+            draw_passenger_portrait(portrait_rect, completion.passenger.id);
+
             draw_text(
                 &data.localization.ui.game.completion.title,
-                inner.x,
+                right_x,
                 y + 30.0,
                 fonts::SIZE_XL,
-                colors::FUEL_GOOD
+                colors::FUEL_GOOD,
             );
             y += 60.0;
 
-            // Passenger emoji and name
-            let passenger_header = format!("{} {}", completion.passenger.emoji, completion.passenger.name);
-            draw_text(&passenger_header, inner.x, y, fonts::SIZE_LG, colors::ACCENT_WARNING);
+            draw_text(
+                &completion.passenger.name,
+                right_x,
+                y,
+                fonts::SIZE_LG,
+                colors::ACCENT_WARNING,
+            );
             y += 35.0;
 
-            // Passenger feedback
             if !completion.passenger.dialogue.is_empty() {
                 let feedback = &completion.passenger.dialogue[0];
                 let formatted_feedback = format!("\"{}\"", feedback);
-                
-                // Wrap text
-                let max_width = inner.w;
-                let words: Vec<&str> = formatted_feedback.split_whitespace().collect();
-                let mut current_line = String::new();
-                
-                for word in words {
-                    let test_line = if current_line.is_empty() {
-                        word.to_string()
-                    } else {
-                        format!("{} {}", current_line, word)
-                    };
-                    
-                    let dims = measure_text(&test_line, None, fonts::SIZE_SM as u16, 1.0);
-                    if dims.width <= max_width {
-                        current_line = test_line;
-                    } else {
-                        draw_text(&current_line, inner.x, y, fonts::SIZE_SM, colors::TEXT_MUTED);
-                        y += 20.0;
-                        current_line = word.to_string();
-                    }
-                }
-                if !current_line.is_empty() {
-                    draw_text(&current_line, inner.x, y, fonts::SIZE_SM, colors::TEXT_MUTED);
-                    y += 30.0;
-                }
+                y = draw_wrapped_text(
+                    &formatted_feedback,
+                    right_x,
+                    y,
+                    right_w,
+                    fonts::SIZE_SM,
+                    20.0,
+                    colors::TEXT_MUTED,
+                    3,
+                ) + 22.0;
             }
 
-            // Fare earned
-            // "💰 Fare Earned: ${}"
-            let fare_text = data.localization.ui.game.completion.fare
+            let fare_text = data
+                .localization
+                .ui
+                .game
+                .completion
+                .fare
                 .replace("{}", &completion.fare_earned.to_string());
-            draw_text(&fare_text, inner.x, y, fonts::SIZE_LG, colors::ACCENT_GOLD);
+            draw_text(&fare_text, right_x, y, fonts::SIZE_LG, colors::ACCENT_GOLD);
             y += 35.0;
 
-            // Items received
             if !completion.items_received.is_empty() {
                 draw_text(
                     &data.localization.ui.game.completion.items,
-                    inner.x,
+                    right_x,
                     y,
                     fonts::SIZE_MD,
-                    colors::TEXT_PRIMARY
+                    colors::TEXT_PRIMARY,
                 );
                 y += 25.0;
 
                 for item in &completion.items_received {
-                    let item_text = format!("  • {}", item.name);
+                    let item_text = format!("  {}", item.name);
                     let item_color = match item.rarity {
                         crate::data::Rarity::Common => colors::TEXT_SECONDARY,
                         crate::data::Rarity::Uncommon => colors::ACCENT_PRIMARY,
                         crate::data::Rarity::Rare => colors::ACCENT_SKY,
                         crate::data::Rarity::Legendary => colors::ACCENT_GOLD,
                     };
-                    draw_text(&item_text, inner.x, y, fonts::SIZE_SM, item_color);
+                    draw_text(&item_text, right_x, y, fonts::SIZE_SM, item_color);
                     y += 20.0;
                 }
                 y += 10.0;
             }
 
-            // Backstory unlock
             if let Some((name, backstory)) = &completion.backstory_unlocked {
-                // "🔓 Backstory Unlocked: {}"
-                let unlock_text = data.localization.ui.game.completion.backstory
+                let unlock_text = data
+                    .localization
+                    .ui
+                    .game
+                    .completion
+                    .backstory
                     .replace("{}", name);
-                    
+
                 draw_text(
                     &unlock_text,
-                    inner.x,
+                    right_x,
                     y,
                     fonts::SIZE_MD,
                     colors::ACCENT_DANGER,
                 );
                 y += 25.0;
 
-                // Show full backstory with wrapping
-                let max_width = inner.w;
-                let words: Vec<&str> = backstory.split_whitespace().collect();
-                let mut current_line = String::new();
-                
-                for word in words {
-                    let test_line = if current_line.is_empty() {
-                        word.to_string()
-                    } else {
-                        format!("{} {}", current_line, word)
-                    };
-                    
-                    let dims = measure_text(&test_line, None, fonts::SIZE_SM as u16, 1.0);
-                    if dims.width <= max_width {
-                        current_line = test_line;
-                    } else {
-                        draw_text(&current_line, inner.x, y, fonts::SIZE_SM, colors::TEXT_MUTED);
-                        y += 20.0; // Line height
-                        current_line = word.to_string();
-                    }
-                }
-                if !current_line.is_empty() {
-                    draw_text(&current_line, inner.x, y, fonts::SIZE_SM, colors::TEXT_MUTED);
-                }
-                // Ensure space for button? Y is updated.
+                draw_wrapped_text(
+                    backstory,
+                    right_x,
+                    y,
+                    right_w,
+                    fonts::SIZE_SM,
+                    19.0,
+                    colors::TEXT_MUTED,
+                    4,
+                );
             }
 
-            // Continue Button
-            if button(
-                inner.x,
-                rect.bottom() - 50.0,
-                200.0,
-                40.0,
-                &data.localization.ui.common.continue_space
+            if draw_glass_button(
+                UiRect::new(right_x, rect.bottom() - 58.0, right_w, 44.0),
+                &data.localization.ui.common.continue_space,
+                colors::FUEL_GOOD,
+                true,
             ) {
                 return UiAction::Continue;
             }
         }
-        
+
         UiAction::None
     }
 }

@@ -65,7 +65,8 @@ pub fn load_locations() -> Vec<Location> {
 /// Load constants from embedded JSON
 pub fn load_constants() -> ConstantsData {
     let json = include_str!("../../assets/constants.json");
-    serde_json::from_str(json).expect("Failed to parse constants.json - this is a development error")
+    serde_json::from_str(json)
+        .expect("Failed to parse constants.json - this is a development error")
 }
 
 /// Load skill tree from embedded JSON (JSON is an array directly)
@@ -84,7 +85,11 @@ pub fn load_almanac() -> AlmanacData {
         eprintln!("Failed to parse almanac: {}", e);
         AlmanacData {
             levels: std::collections::HashMap::new(),
-            lore_costs: LoreCosts { level_1: 1, level_2: 3, level_3: 5 },
+            lore_costs: LoreCosts {
+                level_1: 1,
+                level_2: 3,
+                level_3: 5,
+            },
         }
     })
 }

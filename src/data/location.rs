@@ -11,4 +11,3 @@ pub struct Location {
     #[serde(rename = "riskLevel")]
     pub risk_level: u32,
 }
-

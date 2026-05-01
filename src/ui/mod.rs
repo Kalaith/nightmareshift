@@ -1,14 +1,10 @@
 //! UI component modules.
 
-pub mod core;
 pub mod components;
+pub mod core;
 
-pub use core::*;
 pub use components::*;
-
-// Re-export toolkit modules
-pub use macroquad_toolkit::ui::*;
-pub use macroquad_toolkit::input;
+pub use core::*;
 
 /// Actions triggered by UI interactions
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -22,16 +18,19 @@ pub enum UiAction {
     Continue,
     ReturnToMenu,
     TryAgain,
+    EndShift,
     RefuelFull,
     RefuelPartial,
     ToggleRules,
     ToggleInventory,
     TogglePauseMenu, // ESC pause menu
     UseItem(usize),
+    PerformRuleAction(String),
     // Meta-progression screens
     OpenSkillTree,
     OpenAlmanac,
     OpenLeaderboard,
+    DeleteSave,
     PurchaseSkill(String),
     UpgradeAlmanacKnowledge(u32),
     // Trading

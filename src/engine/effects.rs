@@ -262,27 +262,9 @@ pub fn draw_glitch_effect(intensity: f32) {
     // RGB split effect
     if intensity > 0.5 {
         let offset = intensity * 5.0;
-        draw_rectangle(
-            0.0,
-            0.0,
-            width,
-            height,
-            Color::new(1.0, 0.0, 0.0, 0.05),
-        );
-        draw_rectangle(
-            offset,
-            0.0,
-            width,
-            height,
-            Color::new(0.0, 1.0, 0.0, 0.05),
-        );
-        draw_rectangle(
-            -offset,
-            0.0,
-            width,
-            height,
-            Color::new(0.0, 0.0, 1.0, 0.05),
-        );
+        draw_rectangle(0.0, 0.0, width, height, Color::new(1.0, 0.0, 0.0, 0.05));
+        draw_rectangle(offset, 0.0, width, height, Color::new(0.0, 1.0, 0.0, 0.05));
+        draw_rectangle(-offset, 0.0, width, height, Color::new(0.0, 0.0, 1.0, 0.05));
     }
 }
 
@@ -303,30 +285,30 @@ pub fn draw_danger_overlay(intensity: f32) {
     if intensity <= 0.0 {
         return;
     }
-    
+
     let width = screen_width();
     let height = screen_height();
-    
+
     // Slow pulse effect for the red overlay
     let pulse = ((get_time() * 1.5).sin() as f32 * 0.5 + 0.5) * 0.3 + 0.7;
     let alpha = intensity * 0.15 * pulse;
-    
+
     // Red danger tint
-    draw_rectangle(
-        0.0,
-        0.0,
-        width,
-        height,
-        Color::new(0.8, 0.1, 0.1, alpha),
-    );
-    
+    draw_rectangle(0.0, 0.0, width, height, Color::new(0.8, 0.1, 0.1, alpha));
+
     // Edge vignette gets more intense with danger
     if intensity > 0.3 {
         let edge_alpha = (intensity - 0.3) * 0.2;
         // Top edge
         draw_rectangle(0.0, 0.0, width, 40.0, Color::new(0.5, 0.0, 0.0, edge_alpha));
         // Bottom edge
-        draw_rectangle(0.0, height - 40.0, width, 40.0, Color::new(0.5, 0.0, 0.0, edge_alpha));
+        draw_rectangle(
+            0.0,
+            height - 40.0,
+            width,
+            40.0,
+            Color::new(0.5, 0.0, 0.0, edge_alpha),
+        );
     }
 }
 
@@ -336,34 +318,57 @@ pub fn draw_tension_vignette(intensity: f32) {
     if intensity <= 0.0 {
         return;
     }
-    
+
     let width = screen_width();
     let height = screen_height();
-    
+
     // Vignette intensity scales with stress
     let vignette_strength = intensity * 0.4;
-    
+
     // Draw graduated darkness at edges (simulated vignette with rectangles)
     let edge_count = 4;
     for i in 0..edge_count {
         let layer = i as f32 / edge_count as f32;
         let thickness = 30.0 + layer * 40.0;
         let alpha = vignette_strength * (1.0 - layer) * 0.5;
-        
+
         // Top
         draw_rectangle(0.0, 0.0, width, thickness, Color::new(0.0, 0.0, 0.0, alpha));
         // Bottom
-        draw_rectangle(0.0, height - thickness, width, thickness, Color::new(0.0, 0.0, 0.0, alpha));
+        draw_rectangle(
+            0.0,
+            height - thickness,
+            width,
+            thickness,
+            Color::new(0.0, 0.0, 0.0, alpha),
+        );
         // Left
-        draw_rectangle(0.0, 0.0, thickness, height, Color::new(0.0, 0.0, 0.0, alpha));
+        draw_rectangle(
+            0.0,
+            0.0,
+            thickness,
+            height,
+            Color::new(0.0, 0.0, 0.0, alpha),
+        );
         // Right
-        draw_rectangle(width - thickness, 0.0, thickness, height, Color::new(0.0, 0.0, 0.0, alpha));
+        draw_rectangle(
+            width - thickness,
+            0.0,
+            thickness,
+            height,
+            Color::new(0.0, 0.0, 0.0, alpha),
+        );
     }
-    
+
     // Breathing effect when very stressed (subtle screen pulse)
     if intensity > 0.6 {
         let breath_alpha = ((get_time() * 0.8).sin() as f32 * 0.5 + 0.5) * (intensity - 0.6) * 0.1;
-        draw_rectangle(0.0, 0.0, width, height, Color::new(0.0, 0.0, 0.0, breath_alpha));
+        draw_rectangle(
+            0.0,
+            0.0,
+            width,
+            height,
+            Color::new(0.0, 0.0, 0.0, breath_alpha),
+        );
     }
 }
-

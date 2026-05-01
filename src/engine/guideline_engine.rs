@@ -57,7 +57,10 @@ impl GuidelineEngine {
 
     /// Update detection cycle for game loop
     pub fn update_detection(state: &mut GameState, current_time: f64) {
-        if matches!(state.game_phase, GamePhase::Driving | GamePhase::Interaction) {
+        if matches!(
+            state.game_phase,
+            GamePhase::Driving | GamePhase::Interaction
+        ) {
             let passenger_opt = state.current_passenger.clone();
             if let Some(passenger) = passenger_opt {
                 let weather = state.current_weather.clone();
@@ -69,12 +72,12 @@ impl GuidelineEngine {
                     &weather,
                     player_trust,
                     &guidelines,
-                    current_time
+                    current_time,
                 );
 
                 // Introduce false tells for experienced players
                 if Self::should_introduce_false_tells(state) {
-                     if let Some(real_tell) = new_tells.first().cloned() {
+                    if let Some(real_tell) = new_tells.first().cloned() {
                         let false_tell = DetectedTell {
                             tell: real_tell.tell.clone(),
                             passenger_id: real_tell.passenger_id,
@@ -86,12 +89,13 @@ impl GuidelineEngine {
                         new_tells.push(false_tell);
                     }
                 }
-                
+
                 // Merge
                 for tell in new_tells {
-                    if !state.detected_tells.iter().any(|t|
-                        t.tell.description == tell.tell.description && t.passenger_id == tell.passenger_id
-                    ) {
+                    if !state.detected_tells.iter().any(|t| {
+                        t.tell.description == tell.tell.description
+                            && t.passenger_id == tell.passenger_id
+                    }) {
                         state.detected_tells.push(tell);
                     }
                 }
@@ -107,8 +111,8 @@ impl GuidelineEngine {
         }
 
         // Check by type
-        if !exception.passenger_types.is_empty() 
-            && exception.passenger_types.contains(&passenger.supernatural) 
+        if !exception.passenger_types.is_empty()
+            && exception.passenger_types.contains(&passenger.supernatural)
         {
             return true;
         }
@@ -127,9 +131,10 @@ impl GuidelineEngine {
             let met = match condition.condition_type.as_str() {
                 "passenger_dialogue" => {
                     let value = condition.value.as_str().unwrap_or("");
-                    passenger.dialogue.iter().any(|line| {
-                        line.to_lowercase().contains(&value.to_lowercase())
-                    })
+                    passenger
+                        .dialogue
+                        .iter()
+                        .any(|line| line.to_lowercase().contains(&value.to_lowercase()))
                 }
                 "passenger_behavior" => {
                     if let Some(value) = condition.value.as_f64() {
@@ -189,7 +194,8 @@ impl GuidelineEngine {
         state: &GameState,
     ) -> GuidelineEvaluationResult {
         // Find active exception
-        let active_exception = Self::find_active_exception(guideline, passenger, &state.current_weather);
+        let active_exception =
+            Self::find_active_exception(guideline, passenger, &state.current_weather);
 
         match (active_exception, action) {
             (Some(exc), GuidelineAction::Break) if exc.breaking_safer => {
@@ -305,7 +311,11 @@ impl GuidelineEngine {
     /// Check if false tells should be introduced
     pub fn should_introduce_false_tells(state: &GameState) -> bool {
         let total_rides = state.rides_completed;
-        let correct = state.decision_history.iter().filter(|d| d.was_correct).count();
+        let correct = state
+            .decision_history
+            .iter()
+            .filter(|d| d.was_correct)
+            .count();
         let skill_level = if total_rides > 0 {
             correct as f32 / total_rides as f32
         } else {

@@ -3,7 +3,6 @@
 use crate::data::*;
 use crate::state::*;
 
-
 /// Item drop result
 #[derive(Debug, Clone)]
 pub struct ItemDrop {
@@ -29,7 +28,7 @@ impl ItemService {
         constants: &ConstantsData,
     ) -> f32 {
         let mut base_chance: f32 = constants.probabilities.item_drop;
-        
+
         // Rarity modifiers
         base_chance *= match passenger.rarity {
             Rarity::Common => 0.5,
@@ -65,8 +64,9 @@ impl ItemService {
         current_time: f64,
         constants: &ConstantsData,
     ) -> Option<ItemDrop> {
-        let drop_chance = Self::calculate_drop_chance(passenger, route_type, backstory_unlocked, constants);
-        
+        let drop_chance =
+            Self::calculate_drop_chance(passenger, route_type, backstory_unlocked, constants);
+
         if macroquad_toolkit::rng::rand() > drop_chance {
             return None;
         }
@@ -74,9 +74,7 @@ impl ItemService {
         // Determine item based on passenger
         let item = Self::select_item_for_passenger(passenger, current_time);
 
-        Some(ItemDrop {
-            item,
-        })
+        Some(ItemDrop { item })
     }
 
     /// Select an appropriate item for a passenger to drop
@@ -102,27 +100,52 @@ impl ItemService {
     }
 
     fn random_ghost_item() -> String {
-        let items = ["Old Locket", "Withered Flowers", "Faded Photograph", "Dusty Mirror"];
+        let items = [
+            "Old Locket",
+            "Withered Flowers",
+            "Faded Photograph",
+            "Dusty Mirror",
+        ];
         items[macroquad_toolkit::rng::gen_range(0, items.len())].to_string()
     }
 
     fn random_vampire_item() -> String {
-        let items = ["Blood Vial", "Ancient Coin", "Velvet Cloak Scrap", "Ornate Ring"];
+        let items = [
+            "Blood Vial",
+            "Ancient Coin",
+            "Velvet Cloak Scrap",
+            "Ornate Ring",
+        ];
         items[macroquad_toolkit::rng::gen_range(0, items.len())].to_string()
     }
 
     fn random_demon_item() -> String {
-        let items = ["Sulfur Crystal", "Burning Coal", "Contract Fragment", "Cursed Dice"];
+        let items = [
+            "Sulfur Crystal",
+            "Burning Coal",
+            "Contract Fragment",
+            "Cursed Dice",
+        ];
         items[macroquad_toolkit::rng::gen_range(0, items.len())].to_string()
     }
 
     fn random_occult_item() -> String {
-        let items = ["Crystal Pendant", "Tarot Card", "Incense Bundle", "Rune Stone"];
+        let items = [
+            "Crystal Pendant",
+            "Tarot Card",
+            "Incense Bundle",
+            "Rune Stone",
+        ];
         items[macroquad_toolkit::rng::gen_range(0, items.len())].to_string()
     }
 
     fn random_holy_item() -> String {
-        let items = ["Blessed Medallion", "Holy Water Vial", "Prayer Beads", "Saint's Icon"];
+        let items = [
+            "Blessed Medallion",
+            "Holy Water Vial",
+            "Prayer Beads",
+            "Saint's Icon",
+        ];
         items[macroquad_toolkit::rng::gen_range(0, items.len())].to_string()
     }
 
@@ -144,11 +167,13 @@ impl ItemService {
         }
 
         // Check if player has something the passenger wants
-        let wanted_item = inventory.iter().find(|item| {
-            passenger.wanted_items.contains(&item.name) && item.can_trade
-        });
+        let wanted_item = inventory
+            .iter()
+            .find(|item| passenger.wanted_items.contains(&item.name) && item.can_trade);
 
-        if wanted_item.is_some() || macroquad_toolkit::rng::chance(constants.probabilities.trade_offer_chance) {
+        if wanted_item.is_some()
+            || macroquad_toolkit::rng::chance(constants.probabilities.trade_offer_chance)
+        {
             // Generate a trade offer
             let offered_item = Self::select_item_for_passenger(passenger, current_time);
 
@@ -198,7 +223,13 @@ impl ItemService {
                 }
             }
             ItemEffectType::RuleTrigger => {
-                // Reserved for future use - would trigger rule checks
+                state.curse_danger_bonus += effect.value.max(1) as u32;
+                state.current_dialogue = Some(CurrentDialogue {
+                    text: "The item hums against tonight's rules. The next route will be riskier."
+                        .to_string(),
+                    speaker: DialogueSpeaker::Narrator,
+                    timestamp: macroquad::prelude::get_time(),
+                });
             }
         }
     }
@@ -212,7 +243,7 @@ impl ItemService {
 
         // We need to clone the item to use it while mutating state
         let item = state.inventory[idx].clone();
-        
+
         if !item.can_use {
             return false;
         }
@@ -227,18 +258,18 @@ impl ItemService {
             state.inventory.remove(idx);
         } else {
             // Decrease durability for other usable items
-             if let Some(stored_item) = state.inventory.get_mut(idx) {
+            if let Some(stored_item) = state.inventory.get_mut(idx) {
                 if let Some(durability) = stored_item.durability {
                     if durability > 0 {
                         stored_item.durability = Some(durability - 1);
                         if durability <= 1 {
-                             state.inventory.remove(idx);
+                            state.inventory.remove(idx);
                         }
                     }
                 }
-             }
+            }
         }
-        
+
         true
     }
 
@@ -259,7 +290,11 @@ impl ItemService {
     }
 
     /// Apply curse penalties from all cursed items
-    pub fn apply_curse_penalties(inventory: &[InventoryItem], state: &mut GameState, current_time: f64) {
+    pub fn apply_curse_penalties(
+        inventory: &[InventoryItem],
+        state: &mut GameState,
+        current_time: f64,
+    ) {
         for item in inventory {
             if item.is_cursed() && item.should_trigger_curse(current_time) {
                 if let Some(ref curse) = item.cursed_properties {
@@ -268,14 +303,22 @@ impl ItemService {
                             state.fuel = (state.fuel - curse.penalty_value as f32).max(0.0);
                         }
                         CursePenalty::TimeAcceleration => {
-                            state.time_remaining = state.time_remaining.saturating_sub(curse.penalty_value as u32);
+                            state.time_remaining = state
+                                .time_remaining
+                                .saturating_sub(curse.penalty_value as u32);
                         }
                         CursePenalty::AttractingDanger => {
                             // Increases risk level of next route
                             state.curse_danger_bonus += curse.penalty_value as u32;
                         }
                         CursePenalty::ForcedChoices => {
-                            // Reserved for future use - would limit player route options
+                            state.curse_danger_bonus += curse.penalty_value.max(1) as u32;
+                            state.current_dialogue = Some(CurrentDialogue {
+                                text: "The cursed item narrows your options. The next route feels more dangerous."
+                                    .to_string(),
+                                speaker: DialogueSpeaker::Narrator,
+                                timestamp: current_time,
+                            });
                         }
                     }
                 }

@@ -37,6 +37,22 @@ To run the game natively on your machine:
 cargo run
 ```
 
+### Automated Playtest Bot
+
+To smoke-test the gameplay loop with the built-in bot:
+
+```powershell
+.\scripts\run-playtest-bot.ps1 -Shifts 3 -Strategy coverage
+```
+
+To sweep increasing almanac unlocks for the learned bot:
+
+```powershell
+.\scripts\run-bot-almanac-sweep.ps1 -Strategy learned -FreshStats
+```
+
+See `docs/playtest-bot.md` for strategies and command-line options.
+
 ### Building for Web (WASM)
 
 To build the game for the web:

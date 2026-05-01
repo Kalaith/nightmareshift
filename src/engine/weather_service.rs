@@ -2,7 +2,6 @@
 
 use crate::data::*;
 
-
 /// Weather generation and update service
 pub struct WeatherService;
 
@@ -10,7 +9,8 @@ impl WeatherService {
     /// Generate initial weather for a shift
     pub fn generate_initial_weather(season: &Season, current_time: f64) -> WeatherCondition {
         let weather_types = Self::get_seasonal_weather_types(season);
-        let weather_type = *macroquad_toolkit::rng::choose(&weather_types).unwrap_or(&WeatherType::Clear);
+        let weather_type =
+            *macroquad_toolkit::rng::choose(&weather_types).unwrap_or(&WeatherType::Clear);
 
         Self::create_weather_condition(weather_type, season, current_time)
     }
@@ -18,10 +18,29 @@ impl WeatherService {
     /// Get available weather types for a season
     fn get_seasonal_weather_types(season: &Season) -> Vec<WeatherType> {
         match season.season_type {
-            SeasonType::Spring => vec![WeatherType::Clear, WeatherType::Rain, WeatherType::Thunderstorm, WeatherType::Wind],
-            SeasonType::Summer => vec![WeatherType::Clear, WeatherType::Thunderstorm, WeatherType::Wind],
-            SeasonType::Fall => vec![WeatherType::Clear, WeatherType::Rain, WeatherType::Fog, WeatherType::Wind],
-            SeasonType::Winter => vec![WeatherType::Clear, WeatherType::Snow, WeatherType::Fog, WeatherType::Wind],
+            SeasonType::Spring => vec![
+                WeatherType::Clear,
+                WeatherType::Rain,
+                WeatherType::Thunderstorm,
+                WeatherType::Wind,
+            ],
+            SeasonType::Summer => vec![
+                WeatherType::Clear,
+                WeatherType::Thunderstorm,
+                WeatherType::Wind,
+            ],
+            SeasonType::Fall => vec![
+                WeatherType::Clear,
+                WeatherType::Rain,
+                WeatherType::Fog,
+                WeatherType::Wind,
+            ],
+            SeasonType::Winter => vec![
+                WeatherType::Clear,
+                WeatherType::Snow,
+                WeatherType::Fog,
+                WeatherType::Wind,
+            ],
         }
     }
 
@@ -65,7 +84,10 @@ impl WeatherService {
     }
 
     /// Get weather effects
-    fn get_weather_effects(weather_type: WeatherType, intensity: WeatherIntensity) -> Vec<WeatherEffect> {
+    fn get_weather_effects(
+        weather_type: WeatherType,
+        intensity: WeatherIntensity,
+    ) -> Vec<WeatherEffect> {
         let mult = match intensity {
             WeatherIntensity::Light => 1.0,
             WeatherIntensity::Moderate => 1.5,
@@ -191,21 +213,51 @@ impl WeatherService {
     fn get_weather_description(weather_type: WeatherType, intensity: WeatherIntensity) -> String {
         match (weather_type, intensity) {
             (WeatherType::Clear, _) => "Clear skies with good visibility".to_string(),
-            (WeatherType::Rain, WeatherIntensity::Light) => "Light drizzle dampens the streets".to_string(),
-            (WeatherType::Rain, WeatherIntensity::Moderate) => "Steady rain creates puddles and reflections".to_string(),
-            (WeatherType::Rain, WeatherIntensity::Heavy) => "Heavy downpour reduces visibility significantly".to_string(),
-            (WeatherType::Fog, WeatherIntensity::Light) => "Thin fog creates an eerie atmosphere".to_string(),
-            (WeatherType::Fog, WeatherIntensity::Moderate) => "Dense fog obscures distant objects".to_string(),
-            (WeatherType::Fog, WeatherIntensity::Heavy) => "Thick fog makes driving treacherous".to_string(),
-            (WeatherType::Snow, WeatherIntensity::Light) => "Light snowfall dusts the ground".to_string(),
-            (WeatherType::Snow, WeatherIntensity::Moderate) => "Steady snow accumulates on roads".to_string(),
-            (WeatherType::Snow, WeatherIntensity::Heavy) => "Heavy snowstorm creates whiteout conditions".to_string(),
-            (WeatherType::Thunderstorm, WeatherIntensity::Light) => "Distant thunder rumbles ominously".to_string(),
-            (WeatherType::Thunderstorm, WeatherIntensity::Moderate) => "Lightning illuminates the dark clouds".to_string(),
-            (WeatherType::Thunderstorm, WeatherIntensity::Heavy) => "Violent thunderstorm rages overhead".to_string(),
-            (WeatherType::Wind, WeatherIntensity::Light) => "Gentle breeze stirs the air".to_string(),
-            (WeatherType::Wind, WeatherIntensity::Moderate) => "Strong winds rock the vehicle".to_string(),
-            (WeatherType::Wind, WeatherIntensity::Heavy) => "Powerful gusts threaten to push cars off course".to_string(),
+            (WeatherType::Rain, WeatherIntensity::Light) => {
+                "Light drizzle dampens the streets".to_string()
+            }
+            (WeatherType::Rain, WeatherIntensity::Moderate) => {
+                "Steady rain creates puddles and reflections".to_string()
+            }
+            (WeatherType::Rain, WeatherIntensity::Heavy) => {
+                "Heavy downpour reduces visibility significantly".to_string()
+            }
+            (WeatherType::Fog, WeatherIntensity::Light) => {
+                "Thin fog creates an eerie atmosphere".to_string()
+            }
+            (WeatherType::Fog, WeatherIntensity::Moderate) => {
+                "Dense fog obscures distant objects".to_string()
+            }
+            (WeatherType::Fog, WeatherIntensity::Heavy) => {
+                "Thick fog makes driving treacherous".to_string()
+            }
+            (WeatherType::Snow, WeatherIntensity::Light) => {
+                "Light snowfall dusts the ground".to_string()
+            }
+            (WeatherType::Snow, WeatherIntensity::Moderate) => {
+                "Steady snow accumulates on roads".to_string()
+            }
+            (WeatherType::Snow, WeatherIntensity::Heavy) => {
+                "Heavy snowstorm creates whiteout conditions".to_string()
+            }
+            (WeatherType::Thunderstorm, WeatherIntensity::Light) => {
+                "Distant thunder rumbles ominously".to_string()
+            }
+            (WeatherType::Thunderstorm, WeatherIntensity::Moderate) => {
+                "Lightning illuminates the dark clouds".to_string()
+            }
+            (WeatherType::Thunderstorm, WeatherIntensity::Heavy) => {
+                "Violent thunderstorm rages overhead".to_string()
+            }
+            (WeatherType::Wind, WeatherIntensity::Light) => {
+                "Gentle breeze stirs the air".to_string()
+            }
+            (WeatherType::Wind, WeatherIntensity::Moderate) => {
+                "Strong winds rock the vehicle".to_string()
+            }
+            (WeatherType::Wind, WeatherIntensity::Heavy) => {
+                "Powerful gusts threaten to push cars off course".to_string()
+            }
         }
     }
 
@@ -213,16 +265,30 @@ impl WeatherService {
     fn get_weather_icon(weather_type: WeatherType, intensity: WeatherIntensity) -> String {
         match weather_type {
             WeatherType::Clear => "☀️".to_string(),
-            WeatherType::Rain => if intensity == WeatherIntensity::Heavy { "🌧️" } else { "🌦️" }.to_string(),
+            WeatherType::Rain => if intensity == WeatherIntensity::Heavy {
+                "🌧️"
+            } else {
+                "🌦️"
+            }
+            .to_string(),
             WeatherType::Fog => "🌫️".to_string(),
-            WeatherType::Snow => if intensity == WeatherIntensity::Heavy { "❄️" } else { "🌨️" }.to_string(),
+            WeatherType::Snow => if intensity == WeatherIntensity::Heavy {
+                "❄️"
+            } else {
+                "🌨️"
+            }
+            .to_string(),
             WeatherType::Thunderstorm => "⛈️".to_string(),
             WeatherType::Wind => "💨".to_string(),
         }
     }
 
     /// Get weather duration in minutes
-    fn get_weather_duration(weather_type: WeatherType, intensity: WeatherIntensity, season: &Season) -> u32 {
+    fn get_weather_duration(
+        weather_type: WeatherType,
+        intensity: WeatherIntensity,
+        season: &Season,
+    ) -> u32 {
         let base = match weather_type {
             WeatherType::Clear => 60,
             WeatherType::Rain => 30,
@@ -287,12 +353,32 @@ impl WeatherService {
     /// Get time of day from hour
     pub fn get_time_of_day(hour: u32) -> TimeOfDay {
         let (phase, description, ambient_light, supernatural_activity) = match hour {
-            6..=7 => (TimePhase::Dawn, "The sky lightens as dawn approaches", 30, 70),
-            8..=11 => (TimePhase::Morning, "Morning light fills the streets", 85, 20),
+            6..=7 => (
+                TimePhase::Dawn,
+                "The sky lightens as dawn approaches",
+                30,
+                70,
+            ),
+            8..=11 => (
+                TimePhase::Morning,
+                "Morning light fills the streets",
+                85,
+                20,
+            ),
             12..=16 => (TimePhase::Afternoon, "Bright afternoon sunlight", 100, 10),
-            17..=19 => (TimePhase::Dusk, "The sun sets, casting long shadows", 40, 60),
+            17..=19 => (
+                TimePhase::Dusk,
+                "The sun sets, casting long shadows",
+                40,
+                60,
+            ),
             20..=23 => (TimePhase::Night, "Darkness settles over the city", 15, 85),
-            _ => (TimePhase::Latenight, "The deepest part of the night", 5, 100),
+            _ => (
+                TimePhase::Latenight,
+                "The deepest part of the night",
+                5,
+                100,
+            ),
         };
 
         TimeOfDay {
@@ -315,17 +401,54 @@ impl WeatherService {
     /// Get current season from month
     pub fn get_current_season(month: u32) -> Season {
         let (season_type, temperature) = match month {
-            3..=5 => (SeasonType::Spring, if month == 3 { Temperature::Cool } else if month == 4 { Temperature::Mild } else { Temperature::Warm }),
-            6..=8 => (SeasonType::Summer, if month == 6 { Temperature::Warm } else { Temperature::Hot }),
-            9..=11 => (SeasonType::Fall, if month == 9 { Temperature::Warm } else if month == 10 { Temperature::Cool } else { Temperature::Cold }),
+            3..=5 => (
+                SeasonType::Spring,
+                if month == 3 {
+                    Temperature::Cool
+                } else if month == 4 {
+                    Temperature::Mild
+                } else {
+                    Temperature::Warm
+                },
+            ),
+            6..=8 => (
+                SeasonType::Summer,
+                if month == 6 {
+                    Temperature::Warm
+                } else {
+                    Temperature::Hot
+                },
+            ),
+            9..=11 => (
+                SeasonType::Fall,
+                if month == 9 {
+                    Temperature::Warm
+                } else if month == 10 {
+                    Temperature::Cool
+                } else {
+                    Temperature::Cold
+                },
+            ),
             _ => (SeasonType::Winter, Temperature::Cold),
         };
 
         let description = match season_type {
-            SeasonType::Spring => format!("Spring weather brings {:?} temperatures and frequent changes", temperature),
-            SeasonType::Summer => format!("Summer heat creates {:?} conditions perfect for night driving", temperature),
-            SeasonType::Fall => format!("Autumn's {:?} weather brings unpredictable conditions", temperature),
-            SeasonType::Winter => format!("Winter's {:?} temperatures make every drive challenging", temperature),
+            SeasonType::Spring => format!(
+                "Spring weather brings {:?} temperatures and frequent changes",
+                temperature
+            ),
+            SeasonType::Summer => format!(
+                "Summer heat creates {:?} conditions perfect for night driving",
+                temperature
+            ),
+            SeasonType::Fall => format!(
+                "Autumn's {:?} weather brings unpredictable conditions",
+                temperature
+            ),
+            SeasonType::Winter => format!(
+                "Winter's {:?} temperatures make every drive challenging",
+                temperature
+            ),
         };
 
         Season {
@@ -337,14 +460,18 @@ impl WeatherService {
     }
 
     /// Get weather-triggered rule IDs
-    pub fn get_weather_triggered_rules(weather: &WeatherCondition, time_of_day: &TimeOfDay) -> Vec<u32> {
+    pub fn get_weather_triggered_rules(
+        weather: &WeatherCondition,
+        time_of_day: &TimeOfDay,
+    ) -> Vec<u32> {
         let mut triggered = Vec::new();
 
         if weather.weather_type == WeatherType::Thunderstorm {
             triggered.push(101); // Don't use windshield wipers during thunderstorms
         }
 
-        if weather.weather_type == WeatherType::Fog && weather.intensity == WeatherIntensity::Heavy {
+        if weather.weather_type == WeatherType::Fog && weather.intensity == WeatherIntensity::Heavy
+        {
             triggered.push(102); // Keep headlights on during heavy fog
         }
 
@@ -354,6 +481,15 @@ impl WeatherService {
 
         if time_of_day.phase == TimePhase::Latenight && weather.weather_type != WeatherType::Clear {
             triggered.push(104); // No stops during late night bad weather
+        }
+
+        if weather.visibility < 30 {
+            triggered.push(105); // Don't use AC during low visibility
+        }
+
+        if weather.weather_type == WeatherType::Wind && weather.intensity == WeatherIntensity::Heavy
+        {
+            triggered.push(106); // Keep windows closed during heavy wind
         }
 
         triggered
@@ -378,18 +514,38 @@ impl WeatherService {
         // Weather-specific hazards
         if weather.intensity == WeatherIntensity::Heavy {
             if weather.weather_type == WeatherType::Rain && macroquad_toolkit::rng::chance(0.4) {
-                hazards.push(Self::create_weather_hazard("flooding", weather, current_time));
-            } else if weather.weather_type == WeatherType::Snow && macroquad_toolkit::rng::chance(0.5) {
-                hazards.push(Self::create_weather_hazard("ice_roads", weather, current_time));
-            } else if weather.weather_type == WeatherType::Fog && macroquad_toolkit::rng::chance(0.3) {
-                hazards.push(Self::create_weather_hazard("visibility", weather, current_time));
+                hazards.push(Self::create_weather_hazard(
+                    "flooding",
+                    weather,
+                    current_time,
+                ));
+            } else if weather.weather_type == WeatherType::Snow
+                && macroquad_toolkit::rng::chance(0.5)
+            {
+                hazards.push(Self::create_weather_hazard(
+                    "ice_roads",
+                    weather,
+                    current_time,
+                ));
+            } else if weather.weather_type == WeatherType::Fog
+                && macroquad_toolkit::rng::chance(0.3)
+            {
+                hazards.push(Self::create_weather_hazard(
+                    "visibility",
+                    weather,
+                    current_time,
+                ));
             }
         }
 
         hazards
     }
 
-    fn calculate_hazard_chance(weather: &WeatherCondition, time_of_day: &TimeOfDay, season: &Season) -> f32 {
+    fn calculate_hazard_chance(
+        weather: &WeatherCondition,
+        time_of_day: &TimeOfDay,
+        season: &Season,
+    ) -> f32 {
         let mut chance: f32 = 0.15;
 
         if weather.intensity == WeatherIntensity::Moderate {
@@ -411,9 +567,15 @@ impl WeatherService {
     }
 
     fn select_hazard_type(weather: &WeatherCondition, time_of_day: &TimeOfDay) -> HazardType {
-        let mut types = vec![HazardType::Construction, HazardType::Accident, HazardType::RoadClosure];
+        let mut types = vec![
+            HazardType::Construction,
+            HazardType::Accident,
+            HazardType::RoadClosure,
+        ];
 
-        if weather.weather_type == WeatherType::Thunderstorm || time_of_day.supernatural_activity > 70 {
+        if weather.weather_type == WeatherType::Thunderstorm
+            || time_of_day.supernatural_activity > 70
+        {
             types.push(HazardType::SupernaturalEvent);
         }
 
@@ -424,13 +586,25 @@ impl WeatherService {
         *macroquad_toolkit::rng::choose(&types).unwrap_or(&HazardType::Construction)
     }
 
-    fn create_hazard(hazard_type: HazardType, weather: &WeatherCondition, current_time: f64) -> EnvironmentalHazard {
+    fn create_hazard(
+        hazard_type: HazardType,
+        weather: &WeatherCondition,
+        current_time: f64,
+    ) -> EnvironmentalHazard {
         let locations = [
-            "Downtown Bridge", "Highway 101", "Industrial District", "Cemetery Road",
-            "Forest Route", "Waterfront Drive", "University Avenue", "Hospital District",
+            "Downtown Bridge",
+            "Highway 101",
+            "Industrial District",
+            "Cemetery Road",
+            "Forest Route",
+            "Waterfront Drive",
+            "University Avenue",
+            "Hospital District",
         ];
-        let location = macroquad_toolkit::rng::choose(&locations).unwrap_or(&"Unknown").to_string();
-        
+        let location = macroquad_toolkit::rng::choose(&locations)
+            .unwrap_or(&"Unknown")
+            .to_string();
+
         let severity = if macroquad_toolkit::rng::chance(0.1) {
             HazardSeverity::Extreme
         } else if macroquad_toolkit::rng::chance(0.3) {
@@ -454,7 +628,11 @@ impl WeatherService {
         }
     }
 
-    fn create_weather_hazard(hazard_name: &str, weather: &WeatherCondition, current_time: f64) -> EnvironmentalHazard {
+    fn create_weather_hazard(
+        hazard_name: &str,
+        weather: &WeatherCondition,
+        current_time: f64,
+    ) -> EnvironmentalHazard {
         let (hazard_type, description, effects) = match hazard_name {
             "flooding" => (
                 HazardType::RoadClosure,
@@ -511,7 +689,10 @@ impl WeatherService {
         }
     }
 
-    fn get_hazard_effects(hazard_type: HazardType, severity: HazardSeverity) -> (HazardEffects, u32) {
+    fn get_hazard_effects(
+        hazard_type: HazardType,
+        severity: HazardSeverity,
+    ) -> (HazardEffects, u32) {
         let mult = match severity {
             HazardSeverity::Minor => 1,
             HazardSeverity::Major => 2,
@@ -570,23 +751,57 @@ impl WeatherService {
         (effects, (base_duration as f32 * duration_mult) as u32)
     }
 
-    fn get_hazard_description(hazard_type: HazardType, severity: HazardSeverity, location: &str) -> String {
+    fn get_hazard_description(
+        hazard_type: HazardType,
+        severity: HazardSeverity,
+        location: &str,
+    ) -> String {
         match (hazard_type, severity) {
-            (HazardType::Construction, HazardSeverity::Minor) => format!("Minor road work on {}", location),
-            (HazardType::Construction, HazardSeverity::Major) => format!("Major construction project blocks {}", location),
-            (HazardType::Construction, HazardSeverity::Extreme) => format!("Emergency road repairs shut down {}", location),
-            (HazardType::Accident, HazardSeverity::Minor) => format!("Fender-bender causes delays on {}", location),
-            (HazardType::Accident, HazardSeverity::Major) => format!("Multi-car accident blocks lanes on {}", location),
-            (HazardType::Accident, HazardSeverity::Extreme) => format!("Major crash completely closes {}", location),
-            (HazardType::SupernaturalEvent, HazardSeverity::Minor) => format!("Strange lights reported near {}", location),
-            (HazardType::SupernaturalEvent, HazardSeverity::Major) => format!("Unexplained phenomena disrupt traffic at {}", location),
-            (HazardType::SupernaturalEvent, HazardSeverity::Extreme) => format!("Supernatural event forces evacuation of {}", location),
-            (HazardType::RoadClosure, HazardSeverity::Minor) => format!("Temporary closure of one lane on {}", location),
-            (HazardType::RoadClosure, HazardSeverity::Major) => format!("{} closed for maintenance", location),
-            (HazardType::RoadClosure, HazardSeverity::Extreme) => format!("{} completely shut down indefinitely", location),
-            (HazardType::PoliceCheckpoint, HazardSeverity::Minor) => format!("Routine checkpoint on {}", location),
-            (HazardType::PoliceCheckpoint, HazardSeverity::Major) => format!("Extensive police presence at {}", location),
-            (HazardType::PoliceCheckpoint, HazardSeverity::Extreme) => format!("Roadblock and search operation on {}", location),
+            (HazardType::Construction, HazardSeverity::Minor) => {
+                format!("Minor road work on {}", location)
+            }
+            (HazardType::Construction, HazardSeverity::Major) => {
+                format!("Major construction project blocks {}", location)
+            }
+            (HazardType::Construction, HazardSeverity::Extreme) => {
+                format!("Emergency road repairs shut down {}", location)
+            }
+            (HazardType::Accident, HazardSeverity::Minor) => {
+                format!("Fender-bender causes delays on {}", location)
+            }
+            (HazardType::Accident, HazardSeverity::Major) => {
+                format!("Multi-car accident blocks lanes on {}", location)
+            }
+            (HazardType::Accident, HazardSeverity::Extreme) => {
+                format!("Major crash completely closes {}", location)
+            }
+            (HazardType::SupernaturalEvent, HazardSeverity::Minor) => {
+                format!("Strange lights reported near {}", location)
+            }
+            (HazardType::SupernaturalEvent, HazardSeverity::Major) => {
+                format!("Unexplained phenomena disrupt traffic at {}", location)
+            }
+            (HazardType::SupernaturalEvent, HazardSeverity::Extreme) => {
+                format!("Supernatural event forces evacuation of {}", location)
+            }
+            (HazardType::RoadClosure, HazardSeverity::Minor) => {
+                format!("Temporary closure of one lane on {}", location)
+            }
+            (HazardType::RoadClosure, HazardSeverity::Major) => {
+                format!("{} closed for maintenance", location)
+            }
+            (HazardType::RoadClosure, HazardSeverity::Extreme) => {
+                format!("{} completely shut down indefinitely", location)
+            }
+            (HazardType::PoliceCheckpoint, HazardSeverity::Minor) => {
+                format!("Routine checkpoint on {}", location)
+            }
+            (HazardType::PoliceCheckpoint, HazardSeverity::Major) => {
+                format!("Extensive police presence at {}", location)
+            }
+            (HazardType::PoliceCheckpoint, HazardSeverity::Extreme) => {
+                format!("Roadblock and search operation on {}", location)
+            }
         }
     }
 }

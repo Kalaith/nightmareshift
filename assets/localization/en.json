@@ -19,7 +19,7 @@
     },
     "mainMenu": {
       "title": "NIGHTMARE SHIFT",
-      "subtitle": "Survive the night. Follow the rules. Maybe.",
+      "subtitle": "Survive the night. Follow the rules. Trust your instincts.",
       "startSpace": "Start Shift (SPACE)",
       "stats": "Shifts Completed: {} | Total Earnings: ${} | Rides: {}",
       "achievements": "🏆 Achievements: {}/{}"

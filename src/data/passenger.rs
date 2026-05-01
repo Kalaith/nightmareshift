@@ -236,7 +236,7 @@ pub struct Passenger {
     pub route_preferences: Vec<RoutePreference>,
     #[serde(rename = "ruleModification")]
     pub rule_modification: Option<RuleModification>,
-    
+
     // Item and trading fields
     #[serde(rename = "dropItems", default)]
     pub drop_items: Vec<String>,

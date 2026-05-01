@@ -19,10 +19,13 @@ pub struct PassengerSelectionContext<'a> {
 
 impl PassengerService {
     /// Get rarity weights adjusted for difficulty
-    fn get_adjusted_weights(difficulty_level: u32, constants: &ConstantsData) -> HashMap<Rarity, u32> {
+    fn get_adjusted_weights(
+        difficulty_level: u32,
+        constants: &ConstantsData,
+    ) -> HashMap<Rarity, u32> {
         let mut weights = HashMap::new();
         weights.insert(Rarity::Common, constants.rarity_weights.common);
-        
+
         let rare_mult = match difficulty_level {
             0..=1 => 1.0,
             2 => 1.5,
@@ -37,8 +40,14 @@ impl PassengerService {
         };
 
         weights.insert(Rarity::Uncommon, constants.rarity_weights.uncommon);
-        weights.insert(Rarity::Rare, ((constants.rarity_weights.rare as f32) * rare_mult) as u32);
-        weights.insert(Rarity::Legendary, ((constants.rarity_weights.legendary as f32) * legendary_mult) as u32);
+        weights.insert(
+            Rarity::Rare,
+            ((constants.rarity_weights.rare as f32) * rare_mult) as u32,
+        );
+        weights.insert(
+            Rarity::Legendary,
+            ((constants.rarity_weights.legendary as f32) * legendary_mult) as u32,
+        );
 
         weights
     }
@@ -49,7 +58,8 @@ impl PassengerService {
         used_passengers: &[u32],
         context: &PassengerSelectionContext,
     ) -> Option<Passenger> {
-        let available: Vec<&Passenger> = passengers.iter()
+        let available: Vec<&Passenger> = passengers
+            .iter()
             .filter(|p| !used_passengers.contains(&p.id))
             .collect();
 
@@ -69,22 +79,27 @@ impl PassengerService {
         passengers: &[&Passenger],
         context: &PassengerSelectionContext,
     ) -> Option<Passenger> {
-
-
         // Calculate weights with environmental modifiers
-        let weighted: Vec<(Passenger, f32)> = passengers.iter().map(|p| {
-            let base_weight = Self::get_base_rarity_weight(p.rarity, context.difficulty_level, context.constants);
-            let weather_mod = Self::get_weather_modifier(p.id, context.weather);
-            let time_mod = Self::get_time_modifier(p.id, context.time_of_day);
-            let season_mod = Self::get_seasonal_modifier(p.id, context.season);
-            let special_mod = Self::get_special_behavior_modifier(p.id, context.weather, context.time_of_day);
+        let weighted: Vec<(Passenger, f32)> = passengers
+            .iter()
+            .map(|p| {
+                let base_weight = Self::get_base_rarity_weight(
+                    p.rarity,
+                    context.difficulty_level,
+                    context.constants,
+                );
+                let weather_mod = Self::get_weather_modifier(p.id, context.weather);
+                let time_mod = Self::get_time_modifier(p.id, context.time_of_day);
+                let season_mod = Self::get_seasonal_modifier(p.id, context.season);
+                let special_mod =
+                    Self::get_special_behavior_modifier(p.id, context.weather, context.time_of_day);
 
-            let final_weight = base_weight * weather_mod * time_mod * season_mod * special_mod;
-            ((*p).clone(), final_weight.max(0.1))
-        }).collect();
-        
+                let final_weight = base_weight * weather_mod * time_mod * season_mod * special_mod;
+                ((*p).clone(), final_weight.max(0.1))
+            })
+            .collect();
+
         // ... rest of function ...
-
 
         // Weighted random selection
         let total_weight: f32 = weighted.iter().map(|(_, w)| w).sum();
@@ -104,7 +119,11 @@ impl PassengerService {
     }
 
     /// Get base weight from rarity
-    fn get_base_rarity_weight(rarity: Rarity, difficulty_level: u32, constants: &ConstantsData) -> f32 {
+    fn get_base_rarity_weight(
+        rarity: Rarity,
+        difficulty_level: u32,
+        constants: &ConstantsData,
+    ) -> f32 {
         let weights = Self::get_adjusted_weights(difficulty_level, constants);
         weights.get(&rarity).copied().unwrap_or(1) as f32
     }
@@ -229,7 +248,9 @@ impl PassengerService {
         let mut modifier = 1.0;
 
         // Thunderstorm + latenight = perfect supernatural conditions
-        if weather.weather_type == WeatherType::Thunderstorm && time_of_day.phase == TimePhase::Latenight {
+        if weather.weather_type == WeatherType::Thunderstorm
+            && time_of_day.phase == TimePhase::Latenight
+        {
             match passenger_id {
                 15 | 16 | 11 => modifier *= 2.0,
                 _ => {}
