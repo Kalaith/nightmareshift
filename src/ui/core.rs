@@ -110,9 +110,10 @@ impl UiRect {
 }
 
 pub fn draw_glass_panel(rect: UiRect, border: Color) {
-    draw_rectangle(rect.x, rect.y, rect.w, rect.h, colors::GLASS);
-    draw_rectangle(rect.x, rect.y, rect.w, 1.0, Color::new(1.0, 1.0, 1.0, 0.12));
-    draw_rectangle_lines(rect.x, rect.y, rect.w, rect.h, 1.0, border);
+    let surface = macroquad_toolkit::ui::SurfaceStyle::new(colors::GLASS)
+        .with_top_highlight(1.0, Color::new(1.0, 1.0, 1.0, 0.12))
+        .with_border(1.0, border);
+    macroquad_toolkit::ui::draw_surface(Rect::new(rect.x, rect.y, rect.w, rect.h), &surface);
 }
 
 pub fn draw_divider(x: f32, y: f32, h: f32) {
@@ -135,10 +136,11 @@ pub fn draw_glass_button(rect: UiRect, label: &str, accent: Color, enabled: bool
     };
     let border = if enabled { accent } else { colors::BORDER_DIM };
 
-    draw_rectangle(rect.x, rect.y, rect.w, rect.h, bg);
-    draw_rectangle(rect.x, rect.y, 4.0, rect.h, border);
-    draw_rectangle(rect.x, rect.y, rect.w, 1.0, Color::new(1.0, 1.0, 1.0, 0.10));
-    draw_rectangle_lines(rect.x, rect.y, rect.w, rect.h, 1.0, border);
+    let surface = macroquad_toolkit::ui::SurfaceStyle::new(bg)
+        .with_left_accent(4.0, border)
+        .with_top_highlight(1.0, Color::new(1.0, 1.0, 1.0, 0.10))
+        .with_border(1.0, border);
+    macroquad_toolkit::ui::draw_surface(Rect::new(rect.x, rect.y, rect.w, rect.h), &surface);
 
     let text_color = if enabled {
         colors::TEXT_PRIMARY
@@ -166,34 +168,20 @@ pub fn draw_wrapped_text(
     color: Color,
     max_lines: usize,
 ) -> f32 {
-    let mut current_line = String::new();
-    let mut lines_drawn = 0;
-
-    for word in text.split_whitespace() {
-        let test_line = if current_line.is_empty() {
-            word.to_string()
-        } else {
-            format!("{} {}", current_line, word)
-        };
-        let dims = measure_text(&test_line, None, size as u16, 1.0);
-        if dims.width <= max_width {
-            current_line = test_line;
-        } else {
-            if max_lines == 0 || lines_drawn + 1 < max_lines {
-                draw_text(&current_line, x, y, size, color);
-                y += line_height;
-                lines_drawn += 1;
-                current_line = word.to_string();
-            } else {
-                let ellipsis = format!("{}...", current_line);
-                draw_text(&ellipsis, x, y, size, color);
-                return y + line_height;
-            }
+    let mut lines = macroquad_toolkit::ui::wrap_text(text, max_width, size);
+    if max_lines > 0 && lines.len() > max_lines {
+        lines.truncate(max_lines);
+        if let Some(last) = lines.last_mut() {
+            *last = macroquad_toolkit::ui::truncate_text_to_width(
+                &format!("{last}..."),
+                max_width,
+                size,
+            );
         }
     }
 
-    if !current_line.is_empty() {
-        draw_text(&current_line, x, y, size, color);
+    for line in lines {
+        draw_text(&line, x, y, size, color);
         y += line_height;
     }
 
