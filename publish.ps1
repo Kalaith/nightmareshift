@@ -15,7 +15,15 @@ $ErrorActionPreference = "Stop"
 $ProjectRoot = $PSScriptRoot
 $DistDir = Join-Path $ProjectRoot "dist"
 $CargoToml = Join-Path $ProjectRoot "Cargo.toml"
-
+$TargetDir = Join-Path $ProjectRoot "target"
+try {
+    $CargoMetadata = cargo metadata --format-version 1 --no-deps | ConvertFrom-Json
+    if ($CargoMetadata.target_directory) {
+        $TargetDir = $CargoMetadata.target_directory
+    }
+} catch {
+    Write-Warning "Could not resolve Cargo target directory from metadata. Falling back to: $TargetDir"
+}
 # Deployment paths
 $PreviewRoot = "H:\xampp\htdocs"
 $ProductionRoot = "F:\WebHatchery"
@@ -97,7 +105,7 @@ if ($buildWindows) {
     $WindowsPackageDir = Join-Path $DistDir "windows"
     New-Item -ItemType Directory -Path $WindowsPackageDir -Force | Out-Null
 
-    $ExePath = Join-Path $ProjectRoot "..\target\release\$ProjectName.exe"
+    $ExePath = Join-Path $TargetDir "release\$ProjectName.exe"
     if (-not (Test-Path $ExePath)) {
         Write-Error "Executable not found at: $ExePath"
         exit 1
@@ -106,7 +114,9 @@ if ($buildWindows) {
 
     $AssetsPath = Join-Path $ProjectRoot "assets"
     if (Test-Path $AssetsPath) {
-        Copy-Item $AssetsPath -Destination $WindowsPackageDir -Recurse
+        $destAssets = Join-Path $WindowsPackageDir "assets"
+        if (Test-Path $destAssets) { Remove-Item $destAssets -Recurse -Force }
+        Copy-Item $AssetsPath -Destination $WindowsPackageDir -Recurse -Force
     }
 
     $WindowsZipPath = Join-Path $DistDir "${ProjectName}_windows.zip"
@@ -142,7 +152,7 @@ if ($buildWebGL) {
     New-Item -ItemType Directory -Path $WebGLPackageDir -Force | Out-Null
 
     # Copy WASM file
-    $WasmPath = Join-Path $ProjectRoot "..\target\wasm32-unknown-unknown\release\$ProjectName.wasm"
+    $WasmPath = Join-Path $TargetDir "wasm32-unknown-unknown\release\$ProjectName.wasm"
     if (-not (Test-Path $WasmPath)) {
         Write-Error "WASM file not found at: $WasmPath"
         exit 1
@@ -152,7 +162,9 @@ if ($buildWebGL) {
     # Copy assets
     $AssetsPath = Join-Path $ProjectRoot "assets"
     if (Test-Path $AssetsPath) {
-        Copy-Item $AssetsPath -Destination $WebGLPackageDir -Recurse
+        $destAssets = Join-Path $WebGLPackageDir "assets"
+        if (Test-Path $destAssets) { Remove-Item $destAssets -Recurse -Force }
+        Copy-Item $AssetsPath -Destination $WebGLPackageDir -Recurse -Force
     }
 
     # Download mq_js_bundle.js
