@@ -7,6 +7,7 @@ param(
     [switch]$WebGLOnly = $false,
     [switch]$DeployOnly = $false,
     [Alias('p')] [switch]$Production = $false,
+    [switch]$FTP = $false,
     [switch]$DryRun = $false
 )
 
@@ -18,7 +19,6 @@ $CargoToml = Join-Path $ProjectRoot "Cargo.toml"
 # Deployment paths
 $PreviewRoot = "H:\xampp\htdocs"
 $ProductionRoot = "F:\WebHatchery"
-
 # Parse project name from Cargo.toml
 if (-not (Test-Path $CargoToml)) {
     Write-Error "Cargo.toml not found at: $CargoToml"
@@ -29,8 +29,8 @@ $CargoContent = Get-Content $CargoToml -Raw
 if ($CargoContent -match 'name\s*=\s*"([^"]+)"') {
     $ProjectName = $matches[1]
 } else {
-    Write-Error "Could not parse project name from Cargo.toml"
-    exit 1
+    $ProjectName = Split-Path -Leaf $ProjectRoot
+    Write-Warning "Could not parse project name from Cargo.toml. Falling back to directory name: $ProjectName"
 }
 
 $ProjectTitle = ($ProjectName -replace '_', ' ').ToUpper()
@@ -40,6 +40,7 @@ Write-Host "Project: $ProjectName"
 Write-Host ""
 
 # Determine deployment target
+if ($FTP) { $Production = $true }
 $DeployRoot = $PreviewRoot
 $Environment = "Preview"
 if ($Production) {
@@ -63,6 +64,7 @@ $buildWebGL = -not $WindowsOnly
 $totalSteps = 3  # Clean + Deploy + Summary
 if ($buildWindows) { $totalSteps += 2 }
 if ($buildWebGL) { $totalSteps += 2 }
+if ($FTP) { $totalSteps += 1 }
 $currentStep = 0
 
 # Step: Prepare dist folder
@@ -173,6 +175,7 @@ $currentStep++
 Write-Host ""
 Write-Host "[$currentStep/$totalSteps] Deploying to $Environment..." -ForegroundColor Yellow
 
+$WebGLSourceDir = Join-Path $DistDir "webgl"
 if ($DryRun) {
     Write-Host "[DRY-RUN] Would deploy to: $DeployDir" -ForegroundColor DarkYellow
 } else {
@@ -191,7 +194,6 @@ if ($DryRun) {
     }
 
     # Copy WebGL files
-    $WebGLSourceDir = Join-Path $DistDir "webgl"
     if (Test-Path $WebGLSourceDir) {
         # Copy WASM
         $wasmFile = Join-Path $WebGLSourceDir "$ProjectName.wasm"
@@ -222,6 +224,25 @@ if ($DryRun) {
     Write-Host "Deployed to: $DeployDir" -ForegroundColor Green
 }
 
+if ($FTP) {
+    $currentStep++
+    Write-Host ""
+    Write-Host "[$currentStep/$totalSteps] Uploading to FTP..." -ForegroundColor Yellow
+
+    $FtpSourceDir = $DeployDir
+    if ($DryRun -and (Test-Path $WebGLSourceDir)) {
+        $FtpSourceDir = $WebGLSourceDir
+    }
+
+    $RustGamesPublisher = Join-Path (Split-Path $ProjectRoot -Parent) "publish.ps1"
+    if (-not (Test-Path $RustGamesPublisher)) {
+        Write-Error "RustGames root publisher not found: $RustGamesPublisher"
+        exit 1
+    }
+
+    & $RustGamesPublisher -RustGameFtpUpload -ProjectName $ProjectName -SourceDir $FtpSourceDir -DryRun:$DryRun
+    if (-not $?) { exit 1 }
+}
 # Summary
 $currentStep++
 Write-Host ""
@@ -252,12 +273,14 @@ Write-Host "  -WebGLOnly    : Build only WebGL version"
 Write-Host "  -WindowsOnly  : Build only Windows version"
 Write-Host "  -DeployOnly   : Just deploy existing builds"
 Write-Host "  -Production   : Deploy to production (F:\WebHatchery)"
+Write-Host "  -FTP          : Upload production deployment to FTP /games/$ProjectName"
 Write-Host "  -DryRun       : Show what would happen"
 Write-Host ""
 Write-Host "Examples:" -ForegroundColor Cyan
 Write-Host "  .\publish.ps1                    # Build all + deploy to preview"
 Write-Host "  .\publish.ps1 -WebGLOnly         # Build WebGL + deploy to preview"
 Write-Host "  .\publish.ps1 -Production        # Build all + deploy to production"
+Write-Host "  .\publish.ps1 -p -FTP            # Build all + deploy to production + FTP"
 Write-Host "  .\publish.ps1 -DeployOnly -p     # Deploy existing to production"
 Write-Host ""
 
