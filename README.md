@@ -1,82 +1,28 @@
-# Nightmare Shift 🚕👻
+# Nightmare Shift
 
-**Nightmare Shift** is a horror-themed taxi driving survival game built with Rust and the Macroquad game engine.
+Nightmare Shift is a horror taxi survival game about driving supernatural passengers through a city where every fare may have dangerous rules.
 
-Drive supernatural passengers through the night, follow mysterious rules, and try to survive until dawn. Every passenger has a story, and every route has its risks.
+You work the graveyard shift, observe strange behavior, choose routes, manage fuel and money, and try to survive until dawn.
 
-## 🎮 How to Play
+## Gameplay
 
-You are a taxi driver working the graveyard shift in a city where the supernatural is the norm. Your goal is to pick up passengers, follow their specific rules, and get them to their destination safely.
+- Accept or decline passengers.
+- Watch for tells that reveal hidden threats.
+- Read and follow passenger-specific guidelines.
+- Choose routes with different risks.
+- Manage fuel, earnings, upgrades, and survival pressure.
 
-### Controls
+## Goal
 
-| Action | Key / Input |
-|dev|dev|
-| **Accept / Continue** | <kbd>SPACE</kbd> |
-| **Decline / Back** | <kbd>ESC</kbd> |
-| **Select Route** | <kbd>1</kbd>, <kbd>2</kbd>, <kbd>3</kbd> |
-| **Interact** | <kbd>Mouse Click</kbd> |
+Complete the night without breaking the wrong rule, running dry, or letting a dangerous passenger catch you unprepared.
 
-## 🛠️ Development
+## Controls
 
-This project is built using:
-- **Language:** [Rust](https://www.rust-lang.org/)
-- **Engine:** [Macroquad](https://github.com/not-fl3/macroquad)
-- **Toolkit:** Custom `macroquad-toolkit`
+- Space: accept or continue.
+- Esc: decline, back, or pause.
+- 1-3: select route options.
+- Mouse: interact with the interface.
 
-### Prerequisites
+## Current Scope
 
-- [Rust & Cargo](https://rustup.rs/) v1.70+
-- Basic development tools for your platform (e.g., build-essential on Linux, MSVC on Windows)
-
-### Running Locally
-
-To run the game natively on your machine:
-
-```bash
-cargo run
-```
-
-### Automated Playtest Bot
-
-To smoke-test the gameplay loop with the built-in bot:
-
-```powershell
-.\scripts\run-playtest-bot.ps1 -Shifts 3 -Strategy coverage
-```
-
-To sweep increasing almanac unlocks for the learned bot:
-
-```powershell
-.\scripts\run-bot-almanac-sweep.ps1 -Strategy learned -FreshStats
-```
-
-See `docs/playtest-bot.md` for strategies and command-line options.
-
-### Building for Web (WASM)
-
-To build the game for the web:
-
-1.  Ensure you have the wasm32 target installed:
-    ```bash
-    rustup target add wasm32-unknown-unknown
-    ```
-2.  Use the provided publish script (Windows):
-    ```powershell
-    ./publish.ps1
-    ```
-    Or manually build:
-    ```bash
-    cargo build --target wasm32-unknown-unknown --release
-    ```
-
-## 📂 Project Structure
-
-- `src/`: Core game source code
-- `assets/`: Game assets (images, data, etc.)
-- `index.html`: Web entry point for the WASM build
-- `nightmare_shift.wasm`: Compiled game binary (generated)
-
-## 📜 License
-
-See the LICENSE file for details.
+Playable horror-shift loop with passenger tells, route choices, rules, fuel pressure, earnings, and upgrades.
