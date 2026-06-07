@@ -1,22 +1,22 @@
-# Rust Coding Standards for Nightmare Shift
+# Rust Coding Standards for Macroquad Games
 
 **Engine**: Macroquad + macroquad-toolkit  
 **Language**: Rust  
-**Genre**: Horror Taxi Driving Survival Game
+**Platform**: WebGL (WASM) + Native
 
-This document defines the coding standards for the Nightmare Shift project. Its goal is to maintain long-term sanity for a narrative-driven game with complex passenger state machines and rule systems. The night shift may be terrifying, but the code should be calm.
+This document defines the centrally maintained coding standards for Macroquad game projects. Keep project-local copies identical to the canonical `docs/CODE_STANDARDS.md`; put project-specific guidance in the project's README or another local documentation file instead.
 
 These standards prioritize:  
 - Readability over cleverness  
 - Data-driven design over hardcoded values  
-- Clean state management for passenger interactions  
+- Clean state management  
 - Modular services for game logic  
 - A clear mental model for game phases and transitions  
 
 ## 1. Core Philosophy
 
 ### 1.1 Write for Maintainability
-This is a single-player horror game with complex passenger behaviors and rule systems. Code should be easy to debug and extend.  
+Code should be easy to debug and extend.  
 - Prefer obvious, straightforward code  
 - Avoid hidden state or side effects  
 - If a junior Rust developer can understand the flow, you are doing it right.
@@ -25,7 +25,7 @@ This is a single-player horror game with complex passenger behaviors and rule sy
 If a pattern already exists in the codebase, follow it even if you dislike it. A consistent codebase is more valuable than a perfect one.
 
 ### 1.3 Data-Driven Design
-All game constants, balance values, passenger data, rules, guidelines, and static data should be defined in JSON files under `assets/`. Load this data at startup using Serde for easy balancing and iteration without recompiling code. Avoid hardcoding values in Rust code; reference loaded data structures instead.
+All game constants, balance values, and static data should be defined in JSON files under `assets/`. Load this data at startup using Serde for easy balancing and iteration without recompiling code. Avoid hardcoding values in Rust code; reference loaded data structures instead.
 
 ### 1.4 No Unused Code
 - Remove unused variables, fields, and functions immediately
@@ -43,28 +43,22 @@ Each module/subdirectory owns a single conceptual domain:
 
 **Subdirectories:**
 - `data/` – Data structures and JSON loading
-  - Type definitions for passengers, rules, guidelines, items
+  - Type definitions for game entities
   - Constants and configuration structures
-  - Environment types (weather, time, seasons)
 
 - `engine/` – Game logic services (stateless where possible)
-  - `game_engine.rs` – Core game calculations (fare, violations)
-  - `passenger_service.rs` – Passenger selection and management
-  - `passenger_state_machine.rs` – Need level progression
-  - `guideline_engine.rs` – Tell detection and guideline evaluation
-  - `route_service.rs` – Route cost calculations
-  - `item_service.rs` – Item drops and effects
-  - `weather_service.rs` – Weather generation and effects
-  - `effects.rs` – Visual effects (particles, screen shake, transitions)
+  - Core game calculations
+  - Entity management and state machines
+  - Visual effects (particles, transitions)
 
 - `state/` – Game state management
-  - `game_state.rs` – Current shift state (resources, passengers, phase)
-  - `player_stats.rs` – Persistent player progression
-  - `persistence.rs` – Save/load functionality
+  - Current game state
+  - Persistent player progression
+  - Save/load functionality
 
 - `ui/` – User interface components
-  - `core.rs` – Base UI utilities and styling
-  - `components.rs` – Reusable UI widgets (cards, bars, panels)
+  - Base UI utilities and styling
+  - Reusable UI widgets
   - Uses macroquad-toolkit for buttons and interactions
 
 - `screens/` – Screen-specific rendering (if separated from main.rs)
@@ -79,54 +73,41 @@ Each module/subdirectory owns a single conceptual domain:
 ### 2.2 File Size Guideline
 - Target: 200–400 lines per file
 - Soft limit: 600 lines
-- Hard limit: 800 lines (main.rs excepted for game loop complexity)
+- Hard limit: 800 lines for every `.rs` file
 - If a file grows beyond this, split by responsibility.
 
-### 2.3 Folder Structure
+### 2.3 Module Source Filenames
+- Use Rust's named module source filenames: `foo.rs` for `mod foo;`, and `foo/bar.rs` for `mod bar;` inside `foo.rs`.
+- Do not create new `mod.rs` files.
+- When restructuring existing modules, prefer migrating `foo/mod.rs` to `foo.rs` and keeping child modules under `foo/`.
+- Do not keep both `foo.rs` and `foo/mod.rs`; Rust treats that as an ambiguous module source.
+
+### 2.4 Folder Structure
 
 ```
-nightmare_shift/
+game_name/
 ├── Cargo.toml              # Project manifest
 ├── CODE_STANDARDS.md       # This file
 ├── src/
 │   ├── main.rs             # Entry point, game loop, screen rendering
-│   ├── data/               # Data types and loading
-│   │   ├── mod.rs          # Re-exports all data types
+│   ├── data.rs             # Data module root and re-exports
+│   ├── data/               # Data child modules
 │   │   ├── loader.rs       # JSON deserialization
-│   │   ├── constants.rs    # Game constants structures
-│   │   ├── passenger.rs    # Passenger types and tells
-│   │   ├── rules.rs        # Rule and guideline types
-│   │   ├── inventory.rs    # Item types and effects
-│   │   ├── environment.rs  # Weather, time, seasons
-│   │   ├── location.rs     # Location data
-│   │   └── skill_tree.rs   # Skill progression types
-│   ├── engine/             # Game logic services
-│   │   ├── mod.rs          # Re-exports
-│   │   ├── game_engine.rs  # Core calculations
-│   │   ├── passenger_service.rs
-│   │   ├── passenger_state_machine.rs
-│   │   ├── guideline_engine.rs
-│   │   ├── route_service.rs
-│   │   ├── item_service.rs
-│   │   ├── weather_service.rs
-│   │   └── effects.rs      # Visual effects
-│   ├── state/              # State management
-│   │   ├── mod.rs
-│   │   ├── game_state.rs   # Current shift state
-│   │   ├── player_stats.rs # Persistent progression
+│   │   └── constants.rs    # Game constants structures
+│   ├── engine.rs           # Engine module root and re-exports
+│   ├── engine/             # Engine child modules
+│   │   └── game_engine.rs  # Core calculations
+│   ├── state.rs            # State module root and re-exports
+│   ├── state/              # State child modules
+│   │   ├── game_state.rs   # Current game state
 │   │   └── persistence.rs  # Save/load
-│   ├── ui/                 # UI components
-│   │   ├── mod.rs
+│   ├── ui.rs               # UI module root and re-exports
+│   ├── ui/                 # UI child modules
 │   │   ├── core.rs
 │   │   └── components.rs
-│   └── screens/            # Screen renderers (optional)
+│   └── screens.rs          # Screen renderers module root (optional)
 ├── assets/                 # Game data
 │   ├── constants.json      # Balance values
-│   ├── passengerData.json  # Passenger definitions
-│   ├── shiftRulesData.json # Rule definitions
-│   ├── guidelineData.json  # Guideline exceptions
-│   ├── locationData.json   # Pickup/destination data
-│   ├── skillTreeData.json  # Skill progression
 │   └── localization/       # Text strings
 └── .gitignore
 ```
@@ -141,38 +122,21 @@ nightmare_shift/
 
 Names should describe what the thing is, not how it works.
 
-Good examples:  
-```rust
-Passenger  
-PassengerNeedState  
-calculate_fare  
-check_rule_violation  
-spawn_rain_particles  
-```
-
-Bad examples:  
-```rust
-do_thing  
-temp2  
-handle_stuff  
-p  // use passenger instead
-```
-
 ### 3.2 Boolean Naming
 Booleans should read like facts:  
 ```rust
-is_supernatural  
-can_accept_ride  
-has_backstory_unlocked  
-should_end_shift  
+is_active  
+can_interact  
+has_unlocked  
+should_update  
 ```  
 Avoid `flag`, `value`, or `state` in names.
 
 ### 3.3 Service Naming
 Engine services follow a naming pattern:
-- `*Service` for stateless helpers (`PassengerService`, `RouteService`)
-- `*Engine` for complex stateless processors (`GameEngine`, `GuidelineEngine`)
-- `*StateMachine` for state progressions (`PassengerStateMachine`)
+- `*Service` for stateless helpers
+- `*Engine` for complex stateless processors
+- `*StateMachine` for state progressions
 
 ## 4. Functions & Methods
 
@@ -184,34 +148,20 @@ Engine services follow a naming pattern:
 ### 4.2 Single Responsibility
 Each function should answer one question or perform one action.
 
-Bad:  
-```rust
-// Calculates fare, updates reputation, drops items, checks achievements  
-fn complete_ride() { ... }  
-```
-
-Good:  
-```rust
-fn calculate_fare() -> u32 { ... }  
-fn update_passenger_reputation() { ... }  
-fn check_item_drop() -> Option<Item> { ... }  
-fn check_achievements() { ... }  
-```
-
 ### 4.3 Argument Count
 - Prefer ≤ 3 parameters  
 - If more are needed, use a struct or reference to state  
-- Services should take `&GameState` or `&ConstantsData` rather than many individual fields
+- Services should take `&GameState` or `&Config` rather than many individual fields
 
 ### 4.4 Return Types
 - Use `Option<T>` for potentially missing values  
-- Use custom result structs for complex outcomes (e.g., `RuleViolationResult`)
+- Use custom result structs for complex outcomes
 - Avoid returning multiple values via tuple; create a named struct instead
 
 ## 5. Data & State Management
 
 ### 5.1 Game State Ownership
-- `GameState` owns the current shift state  
+- `GameState` owns the current game state  
 - `PlayerStats` owns persistent progression  
 - Mutation happens through methods on `Game` struct in main.rs  
 - Services return results; they don't mutate state directly  
@@ -225,7 +175,7 @@ Game data should be:
 - Immutable after loading from JSON  
 
 ### 5.3 Data-Driven Design
-- All game balance, passenger stats, rules, and configuration in JSON under `assets/`
+- All game balance and configuration in JSON under `assets/`
 - Load data at application startup; data is embedded at compile time
 - Use structs that mirror JSON structure for type safety
 - Never hardcode magic numbers; reference loaded config data
@@ -236,15 +186,10 @@ Use enums to model distinct game states:
 pub enum GamePhase {
     Loading,
     MainMenu,
-    Briefing,
-    Waiting,
-    RideRequest,
-    Driving,
-    Interaction,
-    GuidelineDecision,
-    DropOff,
+    Playing,
+    Paused,
     GameOver,
-    Success,
+    // Add game-specific phases
 }
 ```
 
@@ -252,7 +197,7 @@ pub enum GamePhase {
 
 ### 6.1 Prefer Option Over Panics
 - `panic!` is acceptable only for truly unrecoverable states  
-- Missing passengers or items should return `None`, not panic  
+- Missing entities or items should return `None`, not panic  
 - Use:  
   - `Option<T>` for potentially missing values  
   - `Result<T, E>` for fallible I/O operations (save/load)  
@@ -269,55 +214,40 @@ UI code:
 - Returns actions/intents  
 - It should never contain game logic.  
 
-Bad:  
-```rust
-// Calculating fare inside a button handler  
-fn on_accept_button() { calculate_fare(); }  
-```
-
-Good:  
-```rust
-// Button returns UiAction::AcceptRide
-// main.rs handles the action and calculations
-fn draw_ride_request() -> Option<UiAction> { ... }
-```
-
 ### 7.2 Action Pattern
 UI components return `Option<UiAction>` to signal user intent:
 ```rust
 pub enum UiAction {
     StartGame,
-    AcceptRide,
-    DeclineRide,
-    SelectRoute(RouteType),
-    UseItem(usize),
-    // etc.
+    Pause,
+    Resume,
+    // Add game-specific actions
 }
 ```
 
 ### 7.3 Component Organization
 - `core.rs` – Color schemes, fonts, base styling  
-- `components.rs` – Reusable widgets (StatusBar, PassengerCard, etc.)  
+- `components.rs` – Reusable widgets  
 - Each component is a pure function: `fn draw_thing(state: &State) -> Option<UiAction>`
 
 ### 7.4 Macroquad-Toolkit Usage
 
-This project uses `macroquad-toolkit` for common UI patterns. Import via `use ui::*;` which re-exports all toolkit modules.
+Use `macroquad-toolkit` for common UI patterns. Prefer `use macroquad_toolkit::prelude::*;` for common helpers, or explicit `macroquad_toolkit::ui::*` imports.
 
 **Available Modules:**
-- `ui::button()` – Standard clickable button (fires on release)
-- `ui::button_on_press()` – Button that fires on mouse down
-- `ui::button_styled()` – Button with custom styling
-- `ui::panel()` – Draws a panel with optional title
-- `ui::progress_bar()` – Progress indicator
-- `ui::colors::dark::*` – Standard dark theme colors
-- `ui::input::*` – Mouse/keyboard input helpers
+- `macroquad_toolkit::ui::button()` - Standard clickable button (fires on release)
+- `macroquad_toolkit::ui::button_on_press()` - Button that fires on mouse down
+- `macroquad_toolkit::ui::button_styled()` - Button with custom styling
+- `macroquad_toolkit::ui::panel()` - Draws a panel with optional title
+- `macroquad_toolkit::ui::progress_bar()` - Progress indicator
+- `macroquad_toolkit::colors::dark::*` - Standard dark theme colors
+- `macroquad_toolkit::input::*` - Mouse/keyboard input helpers
 
 **Button Click Semantics:**
 ```rust
 // Standard button - fires on mouse RELEASE (safer, allows cancel)
-if button(x, y, w, h, "Accept Ride") {
-    return UiAction::AcceptRide;
+if button(x, y, w, h, "Click Me") {
+    return UiAction::DoThing;
 }
 
 // Press button - fires on mouse DOWN (instant feedback)
@@ -338,7 +268,7 @@ draw_text("Hello", x, y, 20.0, dark::TEXT);  // Text color
 
 **Input Helpers:**
 ```rust
-use ui::input::*;
+use macroquad_toolkit::input::*;
 
 if is_hovered(x, y, w, h) { /* Mouse over area */ }
 if was_clicked(x, y, w, h) { /* Left click released on area */ }
@@ -357,97 +287,62 @@ The game must build for:
 - **Windows**: `cargo build --release`
 - **Web/WASM**: `cargo build --release --target wasm32-unknown-unknown`
 
-### 8.3 WebGL Requirements
+### 8.3 Validation
+After meaningful changes, run `.\publish.ps1` with no parameters from the affected project directory.
+
+### 8.4 WebGL Requirements
 The `index.html` must:
 - Load `mq_js_bundle.js` (Miniquad loader)
-- Call `load("nightmare_shift.wasm")`
+- Call `load("game_name.wasm")`
 - Include canvas with `id="glcanvas"`
 - Use `image-rendering: pixelated` for pixel art
 
-## 9. Game Phases & Transitions
+## 9. Comments & Documentation
 
-### 9.1 Clear Phase Model
-The game uses explicit phases:
-1. **MainMenu** → Start game
-2. **Briefing** → Display shift rules
-3. **Waiting** → Between passengers, can refuel
-4. **RideRequest** → Accept/decline passenger
-5. **Driving** → Route selection
-6. **Interaction** → Passenger dialogue
-7. **GuidelineDecision** → Follow/break guideline choice
-8. **DropOff** → Ride completion summary
-9. **GameOver/Success** → End of shift
-
-### 9.2 Transition Clarity
-Phase transitions should be explicit and obvious in code:
-```rust
-// Clear: one function, one transition
-fn start_shift(&mut self) {
-    self.game_state.game_phase = GamePhase::Waiting;
-    self.screen = Screen::Game;
-}
-```
-
-## 10. Comments & Documentation
-
-### 10.1 Comment Why, Not What
+### 9.1 Comment Why, Not What
 Code already explains what it does. Comments should explain why it exists.
 
-Good:  
-```rust
-// Supernatural passengers ignore normal rule violations  
-fn check_rule_violation() { ... }  
-```
-
-Bad:  
-```rust
-// Check if rule is violated  
-fn check_rule_violation() { ... }  
-```
-
-### 10.2 Module-Level Docs
+### 9.2 Module-Level Docs
 Each module should contain a short `//!` comment explaining its purpose:
 ```rust
-//! Passenger state machine for need level progression.
+//! Player inventory and item effects.
 ```
 
-## 11. Formatting & Tooling
+## 10. Formatting & Tooling
 
-### 11.1 rustfmt
+### 10.1 rustfmt
 - Always use `cargo fmt`  
 - Never fight the formatter  
 
-### 11.2 Clippy
+### 10.2 Clippy
 - Run `cargo clippy` regularly  
 - Fix warnings unless intentionally ignored  
 - Document any `#[allow]` with a comment
 
-### 11.3 Variable Shadowing
+### 10.3 Variable Shadowing
 - Avoid variable shadowing (hiding)
 - Do not declare a new variable with the same name as an existing one in the same scope
 
-### 11.4 Unused Code
+### 10.4 Unused Code
 - Remove unused variables immediately
 - Remove unused struct fields immediately  
 - Never use `_` prefix on struct fields to suppress warnings
 - `_` prefix on function parameters is acceptable when required by API
 
-## 12. Testing Guidelines
+## 11. Testing Guidelines
 
-### 12.1 What to Test
+### 11.1 What to Test
 Focus tests on:  
-- Fare calculations  
-- Rule violation detection  
-- Passenger selection logic  
+- Core game calculations  
 - State machine transitions  
 - JSON data loading  
 - UI and rendering generally do not need unit tests.
 
-### 12.2 Test Style
+### 11.2 Test Style
 - Tests should read like rules  
 - Avoid complex setups  
 - If a test is hard to write, the code is probably too tangled.
 
-## 13. Final Rule
+## 12. Final Rule
 
-If a piece of code feels fragile, confusing, or brittle, it probably is. Refactor early. Leave the night shift code calmer than you found it.
+If a piece of code feels fragile, confusing, or brittle, it probably is. Refactor early. Leave the code calmer than you found it.
