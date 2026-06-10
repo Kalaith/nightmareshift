@@ -1,6 +1,7 @@
 //! Visual effects system
 
 use macroquad::prelude::*;
+use macroquad_toolkit::rng;
 
 /// Screen transition effects
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -110,8 +111,8 @@ impl ScreenShake {
         let current_intensity = self.intensity * decay;
 
         (
-            (rand::gen_range(-1.0, 1.0) * current_intensity) as f32,
-            (rand::gen_range(-1.0, 1.0) * current_intensity) as f32,
+            (rng::gen_range(-1.0, 1.0) * current_intensity) as f32,
+            (rng::gen_range(-1.0, 1.0) * current_intensity) as f32,
         )
     }
 }
@@ -164,13 +165,13 @@ impl ParticleSystem {
     pub fn spawn_rain(&mut self, count: usize) {
         for _ in 0..count {
             self.particles.push(Particle {
-                x: rand::gen_range(0.0, screen_width()),
+                x: rng::gen_range(0.0, screen_width()),
                 y: -10.0,
-                vx: rand::gen_range(-20.0, -10.0),
-                vy: rand::gen_range(400.0, 600.0),
-                life: rand::gen_range(1.0, 2.0),
+                vx: rng::gen_range(-20.0, -10.0),
+                vy: rng::gen_range(400.0, 600.0),
+                life: rng::gen_range(1.0, 2.0),
                 max_life: 2.0,
-                size: rand::gen_range(1.0, 2.0),
+                size: rng::gen_range(1.0, 2.0),
                 color: Color::new(0.5, 0.6, 0.8, 0.6),
             });
         }
@@ -180,13 +181,13 @@ impl ParticleSystem {
     pub fn spawn_snow(&mut self, count: usize) {
         for _ in 0..count {
             self.particles.push(Particle {
-                x: rand::gen_range(0.0, screen_width()),
+                x: rng::gen_range(0.0, screen_width()),
                 y: -10.0,
-                vx: rand::gen_range(-30.0, 30.0),
-                vy: rand::gen_range(50.0, 100.0),
-                life: rand::gen_range(3.0, 5.0),
+                vx: rng::gen_range(-30.0, 30.0),
+                vy: rng::gen_range(50.0, 100.0),
+                life: rng::gen_range(3.0, 5.0),
                 max_life: 5.0,
-                size: rand::gen_range(2.0, 4.0),
+                size: rng::gen_range(2.0, 4.0),
                 color: Color::new(1.0, 1.0, 1.0, 0.8),
             });
         }
@@ -196,13 +197,13 @@ impl ParticleSystem {
     pub fn spawn_fog(&mut self, count: usize) {
         for _ in 0..count {
             self.particles.push(Particle {
-                x: rand::gen_range(0.0, screen_width()),
-                y: rand::gen_range(0.0, screen_height()),
-                vx: rand::gen_range(-10.0, 10.0),
+                x: rng::gen_range(0.0, screen_width()),
+                y: rng::gen_range(0.0, screen_height()),
+                vx: rng::gen_range(-10.0, 10.0),
                 vy: 0.0,
-                life: rand::gen_range(5.0, 10.0),
+                life: rng::gen_range(5.0, 10.0),
                 max_life: 10.0,
-                size: rand::gen_range(40.0, 80.0),
+                size: rng::gen_range(40.0, 80.0),
                 color: Color::new(0.7, 0.7, 0.7, 0.1),
             });
         }
@@ -241,9 +242,9 @@ pub fn draw_glitch_effect(intensity: f32) {
 
     // Random horizontal lines
     for _ in 0..(intensity * 20.0) as i32 {
-        let y = rand::gen_range(0.0, height);
-        let thickness = rand::gen_range(1.0, 5.0);
-        let offset = rand::gen_range(-intensity * 50.0, intensity * 50.0);
+        let y = rng::gen_range(0.0, height);
+        let thickness = rng::gen_range(1.0, 5.0);
+        let offset = rng::gen_range(-intensity * 50.0, intensity * 50.0);
 
         draw_rectangle(
             offset,
@@ -251,10 +252,10 @@ pub fn draw_glitch_effect(intensity: f32) {
             width,
             thickness,
             Color::new(
-                rand::gen_range(0.5, 1.0),
-                rand::gen_range(0.0, 0.3),
-                rand::gen_range(0.0, 0.3),
-                rand::gen_range(0.3, 0.7),
+                rng::gen_range(0.5, 1.0),
+                rng::gen_range(0.0, 0.3),
+                rng::gen_range(0.0, 0.3),
+                rng::gen_range(0.3, 0.7),
             ),
         );
     }
