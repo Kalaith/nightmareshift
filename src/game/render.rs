@@ -8,6 +8,7 @@ use crate::engine::{
 use crate::screens::{game_screens, menu_screens, meta_screens, Screen};
 use crate::ui::StatusBar;
 use crate::ui::*;
+use macroquad_toolkit::ui::draw_ui_text;
 
 impl Game {
     pub fn draw(&self) -> UiAction {
@@ -158,7 +159,7 @@ impl Game {
         draw_glass_panel(panel, colors::BORDER);
         let inner = panel.inset(spacing::PADDING_LG);
 
-        draw_text(
+        draw_ui_text(
             "PAUSED",
             inner.x,
             inner.y + 36.0,
@@ -211,7 +212,7 @@ impl Game {
             );
             draw_rectangle(rect.x, rect.y, 4.0, rect.h, *color);
             draw_rectangle_lines(rect.x, rect.y, rect.w, rect.h, 1.0, colors::BORDER_DIM);
-            draw_text(value, rect.x + 14.0, rect.y + 30.0, fonts::SIZE_LG, *color);
+            draw_ui_text(value, rect.x + 14.0, rect.y + 30.0, fonts::SIZE_LG, *color);
             draw_small_caps(
                 label,
                 rect.x + 14.0,

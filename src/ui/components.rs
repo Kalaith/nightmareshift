@@ -4,6 +4,7 @@ use super::*;
 use crate::data::*;
 use crate::state::*;
 use macroquad::prelude::*;
+use macroquad_toolkit::ui::draw_ui_text;
 
 fn ascii_trimmed(text: String) -> String {
     text.chars()
@@ -178,7 +179,7 @@ impl PassengerCard {
         draw_passenger_portrait(portrait_rect, passenger.id);
 
         let mut y = portrait_rect.bottom() + 28.0;
-        draw_text(
+        draw_ui_text(
             &passenger.name,
             inner.x,
             y,
@@ -221,7 +222,7 @@ impl PassengerCard {
         ) + 10.0;
 
         let fare = format!("| ${}", passenger.fare);
-        draw_text(&fare, inner.x, y, fonts::SIZE_LG, colors::ACCENT_GOLD);
+        draw_ui_text(&fare, inner.x, y, fonts::SIZE_LG, colors::ACCENT_GOLD);
         y += 30.0;
 
         if let Some(dialogue_text) = dialogue {
@@ -301,7 +302,7 @@ impl CompletionSummary {
             let portrait_rect = UiRect::new(inner.x, inner.y + 16.0, portrait_size, portrait_size);
             draw_passenger_portrait(portrait_rect, completion.passenger.id);
 
-            draw_text(
+            draw_ui_text(
                 &data.localization.ui.game.completion.title,
                 right_x,
                 y + 30.0,
@@ -310,7 +311,7 @@ impl CompletionSummary {
             );
             y += 60.0;
 
-            draw_text(
+            draw_ui_text(
                 &completion.passenger.name,
                 right_x,
                 y,
@@ -341,11 +342,11 @@ impl CompletionSummary {
                 .completion
                 .fare
                 .replace("{}", &completion.fare_earned.to_string());
-            draw_text(&fare_text, right_x, y, fonts::SIZE_LG, colors::ACCENT_GOLD);
+            draw_ui_text(&fare_text, right_x, y, fonts::SIZE_LG, colors::ACCENT_GOLD);
             y += 35.0;
 
             if !completion.items_received.is_empty() {
-                draw_text(
+                draw_ui_text(
                     &data.localization.ui.game.completion.items,
                     right_x,
                     y,
@@ -362,7 +363,7 @@ impl CompletionSummary {
                         crate::data::Rarity::Rare => colors::ACCENT_SKY,
                         crate::data::Rarity::Legendary => colors::ACCENT_GOLD,
                     };
-                    draw_text(&item_text, right_x, y, fonts::SIZE_SM, item_color);
+                    draw_ui_text(&item_text, right_x, y, fonts::SIZE_SM, item_color);
                     y += 20.0;
                 }
                 y += 10.0;
@@ -377,7 +378,7 @@ impl CompletionSummary {
                     .backstory
                     .replace("{}", name);
 
-                draw_text(
+                draw_ui_text(
                     &unlock_text,
                     right_x,
                     y,

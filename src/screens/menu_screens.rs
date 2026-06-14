@@ -8,6 +8,7 @@ use crate::ui::{
     colors, draw_glass_button, draw_glass_panel, draw_noir_city_background, draw_small_caps,
     draw_wrapped_text, fonts, spacing, UiAction, UiRect,
 };
+use macroquad_toolkit::ui::{draw_ui_text, measure_ui_text};
 
 fn draw_menu_icon(kind: &str, cx: f32, cy: f32, scale: f32, color: Color) {
     let s = scale;
@@ -209,7 +210,7 @@ fn draw_briefing_taxi_scene(rect: UiRect) {
         body_h * 0.18,
         colors::CAB_YELLOW,
     );
-    draw_text(
+    draw_ui_text(
         "TAXI",
         body_x + body_w * 0.31,
         body_y - body_h * 0.51,
@@ -318,8 +319,8 @@ pub fn draw_loading(game_data: Option<&GameData>) -> UiAction {
     };
 
     let font_size = 32.0;
-    let text_width = measure_text(text, None, font_size as u16, 1.0).width;
-    draw_text(
+    let text_width = measure_ui_text(text, None, font_size as u16, 1.0).width;
+    draw_ui_text(
         text,
         screen_width() / 2.0 - text_width / 2.0,
         screen_height() / 2.0,
@@ -327,8 +328,8 @@ pub fn draw_loading(game_data: Option<&GameData>) -> UiAction {
         colors::TEXT_PRIMARY,
     );
     if let Some(data) = game_data {
-        let system_width = measure_text(&data.localization.system.loading, None, 14, 1.0).width;
-        draw_text(
+        let system_width = measure_ui_text(&data.localization.system.loading, None, 14, 1.0).width;
+        draw_ui_text(
             &data.localization.system.loading,
             screen_width() / 2.0 - system_width / 2.0,
             screen_height() / 2.0 + 28.0,
@@ -341,8 +342,8 @@ pub fn draw_loading(game_data: Option<&GameData>) -> UiAction {
             data.localization.meta.code,
             data.localization.meta.version
         );
-        let meta_width = measure_text(&meta_text, None, 14, 1.0).width;
-        draw_text(
+        let meta_width = measure_ui_text(&meta_text, None, 14, 1.0).width;
+        draw_ui_text(
             &meta_text,
             screen_width() / 2.0 - meta_width / 2.0,
             screen_height() / 2.0 + 48.0,
@@ -377,7 +378,7 @@ pub fn draw_main_menu(player_stats: &PlayerStats, game_data: Option<&GameData>) 
     let title_gap = title_size * 0.92;
     let mut title_y = (112.0 * menu_scale).clamp(50.0, 122.0);
     for line in title_text.split_whitespace() {
-        draw_text(line, title_x, title_y, title_size, colors::TEXT_PRIMARY);
+        draw_ui_text(line, title_x, title_y, title_size, colors::TEXT_PRIMARY);
         title_y += title_gap;
     }
     draw_small_caps(
@@ -448,7 +449,7 @@ pub fn draw_main_menu(player_stats: &PlayerStats, game_data: Option<&GameData>) 
                 colors::TEXT_MUTED,
                 2,
             );
-            draw_text(
+            draw_ui_text(
                 &achievements_text,
                 stats_inner.x,
                 stats_inner.y + 112.0,
@@ -596,7 +597,7 @@ pub fn draw_briefing(game_state: &GameState, game_data: Option<&GameData>) -> Ui
         draw_glass_panel(header, colors::BORDER_DIM);
         let header_inner = header.inset(18.0);
 
-        draw_text(
+        draw_ui_text(
             &data.localization.ui.briefing.title,
             header_inner.x,
             header_inner.y + 40.0,
@@ -663,7 +664,7 @@ pub fn draw_briefing(game_state: &GameState, game_data: Option<&GameData>) -> Ui
                 fonts::SIZE_SM,
                 colors::CAB_YELLOW,
             );
-            draw_text(
+            draw_ui_text(
                 &rule.title,
                 card.x + 96.0,
                 card.y + 27.0,
@@ -729,7 +730,7 @@ pub fn draw_briefing(game_state: &GameState, game_data: Option<&GameData>) -> Ui
                 );
                 draw_rectangle(rect.x, rect.y, 4.0, rect.h, *color);
                 draw_rectangle_lines(rect.x, rect.y, rect.w, rect.h, 1.0, colors::BORDER_DIM);
-                draw_text(value, rect.x + 18.0, rect.y + 31.0, fonts::SIZE_XL, *color);
+                draw_ui_text(value, rect.x + 18.0, rect.y + 31.0, fonts::SIZE_XL, *color);
                 draw_small_caps(
                     label,
                     rect.x + 18.0,
@@ -773,7 +774,7 @@ pub fn draw_briefing(game_state: &GameState, game_data: Option<&GameData>) -> Ui
             1.0,
             colors::BORDER_DIM,
         );
-        draw_text(
+        draw_ui_text(
             game_state.current_weather.weather_type.name(),
             conditions_inner.x + 18.0,
             side_y + 34.0,
@@ -884,7 +885,7 @@ pub fn draw_briefing(game_state: &GameState, game_data: Option<&GameData>) -> Ui
                 );
                 draw_rectangle(rect.x, rect.y, 4.0, rect.h, *color);
                 draw_rectangle_lines(rect.x, rect.y, rect.w, rect.h, 1.0, colors::BORDER_DIM);
-                draw_text(value, rect.x + 14.0, rect.y + 31.0, fonts::SIZE_LG, *color);
+                draw_ui_text(value, rect.x + 14.0, rect.y + 31.0, fonts::SIZE_LG, *color);
                 draw_small_caps(
                     label,
                     rect.x + 14.0,
@@ -923,8 +924,8 @@ pub fn draw_game_over(game_state: &GameState, game_data: Option<&GameData>) -> U
 
         let title = &data.localization.ui.game_over.title;
         let title_size = 46.0;
-        let title_width = measure_text(title, None, title_size as u16, 1.0).width;
-        draw_text(
+        let title_width = measure_ui_text(title, None, title_size as u16, 1.0).width;
+        draw_ui_text(
             title,
             center_x - title_width / 2.0,
             inner.y + 50.0,
@@ -955,7 +956,7 @@ pub fn draw_game_over(game_state: &GameState, game_data: Option<&GameData>) -> U
             .replacen("{}", &game_state.rides_completed.to_string(), 1)
             .replacen("{}", &score.to_string(), 1);
 
-        draw_text(
+        draw_ui_text(
             &stats,
             inner.x,
             inner.y + 186.0,
@@ -988,8 +989,8 @@ pub fn draw_success(game_state: &GameState, game_data: Option<&GameData>) -> UiA
 
         let title = &data.localization.ui.success.title;
         let title_size = 48.0;
-        let title_width = measure_text(title, None, title_size as u16, 1.0).width;
-        draw_text(
+        let title_width = measure_ui_text(title, None, title_size as u16, 1.0).width;
+        draw_ui_text(
             title,
             center_x - title_width / 2.0,
             inner.y + 50.0,
@@ -998,8 +999,8 @@ pub fn draw_success(game_state: &GameState, game_data: Option<&GameData>) -> UiA
         );
 
         let subtitle = &data.localization.ui.success.subtitle;
-        let sub_width = measure_text(subtitle, None, 24, 1.0).width;
-        draw_text(
+        let sub_width = measure_ui_text(subtitle, None, 24, 1.0).width;
+        draw_ui_text(
             subtitle,
             center_x - sub_width / 2.0,
             inner.y + 92.0,
@@ -1015,7 +1016,7 @@ pub fn draw_success(game_state: &GameState, game_data: Option<&GameData>) -> UiA
             .success
             .total_earnings
             .replace("{}", &game_state.earnings.to_string());
-        draw_text(&earnings_text, inner.x, y, 20.0, colors::ACCENT_GOLD);
+        draw_ui_text(&earnings_text, inner.x, y, 20.0, colors::ACCENT_GOLD);
 
         let rides_text = data
             .localization
@@ -1023,19 +1024,19 @@ pub fn draw_success(game_state: &GameState, game_data: Option<&GameData>) -> UiA
             .success
             .rides_completed
             .replace("{}", &game_state.rides_completed.to_string());
-        draw_text(&rides_text, inner.x, y + 30.0, 20.0, WHITE);
+        draw_ui_text(&rides_text, inner.x, y + 30.0, 20.0, WHITE);
 
         let bonus_text = data.localization.ui.success.survival_bonus.replace(
             "{}",
             &data.constants.game_constants.survival_bonus.to_string(),
         );
-        draw_text(&bonus_text, inner.x, y + 60.0, 20.0, colors::FUEL_GOOD);
+        draw_ui_text(&bonus_text, inner.x, y + 60.0, 20.0, colors::FUEL_GOOD);
 
         let score_text = data.localization.ui.success.final_score.replace(
             "{}",
             &game_state.calculate_score(&data.constants).to_string(),
         );
-        draw_text(&score_text, inner.x, y + 100.0, 24.0, colors::ACCENT_DANGER);
+        draw_ui_text(&score_text, inner.x, y + 100.0, 24.0, colors::ACCENT_DANGER);
 
         if draw_glass_button(
             UiRect::new(center_x - 100.0, panel.bottom() - 62.0, 200.0, 42.0),

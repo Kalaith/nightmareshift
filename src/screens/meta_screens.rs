@@ -7,6 +7,7 @@ use crate::ui::{
     draw_wrapped_text, fonts, UiAction, UiRect,
 };
 use macroquad::prelude::*;
+use macroquad_toolkit::ui::{draw_ui_text, measure_ui_text};
 
 /// Scroll offset for skill tree (static for simplicity)
 static mut SKILL_TREE_SCROLL: f32 = 0.0;
@@ -86,8 +87,8 @@ fn draw_skill_card(
         .filter_map(|part| part.chars().next())
         .take(2)
         .collect::<String>();
-    let initials_width = measure_text(&initials, None, fonts::SIZE_XS as u16, 1.0).width;
-    draw_text(
+    let initials_width = measure_ui_text(&initials, None, fonts::SIZE_XS as u16, 1.0).width;
+    draw_ui_text(
         &initials,
         icon_x - initials_width / 2.0,
         icon_y + 4.0,
@@ -96,7 +97,7 @@ fn draw_skill_card(
     );
 
     let text_x = rect.x + 54.0;
-    draw_text(
+    draw_ui_text(
         &skill.name,
         text_x,
         rect.y + 27.0,
@@ -186,7 +187,7 @@ pub fn draw_skill_tree(player_stats: &PlayerStats, game_data: Option<&GameData>)
         let header_inner = header_rect.inset(18.0);
 
         let title = &data.localization.ui.meta.skill_tree.title;
-        draw_text(
+        draw_ui_text(
             title,
             header_inner.x,
             header_inner.y + 34.0,
@@ -370,7 +371,7 @@ pub fn draw_almanac(player_stats: &PlayerStats, game_data: Option<&GameData>) ->
         let header_inner = header_rect.inset(18.0);
 
         let title = &data.localization.ui.meta.almanac.title;
-        draw_text(
+        draw_ui_text(
             title,
             header_inner.x,
             header_inner.y + 34.0,
@@ -544,8 +545,8 @@ pub fn draw_almanac(player_stats: &PlayerStats, game_data: Option<&GameData>) ->
                     .take(2)
                     .collect::<String>();
                 let initials_width =
-                    measure_text(&initials, None, fonts::SIZE_XS as u16, 1.0).width;
-                draw_text(
+                    measure_ui_text(&initials, None, fonts::SIZE_XS as u16, 1.0).width;
+                draw_ui_text(
                     &initials,
                     portrait_x - initials_width / 2.0,
                     portrait_y + 4.0,
@@ -558,7 +559,7 @@ pub fn draw_almanac(player_stats: &PlayerStats, game_data: Option<&GameData>) ->
                 } else {
                     "Unknown Passenger"
                 };
-                draw_text(
+                draw_ui_text(
                     display_name,
                     text_x,
                     card_y + 29.0,
@@ -816,7 +817,7 @@ pub fn draw_leaderboard(player_stats: &PlayerStats, game_data: Option<&GameData>
         let header_inner = header_rect.inset(18.0);
 
         let title = &data.localization.ui.meta.leaderboard.title;
-        draw_text(
+        draw_ui_text(
             title,
             header_inner.x,
             header_inner.y + 34.0,
@@ -975,7 +976,7 @@ pub fn draw_leaderboard(player_stats: &PlayerStats, game_data: Option<&GameData>
                     .replacen("{}", &(idx + 1).to_string(), 1)
                     .replacen("{}", &entry.score.to_string(), 1);
 
-                draw_text(
+                draw_ui_text(
                     &rank_text,
                     card_rect.x + 18.0,
                     card_rect.y + 27.0,
@@ -1070,7 +1071,7 @@ pub fn draw_leaderboard(player_stats: &PlayerStats, game_data: Option<&GameData>
             );
 
             let status = if unlocked { "Unlocked" } else { "Locked" };
-            draw_text(
+            draw_ui_text(
                 &achievement.name,
                 card_rect.x + 18.0,
                 card_rect.y + 27.0,

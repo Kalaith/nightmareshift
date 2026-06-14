@@ -2,6 +2,7 @@
 
 use macroquad::prelude::*;
 use macroquad_toolkit::ui::button;
+use macroquad_toolkit::ui::{draw_ui_text, measure_ui_text};
 use std::{cell::RefCell, collections::HashMap};
 
 thread_local! {
@@ -121,7 +122,7 @@ pub fn draw_divider(x: f32, y: f32, h: f32) {
 }
 
 pub fn draw_small_caps(text: &str, x: f32, y: f32, size: f32, color: Color) {
-    draw_text(&text.to_uppercase(), x, y, size, color);
+    draw_ui_text(&text.to_uppercase(), x, y, size, color);
 }
 
 pub fn draw_glass_button(rect: UiRect, label: &str, accent: Color, enabled: bool) -> bool {
@@ -147,8 +148,8 @@ pub fn draw_glass_button(rect: UiRect, label: &str, accent: Color, enabled: bool
     } else {
         colors::TEXT_MUTED
     };
-    let dims = measure_text(label, None, fonts::SIZE_MD as u16, 1.0);
-    draw_text(
+    let dims = measure_ui_text(label, None, fonts::SIZE_MD as u16, 1.0);
+    draw_ui_text(
         label,
         rect.x + (rect.w - dims.width) / 2.0,
         rect.y + rect.h / 2.0 + dims.height / 2.0 - 2.0,
@@ -181,7 +182,7 @@ pub fn draw_wrapped_text(
     }
 
     for line in lines {
-        draw_text(&line, x, y, size, color);
+        draw_ui_text(&line, x, y, size, color);
         y += line_height;
     }
 
@@ -189,8 +190,8 @@ pub fn draw_wrapped_text(
 }
 
 pub fn draw_stat_block(icon: &str, value: &str, label: &str, x: f32, y: f32, color: Color) {
-    draw_text(icon, x, y + 22.0, fonts::SIZE_XL, color);
-    draw_text(value, x + 26.0, y + 16.0, fonts::SIZE_LG, color);
+    draw_ui_text(icon, x, y + 22.0, fonts::SIZE_XL, color);
+    draw_ui_text(value, x + 26.0, y + 16.0, fonts::SIZE_LG, color);
     draw_small_caps(
         label,
         x + 26.0,
@@ -270,7 +271,7 @@ pub fn draw_noir_city_background() {
         Color::new(0.26, 0.17, 0.04, 0.92),
     );
     draw_rectangle(tx + 44.0, ty - 60.0, 80.0, 20.0, colors::CAB_YELLOW);
-    draw_text("TAXI", tx + 55.0, ty - 45.0, fonts::SIZE_LG, colors::BLACK);
+    draw_ui_text("TAXI", tx + 55.0, ty - 45.0, fonts::SIZE_LG, colors::BLACK);
     draw_circle(tx + 52.0, ty + 76.0, 30.0, colors::BLACK);
     draw_circle(tx + w * 0.25, ty + 76.0, 30.0, colors::BLACK);
     draw_rectangle(

@@ -11,6 +11,7 @@ use crate::ui::{
     draw_small_caps, draw_wrapped_text, fonts, get_fuel_color, layout, spacing, CompletionSummary,
     UiAction, UiRect,
 };
+use macroquad_toolkit::ui::draw_ui_text;
 
 /// Get a pulsing color for warning text (slow, gentle pulse)
 fn pulsing_warning_color() -> Color {
@@ -111,7 +112,7 @@ fn draw_bottom_taxi_scene(rect: UiRect) {
         body_h * 0.18,
         colors::CAB_YELLOW,
     );
-    draw_text(
+    draw_ui_text(
         "TAXI",
         body_x + body_w * 0.32,
         body_y - body_h * 0.51,
@@ -175,7 +176,7 @@ fn draw_metric_tile(rect: UiRect, label: &str, value: &str, color: Color) {
         fonts::SIZE_XS,
         colors::TEXT_MUTED,
     );
-    draw_text(value, inner.x, inner.y + 42.0, fonts::SIZE_LG, color);
+    draw_ui_text(value, inner.x, inner.y + 42.0, fonts::SIZE_LG, color);
 }
 
 // Update signatures to accept player_stats
@@ -221,7 +222,7 @@ pub fn draw_waiting(game_state: &GameState, game_data: Option<&GameData>) -> UiA
 
         draw_small_caps("Dispatch", inner.x, y, fonts::SIZE_SM, colors::CAB_YELLOW);
         y += 36.0;
-        draw_text(
+        draw_ui_text(
             &data.localization.ui.game.waiting.looking,
             inner.x,
             y,
@@ -457,7 +458,7 @@ pub fn draw_ride_request(game_state: &GameState, game_data: Option<&GameData>) -
             colors::TEXT_MUTED,
         );
         y += 38.0;
-        draw_text(
+        draw_ui_text(
             &passenger.name,
             info_x,
             y,
@@ -499,7 +500,7 @@ pub fn draw_ride_request(game_state: &GameState, game_data: Option<&GameData>) -
             2,
         ) + 18.0;
 
-        draw_text(
+        draw_ui_text(
             &format!("${}", passenger.fare),
             info_x,
             y,
@@ -596,7 +597,7 @@ pub fn draw_driving(
             None => "Driving...",
         };
 
-        draw_text(
+        draw_ui_text(
             phase_text,
             header_inner.x,
             header_inner.y + 26.0,
@@ -635,7 +636,7 @@ pub fn draw_driving(
             } else {
                 line
             };
-            draw_text(
+            draw_ui_text(
                 &preview,
                 header_inner.x,
                 header_inner.y + 68.0,
@@ -854,7 +855,7 @@ pub fn draw_driving(
             };
 
             if is_blocked {
-                draw_text(
+                draw_ui_text(
                     &data.localization.ui.game.driving.blocked,
                     card.x + 18.0,
                     card.y + 26.0,
@@ -878,7 +879,7 @@ pub fn draw_driving(
                     );
                 }
             } else {
-                draw_text(
+                draw_ui_text(
                     key,
                     card.x + 16.0,
                     card.y + 25.0,
@@ -895,7 +896,7 @@ pub fn draw_driving(
                 if let Some((label, color)) = &preference_label {
                     draw_small_caps(label, card.x + 176.0, card.y + 25.0, fonts::SIZE_XS, *color);
                 }
-                draw_text(
+                draw_ui_text(
                     route_detail,
                     card.x + 54.0,
                     card.y + 45.0,
@@ -925,7 +926,7 @@ pub fn draw_driving(
                 );
 
                 if !weather_warning.is_empty() {
-                    draw_text(
+                    draw_ui_text(
                         &weather_warning,
                         card.x + 54.0,
                         card.y + 58.0,
@@ -968,7 +969,7 @@ pub fn draw_driving(
                 } else {
                     text
                 };
-                draw_text(
+                draw_ui_text(
                     &label,
                     tag_x,
                     tag_y + (tag_idx as f32 * 15.0),
@@ -1032,7 +1033,7 @@ pub fn draw_interaction(
             colors::CAB_YELLOW,
         );
         y += 34.0;
-        draw_text(
+        draw_ui_text(
             &event.title,
             inner.x,
             y,
@@ -1061,7 +1062,7 @@ pub fn draw_interaction(
                 portrait_size,
             );
             draw_passenger_portrait(portrait_rect, passenger.id);
-            draw_text(
+            draw_ui_text(
                 &passenger.name,
                 portrait_rect.x + portrait_rect.w + 18.0,
                 portrait_rect.y + 42.0,
@@ -1116,7 +1117,7 @@ pub fn draw_interaction(
                 2,
             );
             if let Some(hint) = hint_text {
-                draw_text(
+                draw_ui_text(
                     &hint,
                     right_x + 58.0,
                     choice_y + btn_h - 12.0,
@@ -1143,7 +1144,7 @@ pub fn draw_interaction(
         let inner = rect.inset(spacing::PADDING_MD);
 
         // Name
-        draw_text(
+        draw_ui_text(
             &passenger.name,
             inner.x,
             inner.y + 24.0,
@@ -1158,7 +1159,7 @@ pub fn draw_interaction(
             } else {
                 format!("\"{}\"", dialogue)
             };
-            draw_text(
+            draw_ui_text(
                 &preview,
                 inner.x,
                 inner.y + 60.0,
@@ -1214,7 +1215,7 @@ pub fn draw_dropoff(game_state: &GameState, game_data: Option<&GameData>) -> UiA
                 route.time_cost,
                 (get_time() - route.timestamp).max(0.0)
             );
-            draw_text(
+            draw_ui_text(
                 &route_text,
                 rect.x + 16.0,
                 rect.bottom() - 70.0,
@@ -1238,7 +1239,7 @@ pub fn draw_dropoff(game_state: &GameState, game_data: Option<&GameData>) -> UiA
 
                 let inner = trade_rect.inset(spacing::PADDING_MD);
 
-                draw_text(
+                draw_ui_text(
                     &data.localization.ui.game.trade.title,
                     inner.x,
                     inner.y + 24.0,
@@ -1254,7 +1255,7 @@ pub fn draw_dropoff(game_state: &GameState, game_data: Option<&GameData>) -> UiA
                     .trade
                     .wants_to_trade
                     .replace("{}", passenger_name);
-                draw_text(
+                draw_ui_text(
                     &msg,
                     inner.x,
                     inner.y + 50.0,
@@ -1277,7 +1278,7 @@ pub fn draw_dropoff(game_state: &GameState, game_data: Option<&GameData>) -> UiA
                     .trade
                     .offering
                     .replace("{}", &offered_item.name);
-                draw_text(
+                draw_ui_text(
                     &offer_text,
                     inner.x,
                     inner.y + 80.0,
@@ -1286,7 +1287,7 @@ pub fn draw_dropoff(game_state: &GameState, game_data: Option<&GameData>) -> UiA
                 );
 
                 // Show what they want if available
-                draw_text(
+                draw_ui_text(
                     &data.localization.ui.game.trade.any_item,
                     inner.x,
                     inner.y + 105.0,
@@ -1302,7 +1303,7 @@ pub fn draw_dropoff(game_state: &GameState, game_data: Option<&GameData>) -> UiA
 
                 // Show inventory items for selection
                 if !game_state.inventory.is_empty() {
-                    draw_text(
+                    draw_ui_text(
                         &data.localization.ui.game.trade.select,
                         inner.x,
                         btn_y - 20.0,
@@ -1336,7 +1337,7 @@ pub fn draw_dropoff(game_state: &GameState, game_data: Option<&GameData>) -> UiA
                     }
                 } else {
                     // No items to trade
-                    draw_text(
+                    draw_ui_text(
                         &data.localization.ui.game.trade.empty,
                         inner.x,
                         btn_y,
@@ -1385,7 +1386,7 @@ pub fn draw_guideline_decision(game_state: &GameState, game_data: Option<&GameDa
             let mut y = inner.y;
 
             // Title
-            draw_text(
+            draw_ui_text(
                 &data.localization.ui.game.guidelines.title,
                 inner.x,
                 y + 28.0,
@@ -1413,11 +1414,11 @@ pub fn draw_guideline_decision(game_state: &GameState, game_data: Option<&GameDa
                 .timer
                 .replace("{:.1}", &format!("{:.1}", time_left));
 
-            draw_text(&timer_text, inner.x, y + 20.0, fonts::SIZE_LG, timer_color);
+            draw_ui_text(&timer_text, inner.x, y + 20.0, fonts::SIZE_LG, timer_color);
             y += 50.0;
 
             // Guideline info
-            draw_text(
+            draw_ui_text(
                 &data.localization.ui.game.guidelines.label,
                 inner.x,
                 y + 18.0,
@@ -1425,7 +1426,7 @@ pub fn draw_guideline_decision(game_state: &GameState, game_data: Option<&GameDa
                 colors::TEXT_MUTED,
             );
             y += 25.0;
-            draw_text(
+            draw_ui_text(
                 &guideline.title,
                 inner.x,
                 y + 18.0,
@@ -1440,7 +1441,7 @@ pub fn draw_guideline_decision(game_state: &GameState, game_data: Option<&GameDa
             } else {
                 guideline.description.clone()
             };
-            draw_text(
+            draw_ui_text(
                 &desc_preview,
                 inner.x,
                 y + 16.0,
@@ -1450,7 +1451,7 @@ pub fn draw_guideline_decision(game_state: &GameState, game_data: Option<&GameDa
             y += 50.0;
 
             // Detected tells
-            draw_text(
+            draw_ui_text(
                 &data.localization.ui.game.guidelines.tells_label,
                 inner.x,
                 y + 18.0,
@@ -1466,7 +1467,7 @@ pub fn draw_guideline_decision(game_state: &GameState, game_data: Option<&GameDa
                 .collect();
 
             if relevant_tells.is_empty() {
-                draw_text(
+                draw_ui_text(
                     &data.localization.ui.game.guidelines.no_tells,
                     inner.x + 20.0,
                     y + 16.0,
@@ -1501,7 +1502,7 @@ pub fn draw_guideline_decision(game_state: &GameState, game_data: Option<&GameDa
                         "• [{}] {} ({}, {:.0}s)",
                         intensity_text, tell.tell.description, noticed_text, age
                     );
-                    draw_text(
+                    draw_ui_text(
                         &tell_text,
                         inner.x + 20.0,
                         y + 16.0,
@@ -1532,7 +1533,7 @@ pub fn draw_guideline_decision(game_state: &GameState, game_data: Option<&GameDa
                     last_decision.tells_present.len(),
                     (get_time() - last_decision.timestamp).max(0.0)
                 );
-                draw_text(
+                draw_ui_text(
                     &history_text,
                     inner.x,
                     y - 8.0,
@@ -1595,7 +1596,7 @@ pub fn draw_inventory_modal(game_state: &GameState, game_data: Option<&GameData>
         let mut y = inner.y;
 
         // Title
-        draw_text(
+        draw_ui_text(
             &data.localization.ui.game.inventory.title,
             inner.x,
             y,
@@ -1605,7 +1606,7 @@ pub fn draw_inventory_modal(game_state: &GameState, game_data: Option<&GameData>
         y += 40.0;
 
         // Help text
-        draw_text(
+        draw_ui_text(
             &data.localization.ui.game.inventory.hint,
             inner.x,
             y,
@@ -1623,7 +1624,7 @@ pub fn draw_inventory_modal(game_state: &GameState, game_data: Option<&GameData>
             .inventory
             .count
             .replace("{}", &game_state.inventory.len().to_string());
-        draw_text(
+        draw_ui_text(
             &count_text,
             inner.x,
             y,
@@ -1634,7 +1635,7 @@ pub fn draw_inventory_modal(game_state: &GameState, game_data: Option<&GameData>
 
         // Draw items
         if game_state.inventory.is_empty() {
-            draw_text(
+            draw_ui_text(
                 &data.localization.ui.game.inventory.empty,
                 inner.x,
                 y,
@@ -1662,7 +1663,7 @@ pub fn draw_inventory_modal(game_state: &GameState, game_data: Option<&GameData>
                 };
 
                 // Item name
-                draw_text(
+                draw_ui_text(
                     &item.name,
                     inner.x + 10.0,
                     y + 15.0,
@@ -1672,7 +1673,7 @@ pub fn draw_inventory_modal(game_state: &GameState, game_data: Option<&GameData>
 
                 // Rarity badge
                 let rarity_text = format!("{:?}", item.rarity);
-                draw_text(
+                draw_ui_text(
                     &rarity_text,
                     inner.x + 10.0,
                     y + 35.0,
@@ -1689,7 +1690,7 @@ pub fn draw_inventory_modal(game_state: &GameState, game_data: Option<&GameData>
                     .inventory
                     .source
                     .replace("{}", &item.source);
-                draw_text(
+                draw_ui_text(
                     &source_text,
                     inner.x + inner.w * 0.34,
                     y + 35.0,
@@ -1714,7 +1715,7 @@ pub fn draw_inventory_modal(game_state: &GameState, game_data: Option<&GameData>
 
                 // Check if we're running out of space
                 if y > inner.y + panel_h - 80.0 {
-                    draw_text(
+                    draw_ui_text(
                         &data.localization.ui.game.inventory.more,
                         inner.x,
                         y,
@@ -1755,7 +1756,7 @@ pub fn draw_rules_panel(game_state: &GameState, game_data: Option<&GameData>) ->
 
     if let Some(data) = game_data {
         // Title
-        draw_text(
+        draw_ui_text(
             &data.localization.ui.game.rules.title,
             inner.x,
             y,
@@ -1765,7 +1766,7 @@ pub fn draw_rules_panel(game_state: &GameState, game_data: Option<&GameData>) ->
         y += 42.0;
 
         // Help text
-        draw_text(
+        draw_ui_text(
             &data.localization.ui.game.rules.hint,
             inner.x,
             y,
@@ -1776,7 +1777,7 @@ pub fn draw_rules_panel(game_state: &GameState, game_data: Option<&GameData>) ->
     } else {
         // Fallback
         // Title
-        draw_text(
+        draw_ui_text(
             "CURRENT RULES",
             inner.x,
             y,
@@ -1786,7 +1787,7 @@ pub fn draw_rules_panel(game_state: &GameState, game_data: Option<&GameData>) ->
         y += 42.0;
 
         // Help text
-        draw_text(
+        draw_ui_text(
             "Press R to close",
             inner.x,
             y,
@@ -1852,7 +1853,7 @@ pub fn draw_rules_panel(game_state: &GameState, game_data: Option<&GameData>) ->
             fonts::SIZE_SM,
             colors::TEXT_MUTED,
         );
-        draw_text(
+        draw_ui_text(
             &rule.title,
             card.x + 58.0,
             card.y + 34.0,
@@ -1866,7 +1867,7 @@ pub fn draw_rules_panel(game_state: &GameState, game_data: Option<&GameData>) ->
         } else {
             rule.description.clone()
         };
-        draw_text(
+        draw_ui_text(
             &desc,
             card.x + 58.0,
             card.y + 62.0,
@@ -1878,7 +1879,7 @@ pub fn draw_rules_panel(game_state: &GameState, game_data: Option<&GameData>) ->
 
         // Check if we're running out of space
         if y > inner.y + panel_h - 80.0 {
-            draw_text("...", inner.x, y, fonts::SIZE_SM, colors::TEXT_MUTED);
+            draw_ui_text("...", inner.x, y, fonts::SIZE_SM, colors::TEXT_MUTED);
             break;
         }
     }
