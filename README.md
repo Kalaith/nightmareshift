@@ -26,3 +26,10 @@ Complete the night without breaking the wrong rule, running dry, or letting a da
 ## Current Scope
 
 Playable horror-shift loop with passenger tells, route choices, rules, fuel pressure, earnings, and upgrades.
+# Practical Future Improvements
+
+- Add deterministic tests for passenger rule selection, tell detection, route choice, fuel use, money rewards, and failure conditions.
+- Move passenger rules and alert behavior into a data-driven policy layer with fixtures for wrong-rule and near-miss cases.
+- Add scenario replays for full-shift survival paths across different upgrade and route choices.
+- Separate meta-screen state from active shift state so pause, upgrades, and results cannot leak into route simulation.
+
