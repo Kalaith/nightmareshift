@@ -239,7 +239,7 @@ impl PlaytestBot {
             }
             GamePhase::GuidelineDecision => {
                 if self.strategy == PlaytestStrategy::Coverage {
-                    let action = if self.guideline_cursor % 2 == 0 {
+                    let action = if self.guideline_cursor.is_multiple_of(2) {
                         UiAction::FollowGuideline
                     } else {
                         UiAction::BreakGuideline

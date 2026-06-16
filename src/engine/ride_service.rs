@@ -861,7 +861,7 @@ impl RideService {
                             let triggered = PassengerStateMachine::apply_stress_delta(
                                 &mut need,
                                 &passenger,
-                                (amount as i32) * 8,
+                                amount * 8,
                                 macroquad::prelude::get_time(),
                             );
                             state.current_passenger_need_state = Some(need);

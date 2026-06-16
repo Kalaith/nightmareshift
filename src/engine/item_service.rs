@@ -215,9 +215,9 @@ impl ItemService {
                 if let Some(passenger_id) = state.current_passenger.as_ref().map(|p| p.id) {
                     if let Some(rep) = state.passenger_reputation.get_mut(&passenger_id) {
                         if effect.value > 0 {
-                            rep.positive_choices += effect.value.abs() as u32;
+                            rep.positive_choices += effect.value.unsigned_abs();
                         } else {
-                            rep.negative_choices += effect.value.abs() as u32;
+                            rep.negative_choices += effect.value.unsigned_abs();
                         }
                     }
                 }

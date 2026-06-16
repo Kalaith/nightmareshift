@@ -5,35 +5,27 @@ use serde::{Deserialize, Serialize};
 /// Difficulty level for a rule
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
+#[derive(Default)]
 pub enum Difficulty {
     Easy,
+    #[default]
     Medium,
     Hard,
     Expert,
     Nightmare,
 }
 
-impl Default for Difficulty {
-    fn default() -> Self {
-        Difficulty::Medium
-    }
-}
-
 /// Category of rule
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
+#[derive(Default)]
 pub enum RuleType {
+    #[default]
     Basic,
     Conditional,
     Conflicting,
     Hidden,
     Weather,
-}
-
-impl Default for RuleType {
-    fn default() -> Self {
-        RuleType::Basic
-    }
 }
 
 /// Whether an action is forbidden or required

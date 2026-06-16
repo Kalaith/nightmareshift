@@ -711,7 +711,7 @@ impl WeatherService {
             HazardType::Accident => (
                 HazardEffects {
                     time_delay: Some(10 * mult),
-                    risk_increase: Some(1 * mult),
+                    risk_increase: Some(mult),
                     ..Default::default()
                 },
                 25,
@@ -735,7 +735,7 @@ impl WeatherService {
             HazardType::PoliceCheckpoint => (
                 HazardEffects {
                     time_delay: Some(8 * mult),
-                    risk_increase: Some(1 * mult),
+                    risk_increase: Some(mult),
                     ..Default::default()
                 },
                 20,

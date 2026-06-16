@@ -198,7 +198,8 @@ impl PlayerStats {
     /// Add a leaderboard entry and sort (keep top 10)
     pub fn add_leaderboard_entry(&mut self, entry: LeaderboardEntry) {
         self.leaderboard.push(entry);
-        self.leaderboard.sort_by(|a, b| b.score.cmp(&a.score));
+        self.leaderboard
+            .sort_by_key(|entry| std::cmp::Reverse(entry.score));
         self.leaderboard.truncate(10);
     }
 

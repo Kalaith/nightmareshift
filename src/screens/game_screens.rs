@@ -1088,10 +1088,10 @@ pub fn draw_interaction(
             let mut hint_text = None;
             if let Some(req_trait) = &choice.required_trait {
                 if let Some(passenger) = &game_state.current_passenger {
-                    if passenger.traits.contains(req_trait) {
-                        if player_stats.is_backstory_unlocked(passenger.id) {
-                            hint_text = Some(format!("{}'s {} helps!", passenger.name, req_trait));
-                        }
+                    if passenger.traits.contains(req_trait)
+                        && player_stats.is_backstory_unlocked(passenger.id)
+                    {
+                        hint_text = Some(format!("{}'s {} helps!", passenger.name, req_trait));
                     }
                 }
             }
@@ -1830,9 +1830,8 @@ pub fn draw_rules_panel(game_state: &GameState, game_data: Option<&GameData>) ->
     }
 
     let rule_card_h = 92.0;
-    let mut rule_idx = 0;
     // Draw rules
-    for rule in &game_state.current_rules {
+    for (rule_idx, rule) in game_state.current_rules.iter().enumerate() {
         let card = UiRect::new(inner.x, y, inner.w, rule_card_h);
         draw_glass_panel(card, colors::BORDER_DIM);
 
@@ -1875,7 +1874,6 @@ pub fn draw_rules_panel(game_state: &GameState, game_data: Option<&GameData>) ->
             colors::TEXT_SECONDARY,
         );
         y = card.bottom() + 14.0;
-        rule_idx += 1;
 
         // Check if we're running out of space
         if y > inner.y + panel_h - 80.0 {

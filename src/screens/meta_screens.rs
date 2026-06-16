@@ -263,7 +263,7 @@ pub fn draw_skill_tree(player_stats: &PlayerStats, game_data: Option<&GameData>)
                 let panel_rect =
                     UiRect::new(column_x, y, column_w, category_h.min(content_h + 80.0));
                 draw_glass_panel(panel_rect, colors::BORDER_DIM);
-                draw_skill_category_mark(*category, column_x + 28.0, y + 30.0, colors::CAB_YELLOW);
+                draw_skill_category_mark(category, column_x + 28.0, y + 30.0, colors::CAB_YELLOW);
                 draw_small_caps(
                     &skill_category_label(category, data),
                     column_x + 56.0,

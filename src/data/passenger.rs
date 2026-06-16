@@ -6,50 +6,38 @@ use std::collections::HashMap;
 /// Passenger rarity tier
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
+#[derive(Default)]
 pub enum Rarity {
+    #[default]
     Common,
     Uncommon,
     Rare,
     Legendary,
 }
 
-impl Default for Rarity {
-    fn default() -> Self {
-        Rarity::Common
-    }
-}
-
 /// Route types for navigation
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
+#[derive(Default)]
 pub enum RouteType {
+    #[default]
     Normal,
     Shortcut,
     Scenic,
     Police,
 }
 
-impl Default for RouteType {
-    fn default() -> Self {
-        RouteType::Normal
-    }
-}
-
 /// How a passenger feels about a route
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
+#[derive(Default)]
 pub enum PreferenceLevel {
     Loves,
     Likes,
+    #[default]
     Neutral,
     Dislikes,
     Fears,
-}
-
-impl Default for PreferenceLevel {
-    fn default() -> Self {
-        PreferenceLevel::Neutral
-    }
 }
 
 impl PreferenceLevel {
@@ -87,19 +75,15 @@ pub enum TellIntensity {
 /// Type of passenger need
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
+#[derive(Default)]
 pub enum NeedType {
     Hunger,
     Fear,
     Wrath,
     Decay,
     Loneliness,
+    #[default]
     Unknown,
-}
-
-impl Default for NeedType {
-    fn default() -> Self {
-        NeedType::Unknown
-    }
 }
 
 /// A behavioral tell that hints at the passenger's state

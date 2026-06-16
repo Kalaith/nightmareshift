@@ -342,9 +342,9 @@ impl Game {
                             self.game_state.passenger_reputation.get_mut(&passenger.id)
                         {
                             if rep_change > 0 {
-                                rep.positive_choices += rep_change.abs() as u32;
+                                rep.positive_choices += rep_change.unsigned_abs();
                             } else {
-                                rep.negative_choices += rep_change.abs() as u32;
+                                rep.negative_choices += rep_change.unsigned_abs();
                             }
                         }
                     }

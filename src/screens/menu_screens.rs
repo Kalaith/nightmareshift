@@ -562,17 +562,17 @@ pub fn draw_main_menu(player_stats: &PlayerStats, game_data: Option<&GameData>) 
             return UiAction::OpenLeaderboard;
         }
 
-        if Persistence::save_exists() {
-            if draw_menu_command(
+        if Persistence::save_exists()
+            && draw_menu_command(
                 UiRect::new(menu_x, menu_y + (menu_h + gap) * 4.0, menu_w, menu_h),
                 "delete",
                 "Delete Save",
                 "Reset Progress",
                 colors::ACCENT_DANGER,
                 menu_scale,
-            ) {
-                return UiAction::DeleteSave;
-            }
+            )
+        {
+            return UiAction::DeleteSave;
         }
     }
 

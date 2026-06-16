@@ -3,6 +3,8 @@
 //! Drive supernatural passengers through the night, follow mysterious rules,
 //! and try to survive until dawn.
 
+#![allow(clippy::too_many_arguments)]
+
 mod bot;
 mod data;
 mod engine;

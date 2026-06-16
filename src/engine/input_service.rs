@@ -93,10 +93,10 @@ impl InputService {
                     actions.push(UiAction::ReturnToMenu);
                 }
             }
-            Screen::SkillTree | Screen::Almanac | Screen::Leaderboard => {
-                if is_key_pressed(KeyCode::Escape) {
-                    actions.push(UiAction::ReturnToMenu);
-                }
+            Screen::SkillTree | Screen::Almanac | Screen::Leaderboard
+                if is_key_pressed(KeyCode::Escape) =>
+            {
+                actions.push(UiAction::ReturnToMenu);
             }
             _ => {}
         }

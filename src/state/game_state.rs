@@ -4,8 +4,9 @@ use crate::data::*;
 use std::collections::HashMap;
 
 /// Current game phase
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum GamePhase {
+    #[default]
     Loading,
     MainMenu,
     Briefing,
@@ -22,12 +23,6 @@ pub enum GamePhase {
     Leaderboard,
 }
 
-impl Default for GamePhase {
-    fn default() -> Self {
-        GamePhase::Loading
-    }
-}
-
 /// Driving sub-phase
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum DrivingPhase {
@@ -36,33 +31,23 @@ pub enum DrivingPhase {
 }
 
 /// Need stage progression
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
 pub enum NeedStage {
+    #[default]
     Calm,
     Warning,
     Critical,
     Meltdown,
 }
 
-impl Default for NeedStage {
-    fn default() -> Self {
-        NeedStage::Calm
-    }
-}
-
 /// Relationship level with a passenger
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum RelationshipLevel {
     Hostile,
+    #[default]
     Neutral,
     Friendly,
     Trusted,
-}
-
-impl Default for RelationshipLevel {
-    fn default() -> Self {
-        RelationshipLevel::Neutral
-    }
 }
 
 /// Current ride information
@@ -415,7 +400,7 @@ impl GameState {
 
     /// Check if shift should end
     pub fn should_end_shift(&self) -> bool {
-        self.time_remaining <= 0 || self.fuel <= 0.0
+        self.time_remaining == 0 || self.fuel <= 0.0
     }
 
     /// Reveal a hidden rule and move it into the active visible rules.

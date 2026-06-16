@@ -6,19 +6,15 @@ use serde::{Deserialize, Serialize};
 /// Weather types
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
+#[derive(Default)]
 pub enum WeatherType {
+    #[default]
     Clear,
     Rain,
     Fog,
     Snow,
     Thunderstorm,
     Wind,
-}
-
-impl Default for WeatherType {
-    fn default() -> Self {
-        WeatherType::Clear
-    }
 }
 
 impl WeatherType {
@@ -38,16 +34,12 @@ impl WeatherType {
 /// Weather intensity
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
+#[derive(Default)]
 pub enum WeatherIntensity {
+    #[default]
     Light,
     Moderate,
     Heavy,
-}
-
-impl Default for WeatherIntensity {
-    fn default() -> Self {
-        WeatherIntensity::Light
-    }
 }
 
 /// Type of weather effect
@@ -107,19 +99,15 @@ impl Default for WeatherCondition {
 /// Time of day phases
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
+#[derive(Default)]
 pub enum TimePhase {
     Dawn,
     Morning,
     Afternoon,
     Dusk,
+    #[default]
     Night,
     Latenight,
-}
-
-impl Default for TimePhase {
-    fn default() -> Self {
-        TimePhase::Night
-    }
 }
 
 /// Current time of day
@@ -156,17 +144,13 @@ impl TimeOfDay {
 /// Season types
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
+#[derive(Default)]
 pub enum SeasonType {
     Spring,
     Summer,
+    #[default]
     Fall,
     Winter,
-}
-
-impl Default for SeasonType {
-    fn default() -> Self {
-        SeasonType::Fall
-    }
 }
 
 /// Temperature levels

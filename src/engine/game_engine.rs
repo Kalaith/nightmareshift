@@ -12,25 +12,13 @@ pub struct ShiftRules {
 }
 
 /// Result of rule evaluation
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct RuleEvaluationResult {
     pub violation: bool,
     pub rule: Option<Rule>,
     pub message: Option<String>,
     pub need_adjustment: i32,
     pub triggered_exception: Option<GuidelineException>,
-}
-
-impl Default for RuleEvaluationResult {
-    fn default() -> Self {
-        Self {
-            violation: false,
-            rule: None,
-            message: None,
-            need_adjustment: 0,
-            triggered_exception: None,
-        }
-    }
 }
 
 /// Core game engine for rule generation and violation checking

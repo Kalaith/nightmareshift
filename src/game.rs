@@ -169,18 +169,15 @@ impl Game {
         if let Some(ref data) = self.game_data {
             let current_time = get_time();
 
-            match RideService::choose_route(
+            if let RouteOutcome::GameOver(reason) = RideService::choose_route(
                 &mut self.game_state,
                 data,
                 &mut self.player_stats,
                 route,
                 current_time,
             ) {
-                RouteOutcome::GameOver(reason) => {
-                    self.game_state.game_over_reason = Some(reason);
-                    self.end_shift(false);
-                }
-                _ => {}
+                self.game_state.game_over_reason = Some(reason);
+                self.end_shift(false);
             }
         }
     }
@@ -484,10 +481,8 @@ impl Game {
                         self.particles.spawn_snow(3);
                     }
                 }
-                WeatherType::Fog => {
-                    if self.particles.count() < 30 {
-                        self.particles.spawn_fog(1);
-                    }
+                WeatherType::Fog if self.particles.count() < 30 => {
+                    self.particles.spawn_fog(1);
                 }
                 _ => {}
             }

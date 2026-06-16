@@ -6,18 +6,14 @@ use serde::{Deserialize, Serialize};
 /// Type of inventory item
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
+#[derive(Default)]
 pub enum ItemType {
     Protective,
     Cursed,
     Consumable,
     Tradeable,
+    #[default]
     Story,
-}
-
-impl Default for ItemType {
-    fn default() -> Self {
-        ItemType::Story
-    }
 }
 
 /// Type of item effect
