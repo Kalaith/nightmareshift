@@ -66,6 +66,22 @@ impl Game {
         }
     }
 
+    /// Seed a specific scene for the screenshot harness.
+    pub fn begin_capture_scene(&mut self, scene: &str) {
+        match scene {
+            "briefing" => self.start_game(),
+            "gameplay" => {
+                self.start_game();
+                self.start_shift();
+            }
+            _ => {
+                // Default: main menu. The boot flow lands here automatically
+                // after a couple of loading frames (see `update`), so no
+                // seeding is needed.
+            }
+        }
+    }
+
     /// Save player stats
     fn save_stats(&self) {
         if let Some(data) = &self.game_data {
