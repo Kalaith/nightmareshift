@@ -1,7 +1,7 @@
 //! Automated playtest bot for smoke-testing the core gameplay loop.
 
 use crate::data::{GameData, Passenger, PreferenceLevel, RouteType};
-use crate::engine::RouteService;
+use crate::engine::{RouteService, SkillModifiers};
 use crate::screens::Screen;
 use crate::state::{AlmanacEntry, GamePhase, GameState, PlayerStats, RouteStreak};
 use crate::ui::UiAction;
@@ -310,6 +310,7 @@ impl PlaytestBot {
             .and_then(|p| data.get_location(&p.pickup).map(|l| l.risk_level))
             .unwrap_or(1);
         let route_mastery = stats.route_mastery_map();
+        let skill_mods = SkillModifiers::from_unlocked(&data.skills, &stats.unlocked_skills);
         let mut evaluated = Vec::new();
 
         for idx in candidates {
@@ -323,6 +324,7 @@ impl PlaytestBot {
                 &state.environmental_hazards,
                 &route_mastery,
                 Some(passenger),
+                &skill_mods,
             );
 
             if state.fuel < costs.fuel as f32 || state.time_remaining < costs.time {

@@ -21,6 +21,67 @@ pub struct RuleEvaluationResult {
     pub triggered_exception: Option<GuidelineException>,
 }
 
+/// Aggregated gameplay modifiers derived from the player's unlocked skills.
+///
+/// Computed once from the skill definitions plus the player's unlocked list, so
+/// every skill's effect actually reaches the systems it names.
+#[derive(Debug, Clone, Copy)]
+pub struct SkillModifiers {
+    /// Multiplier on route fuel cost (< 1.0 is cheaper).
+    pub fuel_cost_mult: f32,
+    /// Flat bonus to maximum fuel capacity.
+    pub max_fuel_bonus: f32,
+    /// Multiplier on fuel/time/risk added by environmental hazards (< 1.0 softer).
+    pub hazard_mult: f32,
+    /// Per-shift chance to reveal one hidden rule up front.
+    pub reveal_hidden_chance: f32,
+    /// Multiplier on every fare earned (> 1.0 pays more).
+    pub fare_mult: f32,
+    /// Multiplier on refuel cost (< 1.0 is a discount).
+    pub refuel_cost_mult: f32,
+    /// Protective wards granted at the start of each shift.
+    pub bonus_protection: u32,
+}
+
+impl Default for SkillModifiers {
+    fn default() -> Self {
+        Self {
+            fuel_cost_mult: 1.0,
+            max_fuel_bonus: 0.0,
+            hazard_mult: 1.0,
+            reveal_hidden_chance: 0.0,
+            fare_mult: 1.0,
+            refuel_cost_mult: 1.0,
+            bonus_protection: 0,
+        }
+    }
+}
+
+impl SkillModifiers {
+    /// Build the active modifiers from the skill catalog and the player's
+    /// unlocked-skill list. Unknown targets are ignored.
+    pub fn from_unlocked(skills: &[Skill], unlocked: &[String]) -> Self {
+        let mut m = Self::default();
+        for skill in skills {
+            if !unlocked.contains(&skill.id) {
+                continue;
+            }
+            let v = skill.effect.value as f32;
+            match skill.effect.target.as_str() {
+                "fuel_consumption" => m.fuel_cost_mult *= v,
+                "max_fuel" => m.max_fuel_bonus += v,
+                "hazard_damage" => m.hazard_mult *= v,
+                "reveal_hidden_chance" => m.reveal_hidden_chance += v,
+                "fare_multiplier" => m.fare_mult *= v,
+                "refuel_discount" => m.refuel_cost_mult *= (1.0 - v).max(0.0),
+                "supernatural_protection" => m.bonus_protection += v as u32,
+                _ => {}
+            }
+        }
+        m
+    }
+}
+
 /// Core game engine for rule generation and violation checking
 pub struct GameEngine;
 

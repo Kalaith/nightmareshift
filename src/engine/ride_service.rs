@@ -4,7 +4,7 @@ use crate::data::event::{EventChoice, EventConsequence, MidRideEvent, RiskTag};
 use crate::data::*;
 use crate::engine::{
     GameEngine, ItemService, PassengerSelectionContext, PassengerService, PassengerStateMachine,
-    RouteCosts, RouteService, RuleEvaluationResult,
+    RouteCosts, RouteService, RuleEvaluationResult, SkillModifiers,
 };
 use crate::state::*;
 use crate::ui::layout; // For constants like MINIMUM_FUEL_FOR_RIDE
@@ -101,12 +101,15 @@ impl RideService {
         current_time: f64,
     ) {
         if let Some(ref passenger) = state.current_passenger.clone() {
-            // Calculate fare
+            // Calculate fare. The destination's fareModifier and the player's
+            // fare-boosting skills (Silver Tongue) both scale the payout.
             let reputation = state.passenger_reputation.get(&passenger.id);
+            let skill_mods = SkillModifiers::from_unlocked(&data.skills, &stats.unlocked_skills);
             let destination_fare_modifier = data
                 .get_location(&passenger.destination)
                 .map(|l| l.fare_modifier)
-                .unwrap_or(1.0);
+                .unwrap_or(1.0)
+                * skill_mods.fare_mult;
             let fare = GameEngine::calculate_fare(
                 passenger.fare,
                 route,
@@ -211,6 +214,7 @@ impl RideService {
         }
 
         let route_mastery = stats.route_mastery_map();
+        let skill_mods = SkillModifiers::from_unlocked(&data.skills, &stats.unlocked_skills);
         let mut costs = RouteService::calculate_route_costs(
             route,
             &data.constants,
@@ -220,6 +224,7 @@ impl RideService {
             &state.environmental_hazards,
             &route_mastery,
             state.current_passenger.as_ref(),
+            &skill_mods,
         );
         Self::apply_curse_route_pressure(state, &mut costs);
 

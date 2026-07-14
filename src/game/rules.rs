@@ -193,8 +193,8 @@ impl Game {
                     }
                 }
                 ConsequenceType::Fuel => {
-                    self.game_state.fuel =
-                        (self.game_state.fuel + consequence.value as f32).clamp(0.0, 100.0);
+                    self.game_state.fuel = (self.game_state.fuel + consequence.value as f32)
+                        .clamp(0.0, self.game_state.max_fuel);
                 }
                 ConsequenceType::Time => {
                     if consequence.value >= 0 {

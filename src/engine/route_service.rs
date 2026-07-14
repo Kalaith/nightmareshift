@@ -18,6 +18,7 @@ pub struct RouteService;
 
 impl RouteService {
     /// Calculate costs for a route type with all modifiers
+    #[allow(clippy::too_many_arguments)]
     pub fn calculate_route_costs(
         route: RouteType,
         constants: &ConstantsData,
@@ -27,6 +28,7 @@ impl RouteService {
         hazards: &[EnvironmentalHazard],
         route_mastery: &HashMap<RouteType, u32>,
         passenger: Option<&Passenger>,
+        skill_mods: &crate::engine::SkillModifiers,
     ) -> RouteCosts {
         // Base costs from constants
         let (base_fuel, base_time, base_risk) = match route {
@@ -128,27 +130,34 @@ impl RouteService {
             }
         }
 
-        // Hazard effects
+        // Hazard effects, accumulated separately so the Reinforced Chassis skill
+        // (hazard_mult) can soften only the hazard-inflicted portion.
+        let mut hazard_fuel = 0.0;
+        let mut hazard_time = 0.0;
+        let mut hazard_risk = 0.0;
         for hazard in hazards {
             if hazard.blocks_route(route) {
-                time += 12.0;
-                fuel += 5.0;
-                risk = (risk + 2.0).min(5.0);
+                hazard_time += 12.0;
+                hazard_fuel += 5.0;
+                hazard_risk += 2.0;
             }
             if let Some(f) = hazard.effects.fuel_increase {
-                fuel += f as f32;
+                hazard_fuel += f as f32;
             }
             if let Some(t) = hazard.effects.time_delay {
-                time += t as f32;
+                hazard_time += t as f32;
             }
             if let Some(r) = hazard.effects.risk_increase {
-                risk += r as f32;
+                hazard_risk += r as f32;
             }
             if hazard.effects.forced_choice == Some(true) {
-                time += 5.0;
-                risk = (risk + 1.0).min(5.0);
+                hazard_time += 5.0;
+                hazard_risk += 1.0;
             }
         }
+        fuel += hazard_fuel * skill_mods.hazard_mult;
+        time += hazard_time * skill_mods.hazard_mult;
+        risk = (risk + hazard_risk * skill_mods.hazard_mult).min(5.0);
 
         // Route mastery bonuses
         if let Some(&mastery) = route_mastery.get(&route) {
@@ -160,6 +169,10 @@ impl RouteService {
             time = (time - time_reduction).max(constants.route_variations.minimum_time_cost as f32);
             risk = (risk - risk_reduction).max(0.0);
         }
+
+        // Fuel-efficiency skills (Hybrid Injection) scale the whole fuel cost.
+        fuel = (fuel * skill_mods.fuel_cost_mult)
+            .max(constants.route_variations.minimum_fuel_cost as f32);
 
         RouteCosts {
             fuel: fuel.round() as u32,

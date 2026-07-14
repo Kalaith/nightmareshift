@@ -116,6 +116,20 @@ impl Game {
             self.game_state.hidden_rules = shift_rules.hidden_rules;
             self.game_state.difficulty_level = shift_rules.difficulty_level;
 
+            // Apply the player's unlocked-skill effects for this shift.
+            let skill_mods =
+                SkillModifiers::from_unlocked(&data.skills, &self.player_stats.unlocked_skills);
+            self.game_state.max_fuel = 100.0 + skill_mods.max_fuel_bonus;
+            self.game_state.supernatural_protection += skill_mods.bonus_protection;
+            // Glimpse: a chance to reveal one hidden rule up front.
+            if skill_mods.reveal_hidden_chance > 0.0
+                && macroquad_toolkit::rng::chance(skill_mods.reveal_hidden_chance)
+            {
+                if let Some(rule_id) = self.game_state.hidden_rules.first().map(|r| r.id) {
+                    self.game_state.reveal_hidden_rule(rule_id);
+                }
+            }
+
             // Load guidelines for tell detection
             self.game_state.current_guidelines = data.guidelines.clone();
 
@@ -238,11 +252,14 @@ impl Game {
     /// Refuel to full capacity
     fn refuel_full(&mut self) {
         if let Some(ref data) = self.game_data {
-            let fuel_needed = 100.0 - self.game_state.fuel;
-            let cost = (fuel_needed * data.constants.fuel.cost_per_percent) as u32;
+            let refuel_mult =
+                SkillModifiers::from_unlocked(&data.skills, &self.player_stats.unlocked_skills)
+                    .refuel_cost_mult;
+            let fuel_needed = self.game_state.max_fuel - self.game_state.fuel;
+            let cost = (fuel_needed * data.constants.fuel.cost_per_percent * refuel_mult) as u32;
 
             if self.game_state.earnings >= cost {
-                self.game_state.fuel = 100.0;
+                self.game_state.fuel = self.game_state.max_fuel;
                 self.game_state.earnings -= cost;
             }
         }
@@ -251,12 +268,16 @@ impl Game {
     /// Refuel by 25%
     fn refuel_partial(&mut self) {
         if let Some(ref data) = self.game_data {
-            let fuel_needed = 100.0 - self.game_state.fuel;
+            let refuel_mult =
+                SkillModifiers::from_unlocked(&data.skills, &self.player_stats.unlocked_skills)
+                    .refuel_cost_mult;
+            let fuel_needed = self.game_state.max_fuel - self.game_state.fuel;
             let amount = 25.0_f32.min(fuel_needed);
-            let cost = (amount * data.constants.fuel.cost_per_percent) as u32;
+            let cost = (amount * data.constants.fuel.cost_per_percent * refuel_mult) as u32;
 
             if self.game_state.earnings >= cost {
-                self.game_state.fuel = (self.game_state.fuel + amount).min(100.0);
+                self.game_state.fuel =
+                    (self.game_state.fuel + amount).min(self.game_state.max_fuel);
                 self.game_state.earnings -= cost;
             }
         }

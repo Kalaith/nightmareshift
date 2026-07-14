@@ -246,6 +246,8 @@ pub enum DialogueSpeaker {
 pub struct GameState {
     // Core resources
     pub fuel: f32,
+    /// Maximum fuel capacity for this shift (100 plus any capacity skills).
+    pub max_fuel: f32,
     pub earnings: u32,
     pub time_remaining: u32,
     pub rides_completed: u32,
@@ -310,6 +312,7 @@ impl GameState {
     pub fn new(_current_time: f64, constants: &GameConstants) -> Self {
         Self {
             fuel: constants.initial_fuel as f32,
+            max_fuel: 100.0,
             earnings: 0,
             time_remaining: constants.initial_time,
             rides_completed: 0,
@@ -357,6 +360,7 @@ impl GameState {
     /// Reset for a new shift using constants
     pub fn reset_for_new_shift(&mut self, current_time: f64, constants: &GameConstants) {
         self.fuel = constants.initial_fuel as f32;
+        self.max_fuel = 100.0;
         self.earnings = 0;
         self.time_remaining = constants.initial_time;
         self.minimum_earnings = constants.minimum_earnings;

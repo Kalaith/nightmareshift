@@ -145,7 +145,7 @@ impl ItemService {
         match effect.effect_type {
             ItemEffectType::FuelBonus => {
                 let bonus = effect.value as f32;
-                state.fuel = (state.fuel + bonus).min(100.0);
+                state.fuel = (state.fuel + bonus).min(state.max_fuel);
             }
             ItemEffectType::TimeBonus => {
                 state.time_remaining += effect.value as u32;

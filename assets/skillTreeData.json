@@ -62,7 +62,7 @@
     {
         "id": "warding_charm",
         "name": "Basic Warding",
-        "description": "Reduces the sanity drain from supernatural events.",
+        "description": "Begin each shift with an extra protective ward that can absorb one meltdown.",
         "cost": 1000,
         "icon": "🧿",
         "category": "occult",
@@ -70,29 +70,29 @@
             "third_eye_1"
         ],
         "effect": {
-            "type": "stat_boost",
-            "target": "sanity_resistance",
-            "value": 0.1
+            "type": "mechanic_unlock",
+            "target": "supernatural_protection",
+            "value": 1
         }
     },
     {
         "id": "silver_tongue_1",
         "name": "Silver Tongue",
-        "description": "Increases tips from passengers by 10%.",
+        "description": "Increases the fare from every ride by 10%.",
         "cost": 400,
         "icon": "🗣️",
         "category": "efficiency",
         "prerequisites": [],
         "effect": {
             "type": "stat_boost",
-            "target": "tip_multiplier",
+            "target": "fare_multiplier",
             "value": 1.1
         }
     },
     {
         "id": "negotiator",
         "name": "Negotiator",
-        "description": "Reduces the cost of items in shops by 15%.",
+        "description": "Reduces refueling costs by 15%.",
         "cost": 900,
         "icon": "🤝",
         "category": "efficiency",
@@ -101,7 +101,7 @@
         ],
         "effect": {
             "type": "stat_boost",
-            "target": "shop_discount",
+            "target": "refuel_discount",
             "value": 0.15
         }
     },

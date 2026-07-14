@@ -283,7 +283,7 @@ pub fn draw_waiting(game_state: &GameState, game_data: Option<&GameData>) -> UiA
             2,
         );
 
-        if fuel_pct < 100.0 {
+        if fuel_pct < game_state.max_fuel {
             let refuel_y = inner.y + inner.h - 112.0;
             draw_small_caps(
                 &data.localization.ui.game.waiting.refuel_title,
@@ -296,7 +296,7 @@ pub fn draw_waiting(game_state: &GameState, game_data: Option<&GameData>) -> UiA
             let btn_w = (left_w - 16.0) / 2.0;
             let btn_h = 44.0;
 
-            let fuel_needed = 100.0 - fuel_pct;
+            let fuel_needed = game_state.max_fuel - fuel_pct;
             let full_cost = (fuel_needed * data.constants.fuel.cost_per_percent) as u32;
             let full_label = data
                 .localization
