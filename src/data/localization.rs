@@ -67,6 +67,12 @@ pub struct BriefingStrings {
     pub weather_title: String,
     #[serde(rename = "beginSpace")]
     pub begin_space: String,
+    /// "NIGHT {} OF {}" progress label for the current run.
+    #[serde(rename = "nightLabel", default)]
+    pub night_label: String,
+    /// Per-night framing lines; index by (night - 1), clamped to the last entry.
+    #[serde(default)]
+    pub premise: Vec<String>,
 }
 
 #[derive(Debug, Deserialize, Clone)]

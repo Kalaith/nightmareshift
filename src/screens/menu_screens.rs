@@ -604,20 +604,42 @@ pub fn draw_briefing(game_state: &GameState, game_data: Option<&GameData>) -> Ui
             44.0,
             colors::CAB_YELLOW,
         );
+        // Campaign progress: which night of the run, plus a framing line that
+        // advances the driver's week-long story.
+        let night_label = data
+            .localization
+            .ui
+            .briefing
+            .night_label
+            .replacen("{}", &game_state.night.to_string(), 1)
+            .replacen(
+                "{}",
+                &data.constants.game_constants.nights_per_run.to_string(),
+                1,
+            );
         draw_small_caps(
-            "Dispatch briefing for tonight's shift",
+            &night_label,
             header_inner.x,
             header_inner.y + 70.0,
             fonts::SIZE_MD,
             colors::TEXT_MUTED,
         );
-        draw_small_caps(
-            "Review active rules before accepting passengers.",
-            header_inner.x + header_inner.w * 0.58,
-            header_inner.y + 58.0,
-            fonts::SIZE_SM,
-            colors::TEXT_SECONDARY,
-        );
+        if let Some(premise) = data
+            .localization
+            .ui
+            .briefing
+            .premise
+            .get((game_state.night as usize).saturating_sub(1))
+            .or_else(|| data.localization.ui.briefing.premise.last())
+        {
+            draw_small_caps(
+                premise,
+                header_inner.x + header_inner.w * 0.42,
+                header_inner.y + 58.0,
+                fonts::SIZE_SM,
+                colors::TEXT_SECONDARY,
+            );
+        }
 
         let top_h = ((content_bottom - content_top) * 0.58).clamp(360.0, 520.0);
         let scene_h = content_bottom - content_top - top_h - gap;

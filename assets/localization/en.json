@@ -28,7 +28,15 @@
       "title": "SHIFT BRIEFING",
       "rulesTitle": "Tonight's Rules:",
       "weatherTitle": "Weather:",
-      "beginSpace": "Begin Shift (SPACE)"
+      "beginSpace": "Begin Shift (SPACE)",
+      "nightLabel": "NIGHT {} OF {}",
+      "premise": [
+        "First night on the graveyard shift. Dispatch swears the rules aren't suggestions.",
+        "The last driver didn't finish the week. You're starting to understand why.",
+        "Halfway through. The regulars are getting stranger - and so are you.",
+        "The city feels thinner tonight, like something is watching the meter.",
+        "Last night. Make it to dawn and the shift is yours to walk away from."
+      ]
     },
     "meta": {
       "skillTree": {
