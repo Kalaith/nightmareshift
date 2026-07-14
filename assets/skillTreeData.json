@@ -176,5 +176,133 @@
             "target": "strong",
             "value": 1
         }
+    },
+    {
+        "id": "fuel_efficiency_2",
+        "name": "Deep Cycle",
+        "description": "Improves fuel efficiency by a further 10% (stacks).",
+        "cost": 1100,
+        "icon": "⛽",
+        "category": "survival",
+        "prerequisites": [
+            "fuel_efficiency_1"
+        ],
+        "effect": {
+            "type": "stat_boost",
+            "target": "fuel_consumption",
+            "value": 0.9
+        }
+    },
+    {
+        "id": "fuel_tank_2",
+        "name": "Reserve Cell",
+        "description": "Increases maximum fuel capacity by another 10.",
+        "cost": 1400,
+        "icon": "🛢️",
+        "category": "survival",
+        "prerequisites": [
+            "fuel_tank_1"
+        ],
+        "effect": {
+            "type": "stat_boost",
+            "target": "max_fuel",
+            "value": 10
+        }
+    },
+    {
+        "id": "hull_reinforcement_2",
+        "name": "Blessed Plating",
+        "description": "Further softens damage from environmental hazards.",
+        "cost": 1800,
+        "icon": "🛡️",
+        "category": "survival",
+        "prerequisites": [
+            "hull_reinforcement"
+        ],
+        "effect": {
+            "type": "passive_bonus",
+            "target": "hazard_damage",
+            "value": 0.8
+        }
+    },
+    {
+        "id": "third_eye_2",
+        "name": "Second Sight",
+        "description": "Adds a 10% chance to reveal a hidden rule at the start of a shift.",
+        "cost": 1200,
+        "icon": "👁️",
+        "category": "occult",
+        "prerequisites": [
+            "third_eye_1"
+        ],
+        "effect": {
+            "type": "mechanic_unlock",
+            "target": "reveal_hidden_chance",
+            "value": 0.1
+        }
+    },
+    {
+        "id": "premonition",
+        "name": "Premonition",
+        "description": "Adds a further 15% chance to reveal a hidden rule at shift start.",
+        "cost": 1900,
+        "icon": "🔮",
+        "category": "occult",
+        "prerequisites": [
+            "third_eye_2"
+        ],
+        "effect": {
+            "type": "mechanic_unlock",
+            "target": "reveal_hidden_chance",
+            "value": 0.15
+        }
+    },
+    {
+        "id": "warding_charm_2",
+        "name": "Iron Ward",
+        "description": "Begin each shift with a second protective ward.",
+        "cost": 1700,
+        "icon": "🧿",
+        "category": "occult",
+        "prerequisites": [
+            "warding_charm"
+        ],
+        "effect": {
+            "type": "mechanic_unlock",
+            "target": "supernatural_protection",
+            "value": 1
+        }
+    },
+    {
+        "id": "silver_tongue_2",
+        "name": "Golden Tongue",
+        "description": "Increases the fare from every ride by a further 10% (stacks).",
+        "cost": 1000,
+        "icon": "🗣️",
+        "category": "efficiency",
+        "prerequisites": [
+            "silver_tongue_1"
+        ],
+        "effect": {
+            "type": "stat_boost",
+            "target": "fare_multiplier",
+            "value": 1.1
+        }
+    },
+    {
+        "id": "haggler",
+        "name": "Haggler",
+        "description": "Reduces refueling costs by a further 15%.",
+        "cost": 1500,
+        "icon": "💰",
+        "category": "efficiency",
+        "prerequisites": [
+            "negotiator"
+        ],
+        "effect": {
+            "type": "stat_boost",
+            "target": "refuel_discount",
+            "value": 0.15
+        }
     }
 ]
