@@ -5,6 +5,10 @@
 
 use serde::{Deserialize, Serialize};
 
+fn default_nights_per_run() -> u32 {
+    5
+}
+
 /// Storage keys for persistence
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct StorageKeys {
@@ -25,6 +29,9 @@ pub struct GameConstants {
     pub initial_fuel: u32,
     #[serde(rename = "INITIAL_TIME")]
     pub initial_time: u32,
+    /// Number of consecutive nights that make up one full run.
+    #[serde(rename = "NIGHTS_PER_RUN", default = "default_nights_per_run")]
+    pub nights_per_run: u32,
     #[serde(rename = "SURVIVAL_BONUS")]
     pub survival_bonus: u32,
     #[serde(rename = "BACKSTORY_UNLOCK_FIRST")]

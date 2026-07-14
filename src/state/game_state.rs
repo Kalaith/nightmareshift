@@ -248,6 +248,10 @@ pub struct GameState {
     pub fuel: f32,
     /// Maximum fuel capacity for this shift (100 plus any capacity skills).
     pub max_fuel: f32,
+    /// Current night within the run (1-based).
+    pub night: u32,
+    /// True once the final night of a run has been survived.
+    pub run_complete: bool,
     pub earnings: u32,
     pub time_remaining: u32,
     pub rides_completed: u32,
@@ -313,6 +317,8 @@ impl GameState {
         Self {
             fuel: constants.initial_fuel as f32,
             max_fuel: 100.0,
+            night: 1,
+            run_complete: false,
             earnings: 0,
             time_remaining: constants.initial_time,
             rides_completed: 0,

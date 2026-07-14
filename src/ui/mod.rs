@@ -18,6 +18,8 @@ pub enum UiAction {
     Continue,
     ReturnToMenu,
     TryAgain,
+    /// Advance from the results screen to the next night of the run.
+    NextNight,
     EndShift,
     RefuelFull,
     RefuelPartial,

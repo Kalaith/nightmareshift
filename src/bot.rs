@@ -186,7 +186,13 @@ impl PlaytestBot {
                     return PlaytestDirective::Stop(0);
                 }
 
-                UiAction::TryAgain
+                // Press on through interim nights so the campaign path (nights
+                // 2..N) is exercised; otherwise begin a fresh run.
+                if screen == Screen::Success && !state.run_complete {
+                    UiAction::NextNight
+                } else {
+                    UiAction::TryAgain
+                }
             }
             Screen::SkillTree | Screen::Almanac | Screen::Leaderboard => UiAction::ReturnToMenu,
         };

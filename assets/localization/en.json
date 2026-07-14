@@ -147,12 +147,15 @@
       "stats": "Earnings: ${} | Rides: {} | Score: {}"
     },
     "success": {
-      "title": "🌅 SHIFT COMPLETE!",
-      "subtitle": "You survived the night!",
       "totalEarnings": "Total Earnings: ${}",
       "rides": "Rides Completed: {}",
       "bonus": "Survival Bonus: +${}",
-      "finalScore": "Final Score: {}"
+      "finalScore": "Final Score: {}",
+      "nightTitle": "NIGHT {} SURVIVED",
+      "nightSubtitle": "{} more until the sun comes up.",
+      "runTitle": "🌅 YOU SURVIVED",
+      "runSubtitle": "Every night endured. Dawn breaks at last.",
+      "nextNight": "Next Night (SPACE)"
     }
   },
   "system": {

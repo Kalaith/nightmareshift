@@ -96,25 +96,47 @@ impl Game {
         }
     }
 
-    /// Start a new game
+    /// Start a new run from night 1.
     pub fn start_game(&mut self) {
+        self.game_state.night = 1;
+        self.game_state.run_complete = false;
+        self.begin_night();
+    }
+
+    /// Advance to the next night of the current run.
+    fn advance_night(&mut self) {
+        self.game_state.night += 1;
+        self.begin_night();
+    }
+
+    /// Set up and begin the current night (`game_state.night`), scaling
+    /// difficulty and the earnings quota with how deep into the run we are.
+    fn begin_night(&mut self) {
         if let Some(ref data) = self.game_data {
             let current_time = get_time();
             self.player_stats.session_start = Some(current_time);
 
-            // Reset game state using constants from data
+            // Reset per-night resources (fuel, time, earnings) but keep the run's
+            // night counter, which is owned by start_game/advance_night.
             self.game_state
                 .reset_for_new_shift(current_time, &data.constants.game_constants);
 
-            // Generate rules
-            let shift_rules = GameEngine::generate_shift_rules(
-                self.player_stats.total_shifts_completed,
-                &data.rules,
-                &data.constants,
-            );
+            // Difficulty escalates with the night within the run, layered on top
+            // of the player's lifetime experience, and drives the rule count.
+            let night = self.game_state.night;
+            let max_diff = data.constants.scoring.max_difficulty;
+            let base_diff = self.player_stats.suggested_difficulty();
+            let effective_diff = (base_diff + night - 1).min(max_diff);
+            let synthetic_xp = effective_diff * data.constants.scoring.experience_per_level;
+            let shift_rules =
+                GameEngine::generate_shift_rules(synthetic_xp, &data.rules, &data.constants);
             self.game_state.current_rules = shift_rules.visible_rules;
             self.game_state.hidden_rules = shift_rules.hidden_rules;
             self.game_state.difficulty_level = shift_rules.difficulty_level;
+
+            // The nightly earnings quota rises each night: base + base*(night-1)/2.
+            let base_quota = data.constants.game_constants.minimum_earnings;
+            self.game_state.minimum_earnings = base_quota + base_quota * (night - 1) / 2;
 
             // Apply the player's unlocked-skill effects for this shift.
             let skill_mods =
@@ -295,11 +317,21 @@ impl Game {
         let earned_enough = self.game_state.earnings >= self.game_state.minimum_earnings;
         let actually_successful = success && earned_enough;
 
+        let nights_per_run = self
+            .game_data
+            .as_ref()
+            .map(|d| d.constants.game_constants.nights_per_run)
+            .unwrap_or(5)
+            .max(1);
+
         if actually_successful {
             // Add survival bonus
             if let Some(ref data) = self.game_data {
                 self.game_state.earnings += data.constants.game_constants.survival_bonus;
             }
+            // Surviving the final night completes the run; otherwise this is an
+            // interim night and the results screen offers to press on.
+            self.game_state.run_complete = self.game_state.night >= nights_per_run;
             self.transition.fade_in();
             self.game_state.game_phase = GamePhase::Success;
             self.screen = Screen::Success;
@@ -663,7 +695,11 @@ impl Game {
                 }
             }
             UiAction::ReturnToMenu => {
-                if self.screen == Screen::GameOver
+                // On an interim-night results screen, the confirm key presses on
+                // into the next night rather than abandoning the run.
+                if self.screen == Screen::Success && !self.game_state.run_complete {
+                    self.advance_night();
+                } else if self.screen == Screen::GameOver
                     || self.screen == Screen::Success
                     || self.screen == Screen::SkillTree
                     || self.screen == Screen::Almanac
@@ -678,6 +714,11 @@ impl Game {
                 if self.screen == Screen::GameOver || self.screen == Screen::Success {
                     self.return_to_menu();
                     self.start_game();
+                }
+            }
+            UiAction::NextNight => {
+                if self.screen == Screen::Success && !self.game_state.run_complete {
+                    self.advance_night();
                 }
             }
             UiAction::EndShift => {

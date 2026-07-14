@@ -265,8 +265,6 @@ pub struct GameOverStrings {
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct SuccessStrings {
-    pub title: String,
-    pub subtitle: String,
     #[serde(rename = "totalEarnings")]
     pub total_earnings: String,
     #[serde(rename = "rides")]
@@ -275,6 +273,16 @@ pub struct SuccessStrings {
     pub survival_bonus: String,
     #[serde(rename = "finalScore")]
     pub final_score: String,
+    #[serde(rename = "nightTitle")]
+    pub night_title: String,
+    #[serde(rename = "nightSubtitle")]
+    pub night_subtitle: String,
+    #[serde(rename = "runTitle")]
+    pub run_title: String,
+    #[serde(rename = "runSubtitle")]
+    pub run_subtitle: String,
+    #[serde(rename = "nextNight")]
+    pub next_night: String,
 }
 
 #[derive(Debug, Deserialize, Clone)]

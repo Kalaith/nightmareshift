@@ -987,21 +987,44 @@ pub fn draw_success(game_state: &GameState, game_data: Option<&GameData>) -> UiA
         draw_glass_panel(panel, colors::ACCENT_GOLD);
         let inner = panel.inset(spacing::PADDING_LG);
 
-        let title = &data.localization.ui.success.title;
+        // Interim nights and the final run-victory show different framing.
+        let interim = !game_state.run_complete;
+        let nights_left = data
+            .constants
+            .game_constants
+            .nights_per_run
+            .saturating_sub(game_state.night);
+        let title = if interim {
+            data.localization
+                .ui
+                .success
+                .night_title
+                .replace("{}", &game_state.night.to_string())
+        } else {
+            data.localization.ui.success.run_title.clone()
+        };
         let title_size = 48.0;
-        let title_width = measure_ui_text(title, None, title_size as u16, 1.0).width;
+        let title_width = measure_ui_text(&title, None, title_size as u16, 1.0).width;
         draw_ui_text(
-            title,
+            &title,
             center_x - title_width / 2.0,
             inner.y + 50.0,
             title_size,
             colors::ACCENT_GOLD,
         );
 
-        let subtitle = &data.localization.ui.success.subtitle;
-        let sub_width = measure_ui_text(subtitle, None, 24, 1.0).width;
+        let subtitle = if interim {
+            data.localization
+                .ui
+                .success
+                .night_subtitle
+                .replace("{}", &nights_left.to_string())
+        } else {
+            data.localization.ui.success.run_subtitle.clone()
+        };
+        let sub_width = measure_ui_text(&subtitle, None, 24, 1.0).width;
         draw_ui_text(
-            subtitle,
+            &subtitle,
             center_x - sub_width / 2.0,
             inner.y + 92.0,
             24.0,
@@ -1038,13 +1061,34 @@ pub fn draw_success(game_state: &GameState, game_data: Option<&GameData>) -> UiA
         );
         draw_ui_text(&score_text, inner.x, y + 100.0, 24.0, colors::ACCENT_DANGER);
 
-        if draw_glass_button(
-            UiRect::new(center_x - 100.0, panel.bottom() - 62.0, 200.0, 42.0),
-            &data.localization.ui.common.continue_text,
-            colors::ACCENT_GOLD,
-            true,
-        ) {
-            return UiAction::ReturnToMenu;
+        if interim {
+            // One button: press on into the next night.
+            if draw_glass_button(
+                UiRect::new(center_x - 110.0, panel.bottom() - 62.0, 220.0, 42.0),
+                &data.localization.ui.success.next_night,
+                colors::ACCENT_GOLD,
+                true,
+            ) {
+                return UiAction::NextNight;
+            }
+        } else {
+            // Run complete: start a fresh run or bank progress at the menu.
+            if draw_glass_button(
+                UiRect::new(center_x - 210.0, panel.bottom() - 62.0, 200.0, 42.0),
+                &data.localization.ui.common.try_again,
+                colors::ACCENT_GOLD,
+                true,
+            ) {
+                return UiAction::TryAgain;
+            }
+            if draw_glass_button(
+                UiRect::new(center_x + 10.0, panel.bottom() - 62.0, 200.0, 42.0),
+                &data.localization.ui.common.back_button,
+                colors::ACCENT_PRIMARY,
+                true,
+            ) {
+                return UiAction::ReturnToMenu;
+            }
         }
     }
 
