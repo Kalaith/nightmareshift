@@ -88,11 +88,11 @@ impl PassengerService {
                     context.difficulty_level,
                     context.constants,
                 );
-                let weather_mod = Self::get_weather_modifier(p.id, context.weather);
-                let time_mod = Self::get_time_modifier(p.id, context.time_of_day);
-                let season_mod = Self::get_seasonal_modifier(p.id, context.season);
+                let weather_mod = Self::get_weather_modifier(p, context.weather);
+                let time_mod = Self::get_time_modifier(p, context.time_of_day);
+                let season_mod = Self::get_seasonal_modifier(p, context.season);
                 let special_mod =
-                    Self::get_special_behavior_modifier(p.id, context.weather, context.time_of_day);
+                    Self::get_special_behavior_modifier(p, context.weather, context.time_of_day);
 
                 let final_weight = base_weight * weather_mod * time_mod * season_mod * special_mod;
                 ((*p).clone(), final_weight.max(0.1))
@@ -128,141 +128,105 @@ impl PassengerService {
         weights.get(&rarity).copied().unwrap_or(1) as f32
     }
 
-    /// Weather preference modifiers per passenger
-    fn get_weather_modifier(passenger_id: u32, weather: &WeatherCondition) -> f32 {
-        let base = match (passenger_id, weather.weather_type) {
-            // Mrs. Chen - ghosts like misty conditions
-            (1, WeatherType::Fog) => 1.5,
-            (1, WeatherType::Rain) => 1.3,
-            // Sarah Woods - escaped during storms
-            (3, WeatherType::Thunderstorm) => 1.4,
-            (3, WeatherType::Rain) => 1.2,
-            // Dr. Hollow - mysterious conditions
-            (4, WeatherType::Fog) => 1.3,
-            (4, WeatherType::Thunderstorm) => 1.2,
-            // The Collector - dramatic weather
-            (5, WeatherType::Clear) => 0.8,
-            (5, WeatherType::Thunderstorm) => 1.5,
-            // Elena Vasquez - prefers clear nights
-            (7, WeatherType::Clear) => 1.2,
-            (7, WeatherType::Rain) => 0.9,
-            // Old Pete - water-related weather
-            (10, WeatherType::Rain) => 1.4,
-            (10, WeatherType::Fog) => 1.3,
-            // Madame Zelda - supernatural weather
-            (11, WeatherType::Thunderstorm) => 1.6,
-            (11, WeatherType::Fog) => 1.4,
-            // Frank the Pianist - melancholy weather
-            (12, WeatherType::Rain) => 1.2,
-            (12, WeatherType::Clear) => 1.1,
-            // Sister Agnes - active in dangerous weather
-            (13, WeatherType::Thunderstorm) => 1.3,
-            (13, WeatherType::Snow) => 1.2,
-            // The Midnight Mayor - dramatic weather
-            (15, WeatherType::Thunderstorm) => 1.8,
-            (15, WeatherType::Fog) => 1.5,
-            // Death's Taxi Driver - ominous conditions
-            (16, WeatherType::Thunderstorm) => 2.0,
-            (16, WeatherType::Fog) => 1.7,
-            _ => 1.0,
-        };
+    /// Lowercase key for a weather type, matching the JSON `spawnWeighting` keys.
+    fn weather_key(weather_type: WeatherType) -> &'static str {
+        match weather_type {
+            WeatherType::Clear => "clear",
+            WeatherType::Rain => "rain",
+            WeatherType::Fog => "fog",
+            WeatherType::Snow => "snow",
+            WeatherType::Thunderstorm => "thunderstorm",
+            WeatherType::Wind => "wind",
+        }
+    }
 
-        // Heavy weather intensifies supernatural activity
+    /// Lowercase key for a time phase, matching the JSON `spawnWeighting` keys.
+    fn phase_key(phase: TimePhase) -> &'static str {
+        match phase {
+            TimePhase::Dawn => "dawn",
+            TimePhase::Morning => "morning",
+            TimePhase::Afternoon => "afternoon",
+            TimePhase::Dusk => "dusk",
+            TimePhase::Night => "night",
+            TimePhase::Latenight => "latenight",
+        }
+    }
+
+    /// Lowercase key for a season, matching the JSON `spawnWeighting` keys.
+    fn season_key(season_type: SeasonType) -> &'static str {
+        match season_type {
+            SeasonType::Spring => "spring",
+            SeasonType::Summer => "summer",
+            SeasonType::Fall => "fall",
+            SeasonType::Winter => "winter",
+        }
+    }
+
+    /// Weather preference modifier, driven by the passenger's `spawnWeighting`.
+    fn get_weather_modifier(passenger: &Passenger, weather: &WeatherCondition) -> f32 {
+        let Some(sw) = &passenger.spawn_weighting else {
+            return 1.0;
+        };
+        let base = sw
+            .weather
+            .get(Self::weather_key(weather.weather_type))
+            .copied()
+            .unwrap_or(1.0);
+
         if weather.intensity == WeatherIntensity::Heavy {
-            // Supernatural passengers more likely in heavy weather
-            match passenger_id {
-                1 | 4 | 11 | 15 | 16 => base * 1.3,
-                _ => base,
-            }
+            base * sw.heavy_weather_boost
         } else {
             base
         }
     }
 
-    /// Time of day preference modifiers
-    fn get_time_modifier(passenger_id: u32, time_of_day: &TimeOfDay) -> f32 {
-        let base = match (passenger_id, time_of_day.phase) {
-            // Mrs. Chen - ghost most active at night
-            (1, TimePhase::Night) => 1.4,
-            (1, TimePhase::Latenight) => 1.6,
-            // Jake Morrison - night shift worker
-            (2, TimePhase::Night) => 1.3,
-            (2, TimePhase::Latenight) => 1.2,
-            // Dr. Hollow - mysterious nighttime visits
-            (4, TimePhase::Night) => 1.5,
-            (4, TimePhase::Latenight) => 1.3,
-            // The Collector - evening deals
-            (5, TimePhase::Dusk) => 1.2,
-            (5, TimePhase::Night) => 1.4,
-            // Tommy Sullivan - child, less likely very late
-            (6, TimePhase::Latenight) => 0.7,
-            // Elena Vasquez - evening performance times
-            (7, TimePhase::Dusk) => 1.3,
-            (7, TimePhase::Night) => 1.2,
-            // Madame Zelda - fortune telling at night
-            (11, TimePhase::Night) => 1.5,
-            (11, TimePhase::Latenight) => 1.6,
-            // The Midnight Mayor - rules the night
-            (15, TimePhase::Night) => 1.8,
-            (15, TimePhase::Latenight) => 2.0,
-            // Death's Taxi Driver - witching hour
-            (16, TimePhase::Latenight) => 2.5,
-            _ => 1.0,
+    /// Time-of-day preference modifier, driven by the passenger's `spawnWeighting`.
+    fn get_time_modifier(passenger: &Passenger, time_of_day: &TimeOfDay) -> f32 {
+        let Some(sw) = &passenger.spawn_weighting else {
+            return 1.0;
         };
+        let base = sw
+            .time
+            .get(Self::phase_key(time_of_day.phase))
+            .copied()
+            .unwrap_or(1.0);
 
-        // Supernatural activity modifier for non-human passengers
-        let supernatural_mod = time_of_day.supernatural_activity as f32 / 100.0;
-        match passenger_id {
-            1 | 4 | 5 | 11 | 15 | 16 => base * (0.7 + supernatural_mod * 0.6),
-            _ => base,
+        if sw.supernatural_time_scaling {
+            let supernatural_mod = time_of_day.supernatural_activity as f32 / 100.0;
+            base * (0.7 + supernatural_mod * 0.6)
+        } else {
+            base
         }
     }
 
-    /// Seasonal preference modifiers
-    fn get_seasonal_modifier(passenger_id: u32, season: &Season) -> f32 {
-        match (passenger_id, season.season_type) {
-            // Nature spirits more active in spring
-            (3, SeasonType::Spring) => 1.5,
-            (8, SeasonType::Spring) => 1.3,
-            (10, SeasonType::Spring) => 1.2,
-            // Melancholy souls more active in fall
-            (1, SeasonType::Fall) => 1.3,
-            (12, SeasonType::Fall) => 1.4,
-            // Frost entities more active in winter
-            (4, SeasonType::Winter) => 1.5,
-            (15, SeasonType::Winter) => 1.4,
-            (16, SeasonType::Winter) => 1.5,
-            // Holiday spirits
-            (6, SeasonType::Winter) => 1.2,
-            (13, SeasonType::Winter) => 1.3,
-            _ => 1.0,
-        }
+    /// Seasonal preference modifier, driven by the passenger's `spawnWeighting`.
+    fn get_seasonal_modifier(passenger: &Passenger, season: &Season) -> f32 {
+        passenger
+            .spawn_weighting
+            .as_ref()
+            .and_then(|sw| sw.season.get(Self::season_key(season.season_type)).copied())
+            .unwrap_or(1.0)
     }
 
-    /// Special behavior modifiers for combined conditions
+    /// Combined-condition modifier, driven by the passenger's `spawnWeighting`.
     fn get_special_behavior_modifier(
-        passenger_id: u32,
+        passenger: &Passenger,
         weather: &WeatherCondition,
         time_of_day: &TimeOfDay,
     ) -> f32 {
+        let Some(sw) = &passenger.spawn_weighting else {
+            return 1.0;
+        };
         let mut modifier = 1.0;
 
-        // Thunderstorm + latenight = perfect supernatural conditions
         if weather.weather_type == WeatherType::Thunderstorm
             && time_of_day.phase == TimePhase::Latenight
         {
-            match passenger_id {
-                15 | 16 | 11 => modifier *= 2.0,
-                _ => {}
-            }
+            modifier *= sw.storm_latenight_boost;
         }
 
-        // Fog + night = mysterious conditions
         if weather.weather_type == WeatherType::Fog && time_of_day.is_night() {
-            match passenger_id {
-                1 | 4 => modifier *= 1.5,
-                _ => {}
-            }
+            modifier *= sw.fog_night_boost;
         }
 
         modifier

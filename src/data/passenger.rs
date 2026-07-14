@@ -153,6 +153,40 @@ pub struct PassengerStateProfile {
     pub trust_impact: Option<StageImpact>,
 }
 
+fn one_f32() -> f32 {
+    1.0
+}
+
+/// Data-driven spawn weighting for a passenger.
+///
+/// Multipliers are keyed by the lowercase enum name (e.g. `"fog"`, `"latenight"`,
+/// `"fall"`); a missing key means a neutral `1.0`. This replaces the per-id match
+/// tables that used to live in `PassengerService`.
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct SpawnWeighting {
+    /// Multiplier by weather type (keys: clear/rain/fog/snow/thunderstorm/wind).
+    #[serde(default)]
+    pub weather: HashMap<String, f32>,
+    /// Multiplier by time phase (keys: dawn/morning/afternoon/dusk/night/latenight).
+    #[serde(default)]
+    pub time: HashMap<String, f32>,
+    /// Multiplier by season (keys: spring/summer/fall/winter).
+    #[serde(default)]
+    pub season: HashMap<String, f32>,
+    /// Extra multiplier applied when weather intensity is Heavy.
+    #[serde(rename = "heavyWeatherBoost", default = "one_f32")]
+    pub heavy_weather_boost: f32,
+    /// If true, the time multiplier is scaled by the hour's supernatural activity.
+    #[serde(rename = "supernaturalTimeScaling", default)]
+    pub supernatural_time_scaling: bool,
+    /// Extra multiplier when it is both a thunderstorm and late night.
+    #[serde(rename = "stormLatenightBoost", default = "one_f32")]
+    pub storm_latenight_boost: f32,
+    /// Extra multiplier when it is both foggy and nighttime.
+    #[serde(rename = "fogNightBoost", default = "one_f32")]
+    pub fog_night_boost: f32,
+}
+
 /// Passenger preference for a specific route type
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RoutePreference {
@@ -234,6 +268,10 @@ pub struct Passenger {
     // NEW traits field
     #[serde(default)]
     pub traits: Vec<String>,
+
+    /// Data-driven environmental spawn weighting (None = neutral on all factors).
+    #[serde(rename = "spawnWeighting", default)]
+    pub spawn_weighting: Option<SpawnWeighting>,
 }
 
 impl Passenger {
