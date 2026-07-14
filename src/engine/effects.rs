@@ -1,237 +1,99 @@
 //! Visual effects system
 
 use macroquad::prelude::*;
+use macroquad_toolkit::fx::{Particle, ParticleSystem};
+use macroquad_toolkit::math::{pulse01, pulse_range};
 use macroquad_toolkit::rng;
 
-/// Screen transition effects
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub enum TransitionState {
-    None,
-    FadeIn,
+pub use macroquad_toolkit::fx::{ScreenFade, ScreenShake};
+
+/// Ambient weather particle emitters (rain/snow/fog) built on the shared
+/// pooled `macroquad_toolkit::fx::ParticleSystem`. Spawn-rate and appearance
+/// tuning stays local to this game; pooling, integration, and rendering are
+/// shared with every other game via the toolkit.
+pub struct WeatherParticles {
+    system: ParticleSystem,
 }
 
-pub struct ScreenTransition {
-    pub state: TransitionState,
-    pub alpha: f32,
-    pub duration: f32,
-    elapsed: f32,
-}
-
-impl ScreenTransition {
+impl WeatherParticles {
     pub fn new() -> Self {
         Self {
-            state: TransitionState::None,
-            alpha: 0.0,
-            duration: 0.3,
-            elapsed: 0.0,
-        }
-    }
-
-    /// Start fade in transition
-    pub fn fade_in(&mut self) {
-        self.state = TransitionState::FadeIn;
-        self.alpha = 1.0;
-        self.elapsed = 0.0;
-    }
-
-    /// Update transition
-    pub fn update(&mut self, dt: f32) {
-        if self.state == TransitionState::None {
-            return;
-        }
-
-        self.elapsed += dt;
-        let progress = (self.elapsed / self.duration).min(1.0);
-
-        match self.state {
-            TransitionState::FadeIn => {
-                self.alpha = 1.0 - progress;
-                if progress >= 1.0 {
-                    self.state = TransitionState::None;
-                    self.alpha = 0.0;
-                }
-            }
-            TransitionState::None => {}
-        }
-    }
-
-    /// Draw the transition overlay
-    pub fn draw(&self) {
-        if self.alpha > 0.0 {
-            draw_rectangle(
-                0.0,
-                0.0,
-                screen_width(),
-                screen_height(),
-                Color::new(0.0, 0.0, 0.0, self.alpha),
-            );
-        }
-    }
-}
-
-/// Screen shake effect
-pub struct ScreenShake {
-    pub intensity: f32,
-    pub duration: f32,
-    elapsed: f32,
-}
-
-impl ScreenShake {
-    pub fn new() -> Self {
-        Self {
-            intensity: 0.0,
-            duration: 0.0,
-            elapsed: 0.0,
-        }
-    }
-
-    /// Trigger screen shake
-    pub fn shake(&mut self, intensity: f32, duration: f32) {
-        self.intensity = intensity;
-        self.duration = duration;
-        self.elapsed = 0.0;
-    }
-
-    /// Update shake
-    pub fn update(&mut self, dt: f32) {
-        if self.elapsed < self.duration {
-            self.elapsed += dt;
-        } else {
-            self.intensity = 0.0;
-        }
-    }
-
-    /// Get current offset
-    pub fn get_offset(&self) -> (f32, f32) {
-        if self.elapsed >= self.duration {
-            return (0.0, 0.0);
-        }
-
-        let decay = 1.0 - (self.elapsed / self.duration);
-        let current_intensity = self.intensity * decay;
-
-        (
-            (rng::gen_range(-1.0, 1.0) * current_intensity) as f32,
-            (rng::gen_range(-1.0, 1.0) * current_intensity) as f32,
-        )
-    }
-}
-
-/// Particle for visual effects
-#[derive(Clone)]
-pub struct Particle {
-    pub x: f32,
-    pub y: f32,
-    pub vx: f32,
-    pub vy: f32,
-    pub life: f32,
-    pub max_life: f32,
-    pub size: f32,
-    pub color: Color,
-}
-
-impl Particle {
-    pub fn update(&mut self, dt: f32) {
-        self.x += self.vx * dt;
-        self.y += self.vy * dt;
-        self.life -= dt;
-    }
-
-    pub fn is_dead(&self) -> bool {
-        self.life <= 0.0
-    }
-
-    pub fn draw(&self) {
-        let lifecycle_alpha = (self.life / self.max_life).clamp(0.0, 1.0);
-        let mut color = self.color;
-        color.a *= lifecycle_alpha;
-        draw_circle(self.x, self.y, self.size, color);
-    }
-}
-
-/// Particle system
-pub struct ParticleSystem {
-    particles: Vec<Particle>,
-}
-
-impl ParticleSystem {
-    pub fn new() -> Self {
-        Self {
-            particles: Vec::new(),
+            system: ParticleSystem::new(),
         }
     }
 
     /// Spawn rain particles
     pub fn spawn_rain(&mut self, count: usize) {
         for _ in 0..count {
-            self.particles.push(Particle {
-                x: rng::gen_range(0.0, screen_width()),
-                y: -10.0,
-                vx: rng::gen_range(-20.0, -10.0),
-                vy: rng::gen_range(400.0, 600.0),
-                life: rng::gen_range(1.0, 2.0),
-                max_life: 2.0,
-                size: rng::gen_range(1.0, 2.0),
-                color: Color::new(0.5, 0.6, 0.8, 0.6),
-            });
+            let mut particle = Particle::new(
+                Vec2::new(rng::gen_range(0.0, screen_width()), -10.0),
+                Vec2::new(rng::gen_range(-20.0, -10.0), rng::gen_range(400.0, 600.0)),
+                rng::gen_range(1.0, 2.0),
+                rng::gen_range(1.0, 2.0),
+                Color::new(0.5, 0.6, 0.8, 0.6),
+            );
+            particle.max_life = 2.0;
+            self.system.spawn(particle);
         }
     }
 
     /// Spawn snow particles
     pub fn spawn_snow(&mut self, count: usize) {
         for _ in 0..count {
-            self.particles.push(Particle {
-                x: rng::gen_range(0.0, screen_width()),
-                y: -10.0,
-                vx: rng::gen_range(-30.0, 30.0),
-                vy: rng::gen_range(50.0, 100.0),
-                life: rng::gen_range(3.0, 5.0),
-                max_life: 5.0,
-                size: rng::gen_range(2.0, 4.0),
-                color: Color::new(1.0, 1.0, 1.0, 0.8),
-            });
+            let mut particle = Particle::new(
+                Vec2::new(rng::gen_range(0.0, screen_width()), -10.0),
+                Vec2::new(rng::gen_range(-30.0, 30.0), rng::gen_range(50.0, 100.0)),
+                rng::gen_range(3.0, 5.0),
+                rng::gen_range(2.0, 4.0),
+                Color::new(1.0, 1.0, 1.0, 0.8),
+            );
+            particle.max_life = 5.0;
+            self.system.spawn(particle);
         }
     }
 
     /// Spawn fog particles
     pub fn spawn_fog(&mut self, count: usize) {
         for _ in 0..count {
-            self.particles.push(Particle {
-                x: rng::gen_range(0.0, screen_width()),
-                y: rng::gen_range(0.0, screen_height()),
-                vx: rng::gen_range(-10.0, 10.0),
-                vy: 0.0,
-                life: rng::gen_range(5.0, 10.0),
-                max_life: 10.0,
-                size: rng::gen_range(40.0, 80.0),
-                color: Color::new(0.7, 0.7, 0.7, 0.1),
-            });
+            let mut particle = Particle::new(
+                Vec2::new(
+                    rng::gen_range(0.0, screen_width()),
+                    rng::gen_range(0.0, screen_height()),
+                ),
+                Vec2::new(rng::gen_range(-10.0, 10.0), 0.0),
+                rng::gen_range(5.0, 10.0),
+                rng::gen_range(40.0, 80.0),
+                Color::new(0.7, 0.7, 0.7, 0.1),
+            );
+            particle.max_life = 10.0;
+            self.system.spawn(particle);
         }
     }
 
     /// Update all particles
     pub fn update(&mut self, dt: f32) {
-        for particle in &mut self.particles {
-            particle.update(dt);
-        }
-        self.particles.retain(|p| !p.is_dead());
+        self.system.update(dt);
     }
 
     /// Draw all particles
     pub fn draw(&self) {
-        for particle in &self.particles {
-            particle.draw();
-        }
+        self.system.draw();
     }
 
     /// Clear all particles
     pub fn clear(&mut self) {
-        self.particles.clear();
+        self.system.clear();
     }
 
     /// Get particle count
     pub fn count(&self) -> usize {
-        self.particles.len()
+        self.system.count()
+    }
+}
+
+impl Default for WeatherParticles {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -291,7 +153,7 @@ pub fn draw_danger_overlay(intensity: f32) {
     let height = screen_height();
 
     // Slow pulse effect for the red overlay
-    let pulse = ((get_time() * 1.5).sin() as f32 * 0.5 + 0.5) * 0.3 + 0.7;
+    let pulse = pulse_range(1.5, 0.7, 1.0);
     let alpha = intensity * 0.15 * pulse;
 
     // Red danger tint
@@ -363,7 +225,7 @@ pub fn draw_tension_vignette(intensity: f32) {
 
     // Breathing effect when very stressed (subtle screen pulse)
     if intensity > 0.6 {
-        let breath_alpha = ((get_time() * 0.8).sin() as f32 * 0.5 + 0.5) * (intensity - 0.6) * 0.1;
+        let breath_alpha = pulse01(0.8) * (intensity - 0.6) * 0.1;
         draw_rectangle(
             0.0,
             0.0,

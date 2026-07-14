@@ -8,7 +8,8 @@ use crate::ui::{
     colors, draw_glass_button, draw_glass_panel, draw_noir_city_background, draw_small_caps,
     draw_wrapped_text, fonts, spacing, UiAction, UiRect,
 };
-use macroquad_toolkit::ui::{draw_ui_text, measure_ui_text};
+use macroquad_toolkit::colors::with_alpha;
+use macroquad_toolkit::ui::{draw_ui_text, format_clock, measure_ui_text};
 
 fn draw_menu_icon(kind: &str, cx: f32, cy: f32, scale: f32, color: Color) {
     let s = scale;
@@ -27,13 +28,13 @@ fn draw_menu_icon(kind: &str, cx: f32, cy: f32, scale: f32, color: Color) {
                 Vec2::new(cx, cy - 18.0 * s),
                 Vec2::new(cx - 16.0 * s, cy + 4.0 * s),
                 Vec2::new(cx + 16.0 * s, cy + 4.0 * s),
-                Color::new(color.r, color.g, color.b, 0.58),
+                with_alpha(color, 0.58),
             );
             draw_triangle(
                 Vec2::new(cx, cy - 7.0 * s),
                 Vec2::new(cx - 18.0 * s, cy + 14.0 * s),
                 Vec2::new(cx + 18.0 * s, cy + 14.0 * s),
-                Color::new(color.r, color.g, color.b, 0.68),
+                with_alpha(color, 0.68),
             );
         }
         "book" => {
@@ -887,7 +888,7 @@ pub fn draw_briefing(game_state: &GameState, game_data: Option<&GameData>) -> Ui
                 ),
                 (
                     "Hour",
-                    format!("{:02}:00", game_state.time_of_day.hour),
+                    format_clock(game_state.time_of_day.hour, 0),
                     colors::TEXT_SECONDARY,
                 ),
             ];

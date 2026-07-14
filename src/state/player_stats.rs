@@ -1,7 +1,8 @@
 //! Player statistics tracking across sessions.
 
 use crate::data::RouteType;
-use serde::{Deserialize, Serialize};
+use macroquad_toolkit::achievements::{Achievement, Achievements};
+use serde::{Deserialize, Deserializer, Serialize};
 use std::collections::HashMap;
 
 /// Leaderboard entry for a completed shift
@@ -23,14 +24,25 @@ pub struct AlmanacEntry {
     pub knowledge_level: u32,
 }
 
-/// Achievement tracking
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Achievement {
-    pub id: String,
-    pub name: String,
-    pub description: String,
-    pub unlocked: bool,
-    pub unlock_date: Option<String>,
+/// Accepts saves from before the `Achievements` registry adoption, where
+/// `achievements` was a bare `Vec<Achievement>` instead of the registry's
+/// `{ achievements: [...] }` shape. Old and new shapes both deserialize
+/// cleanly since `Achievement`'s fields are unchanged.
+fn deserialize_achievements<'de, D>(deserializer: D) -> Result<Achievements, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    #[derive(Deserialize)]
+    #[serde(untagged)]
+    enum Compat {
+        Legacy(Vec<Achievement>),
+        Current(Achievements),
+    }
+
+    Ok(match Compat::deserialize(deserializer)? {
+        Compat::Legacy(list) => Achievements::from_definitions(list),
+        Compat::Current(achievements) => achievements,
+    })
 }
 
 /// Persistent player statistics
@@ -72,8 +84,8 @@ pub struct PlayerStats {
     #[serde(default)]
     pub route_usage: HashMap<String, u32>,
     /// Unlocked achievements
-    #[serde(default)]
-    pub achievements: Vec<Achievement>,
+    #[serde(default, deserialize_with = "deserialize_achievements")]
+    pub achievements: Achievements,
     /// Current session start time
     #[serde(skip)]
     pub session_start: Option<f64>,
@@ -260,77 +272,42 @@ impl PlayerStats {
         }
     }
 
-    /// Initialize achievements if empty
+    /// The game's fixed achievement definitions (id, name, description).
+    fn achievement_definitions() -> Vec<Achievement> {
+        vec![
+            Achievement::new("first_shift", "First Night", "Complete your first shift"),
+            Achievement::new("survivor", "Survivor", "Survive 10 shifts"),
+            Achievement::new(
+                "perfect_shift",
+                "Perfect Shift",
+                "Complete a shift without violating any rules",
+            ),
+            Achievement::new("big_earner", "Big Earner", "Earn $500 in a single shift"),
+            Achievement::new(
+                "almanac_scholar",
+                "Almanac Scholar",
+                "Master knowledge of 5 passengers",
+            ),
+            Achievement::new("skill_collector", "Skill Collector", "Unlock 3 skills"),
+        ]
+    }
+
+    /// Reconcile the achievement registry with the current definitions.
+    /// Safe to call every load: unlock state and dates are preserved.
     pub fn init_achievements(&mut self) {
-        if self.achievements.is_empty() {
-            self.achievements = vec![
-                Achievement {
-                    id: "first_shift".to_string(),
-                    name: "First Night".to_string(),
-                    description: "Complete your first shift".to_string(),
-                    unlocked: false,
-                    unlock_date: None,
-                },
-                Achievement {
-                    id: "survivor".to_string(),
-                    name: "Survivor".to_string(),
-                    description: "Survive 10 shifts".to_string(),
-                    unlocked: false,
-                    unlock_date: None,
-                },
-                Achievement {
-                    id: "perfect_shift".to_string(),
-                    name: "Perfect Shift".to_string(),
-                    description: "Complete a shift without violating any rules".to_string(),
-                    unlocked: false,
-                    unlock_date: None,
-                },
-                Achievement {
-                    id: "big_earner".to_string(),
-                    name: "Big Earner".to_string(),
-                    description: "Earn $500 in a single shift".to_string(),
-                    unlocked: false,
-                    unlock_date: None,
-                },
-                Achievement {
-                    id: "almanac_scholar".to_string(),
-                    name: "Almanac Scholar".to_string(),
-                    description: "Master knowledge of 5 passengers".to_string(),
-                    unlocked: false,
-                    unlock_date: None,
-                },
-                Achievement {
-                    id: "skill_collector".to_string(),
-                    name: "Skill Collector".to_string(),
-                    description: "Unlock 3 skills".to_string(),
-                    unlocked: false,
-                    unlock_date: None,
-                },
-            ];
-        }
+        self.achievements
+            .sync_definitions(Self::achievement_definitions());
     }
 
     /// Unlock an achievement
     pub fn unlock_achievement(&mut self, achievement_id: &str, date: String) -> bool {
-        if let Some(achievement) = self
-            .achievements
-            .iter_mut()
-            .find(|a| a.id == achievement_id)
-        {
-            if !achievement.unlocked {
-                achievement.unlocked = true;
-                achievement.unlock_date = Some(date);
-                return true;
-            }
-        }
-        false
+        self.achievements
+            .unlock_with_date(achievement_id, Some(date))
     }
 
     /// Check if achievement is unlocked
     pub fn is_achievement_unlocked(&self, achievement_id: &str) -> bool {
-        self.achievements
-            .iter()
-            .any(|a| a.id == achievement_id && a.unlocked)
+        self.achievements.is_unlocked(achievement_id)
     }
 
     /// Check and unlock achievements based on current stats
@@ -382,5 +359,63 @@ impl PlayerStats {
         if self.unlocked_skills.len() >= 3 {
             self.unlock_achievement("skill_collector", now.clone());
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Saves written before the `Achievements` registry adoption stored
+    /// `achievements` as a bare array. Loading one of those saves must not
+    /// error (which would otherwise wipe the whole `PlayerStats` via the
+    /// `unwrap_or_else(|_| PlayerStats::new())` fallback in `Game::new`).
+    #[test]
+    fn legacy_achievement_array_deserializes() {
+        let mut stats = PlayerStats::new();
+        stats.init_achievements();
+        stats.unlock_achievement("first_shift", "2026-01-01".to_string());
+        stats.total_shifts_completed = 3;
+
+        // Reshape the current `{ "achievements": [...] }` registry encoding
+        // back into the pre-migration bare-array shape a real legacy save
+        // would contain, leaving every other field untouched.
+        let mut value = serde_json::to_value(&stats).unwrap();
+        let inner = value["achievements"]["achievements"].take();
+        value["achievements"] = inner;
+        let legacy_json = serde_json::to_string(&value).unwrap();
+
+        let reloaded: PlayerStats = serde_json::from_str(&legacy_json).expect("legacy save loads");
+        assert_eq!(reloaded.total_shifts_completed, 3);
+        assert!(reloaded.is_achievement_unlocked("first_shift"));
+        assert_eq!(reloaded.achievements.len(), stats.achievements.len());
+    }
+
+    /// Current saves serialize `achievements` as the registry's own shape
+    /// (`{ "achievements": [...] }`); round-tripping must preserve unlocks.
+    #[test]
+    fn current_achievement_registry_round_trips() {
+        let mut stats = PlayerStats::new();
+        stats.init_achievements();
+        stats.unlock_achievement("first_shift", "2026-01-01".to_string());
+
+        let json = serde_json::to_string(&stats).unwrap();
+        let reloaded: PlayerStats = serde_json::from_str(&json).unwrap();
+
+        assert!(reloaded.is_achievement_unlocked("first_shift"));
+        assert_eq!(reloaded.achievements.len(), stats.achievements.len());
+    }
+
+    /// A missing `achievements` key (very old saves, from before achievements
+    /// existed at all) should default to an empty registry rather than
+    /// failing deserialization.
+    #[test]
+    fn missing_achievements_field_defaults_empty() {
+        let stats = PlayerStats::new();
+        let mut value = serde_json::to_value(&stats).unwrap();
+        value.as_object_mut().unwrap().remove("achievements");
+
+        let reloaded: PlayerStats = serde_json::from_value(value).expect("defaults apply");
+        assert_eq!(reloaded.achievements.len(), 0);
     }
 }

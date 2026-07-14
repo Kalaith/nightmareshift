@@ -8,13 +8,13 @@ use crate::engine::{
 use crate::screens::{game_screens, menu_screens, meta_screens, Screen};
 use crate::ui::StatusBar;
 use crate::ui::*;
-use macroquad_toolkit::ui::draw_ui_text;
+use macroquad_toolkit::ui::{draw_ui_text, format_clock};
 
 impl Game {
-    pub fn draw(&self) -> UiAction {
+    pub fn draw(&mut self) -> UiAction {
         clear_background(Color::from_hex(0x1a1a2e));
 
-        let (_shake_x, _shake_y) = self.screen_shake.get_offset();
+        let _shake_offset = self.screen_shake.offset();
 
         let action = match self.screen {
             Screen::Loading => menu_screens::draw_loading(self.game_data.as_ref()),
@@ -31,12 +31,17 @@ impl Game {
             Screen::Success => {
                 menu_screens::draw_success(&self.game_state, self.game_data.as_ref())
             }
-            Screen::SkillTree => {
-                meta_screens::draw_skill_tree(&self.player_stats, self.game_data.as_ref())
-            }
-            Screen::Almanac => {
-                meta_screens::draw_almanac(&self.player_stats, self.game_data.as_ref())
-            }
+            Screen::SkillTree => meta_screens::draw_skill_tree(
+                &self.player_stats,
+                self.game_data.as_ref(),
+                &mut self.skill_tree_scroll,
+            ),
+            Screen::Almanac => meta_screens::draw_almanac(
+                &self.player_stats,
+                self.game_data.as_ref(),
+                &mut self.almanac_scroll,
+                &mut self.almanac_selected,
+            ),
             Screen::Leaderboard => {
                 meta_screens::draw_leaderboard(&self.player_stats, self.game_data.as_ref())
             }
@@ -190,11 +195,7 @@ impl Game {
                 format!("${}", self.game_state.earnings),
                 colors::ACCENT_GOLD,
             ),
-            (
-                "Time",
-                format!("{}:{:02}", hours, mins),
-                colors::TEXT_SECONDARY,
-            ),
+            ("Time", format_clock(hours, mins), colors::TEXT_SECONDARY),
         ];
         for (idx, (label, value, color)) in stats.iter().enumerate() {
             let rect = UiRect::new(

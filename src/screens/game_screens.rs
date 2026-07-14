@@ -11,20 +11,15 @@ use crate::ui::{
     draw_small_caps, draw_wrapped_text, fonts, get_fuel_color, layout, spacing, CompletionSummary,
     UiAction, UiRect,
 };
-use macroquad_toolkit::ui::draw_ui_text;
+use macroquad_toolkit::colors::with_alpha;
+use macroquad_toolkit::math::pulse01;
+use macroquad_toolkit::ui::{draw_ui_text, format_clock};
 
 /// Get a pulsing color for warning text (slow, gentle pulse)
 fn pulsing_warning_color() -> Color {
     // 3 second full cycle (0% -> 100% -> 0%)
-    let pulse = (get_time() * 2.0 * std::f64::consts::PI / 3.0).sin() as f32;
-    // Map from [-1, 1] to [0, 1] for full transparency range
-    let alpha = (pulse + 1.0) / 2.0;
-    Color::new(
-        colors::ACCENT_WARNING.r,
-        colors::ACCENT_WARNING.g,
-        colors::ACCENT_WARNING.b,
-        alpha,
-    )
+    let alpha = pulse01(2.0 * std::f32::consts::PI / 3.0);
+    with_alpha(colors::ACCENT_WARNING, alpha)
 }
 
 fn draw_bottom_taxi_scene(rect: UiRect) {
@@ -357,7 +352,7 @@ pub fn draw_waiting(game_state: &GameState, game_data: Option<&GameData>) -> UiA
         draw_metric_tile(
             UiRect::new(right_x, inner.y + 18.0 + tile_h + tile_gap, tile_w, tile_h),
             "Time",
-            &format!("{}:{:02}", hours, mins),
+            &format_clock(hours, mins),
             colors::TEXT_PRIMARY,
         );
         draw_metric_tile(
