@@ -1,0 +1,239 @@
+//! The between-rides screen: fuel, refuelling, shift metrics, and dispatch.
+
+use macroquad::prelude::*;
+
+use crate::data::GameData;
+use crate::state::GameState;
+use crate::ui::{
+    colors, draw_cockpit_background, draw_glass_button, draw_glass_panel, draw_small_caps,
+    draw_wrapped_text, fonts, get_fuel_color, layout, spacing, UiAction, UiRect,
+};
+use macroquad_toolkit::ui::{draw_ui_text, format_clock};
+
+use super::scene::{draw_bottom_taxi_scene, draw_metric_tile};
+
+/// Draw the waiting for passenger screen
+pub fn draw_waiting(game_state: &GameState, game_data: Option<&GameData>) -> UiAction {
+    draw_cockpit_background();
+
+    let scene_h = (screen_height() * 0.28).clamp(220.0, 310.0);
+    let scene_rect = UiRect::new(
+        70.0,
+        screen_height() - scene_h - 34.0,
+        screen_width() - 140.0,
+        scene_h,
+    );
+    draw_bottom_taxi_scene(scene_rect);
+
+    if let Some(data) = game_data {
+        let panel_w = (screen_width() - 140.0).min(1060.0);
+        let panel_h = (scene_rect.y - layout::STATUS_BAR_HEIGHT - 78.0).clamp(390.0, 470.0);
+        let panel = UiRect::centered_x(layout::STATUS_BAR_HEIGHT + 36.0, panel_w, panel_h);
+        draw_glass_panel(panel, colors::BORDER);
+        let inner = panel.inset(spacing::PADDING_MD);
+        let left_w = inner.w * 0.56;
+        let right_x = inner.x + left_w + 28.0;
+        let right_w = inner.w - left_w - 28.0;
+        let mut y = inner.y + 16.0;
+
+        draw_small_caps("Dispatch", inner.x, y, fonts::SIZE_SM, colors::CAB_YELLOW);
+        y += 36.0;
+        draw_ui_text(
+            &data.localization.ui.game.waiting.looking,
+            inner.x,
+            y,
+            fonts::SIZE_XXL,
+            colors::TEXT_PRIMARY,
+        );
+        y += 52.0;
+
+        let fuel_pct = game_state.fuel;
+        let fuel_color = get_fuel_color(fuel_pct);
+        let fuel_status = if fuel_pct <= 10.0 {
+            &data.localization.ui.game.waiting.fuel_status.critical
+        } else if fuel_pct <= 20.0 {
+            &data.localization.ui.game.waiting.fuel_status.low
+        } else if fuel_pct <= 40.0 {
+            &data.localization.ui.game.waiting.fuel_status.medium
+        } else {
+            &data.localization.ui.game.waiting.fuel_status.good
+        };
+
+        // "⛽ Fuel: {:.0}% - {}"
+        let fuel_text = data
+            .localization
+            .ui
+            .game
+            .waiting
+            .fuel_label
+            .replace("{:.0}", &format!("{:.0}", fuel_pct))
+            .replace("{}", fuel_status)
+            .replace("%", &data.localization.ui.common.percent);
+        draw_wrapped_text(
+            &fuel_text,
+            inner.x,
+            y,
+            left_w,
+            fonts::SIZE_LG,
+            26.0,
+            fuel_color,
+            2,
+        );
+        y += 46.0;
+
+        let inv_hint = data
+            .localization
+            .ui
+            .game
+            .waiting
+            .inventory_hint
+            .replace("{}", &game_state.inventory.len().to_string());
+        draw_wrapped_text(
+            &inv_hint,
+            inner.x,
+            y,
+            left_w,
+            fonts::SIZE_SM,
+            19.0,
+            colors::TEXT_MUTED,
+            2,
+        );
+
+        if fuel_pct < game_state.max_fuel {
+            let refuel_y = inner.y + inner.h - 112.0;
+            draw_small_caps(
+                &data.localization.ui.game.waiting.refuel_title,
+                inner.x,
+                refuel_y,
+                fonts::SIZE_SM,
+                colors::TEXT_SECONDARY,
+            );
+
+            let btn_w = (left_w - 16.0) / 2.0;
+            let btn_h = 44.0;
+
+            let fuel_needed = game_state.max_fuel - fuel_pct;
+            let full_cost = (fuel_needed * data.constants.fuel.cost_per_percent) as u32;
+            let full_label = data
+                .localization
+                .ui
+                .game
+                .waiting
+                .full_tank
+                .replace("{}", &full_cost.to_string());
+            let can_afford_full = game_state.earnings >= full_cost;
+
+            if draw_glass_button(
+                UiRect::new(inner.x, refuel_y + 26.0, btn_w, btn_h),
+                &full_label,
+                colors::ACCENT_SKY,
+                can_afford_full,
+            ) {
+                return UiAction::RefuelFull;
+            }
+
+            let partial_amount = 25.0_f32.min(fuel_needed);
+            let partial_cost = (partial_amount * data.constants.fuel.cost_per_percent) as u32;
+            let partial_label = data
+                .localization
+                .ui
+                .game
+                .waiting
+                .partial
+                .replace("{}", &partial_cost.to_string());
+            let can_afford_partial = game_state.earnings >= partial_cost;
+
+            if draw_glass_button(
+                UiRect::new(inner.x + btn_w + 16.0, refuel_y + 26.0, btn_w, btn_h),
+                &partial_label,
+                colors::ACCENT_SKY,
+                can_afford_partial,
+            ) {
+                return UiAction::RefuelPartial;
+            }
+        }
+
+        let hours = game_state.time_remaining / 60;
+        let mins = game_state.time_remaining % 60;
+        let tile_gap = 12.0;
+        let tile_w = (right_w - tile_gap) / 2.0;
+        let tile_h = 86.0;
+        draw_metric_tile(
+            UiRect::new(right_x, inner.y + 18.0, tile_w, tile_h),
+            "Fuel",
+            &format!("{:.0}%", fuel_pct),
+            fuel_color,
+        );
+        draw_metric_tile(
+            UiRect::new(right_x + tile_w + tile_gap, inner.y + 18.0, tile_w, tile_h),
+            "Earnings",
+            &format!("${}", game_state.earnings),
+            colors::ACCENT_GOLD,
+        );
+        draw_metric_tile(
+            UiRect::new(right_x, inner.y + 18.0 + tile_h + tile_gap, tile_w, tile_h),
+            "Time",
+            &format_clock(hours, mins),
+            colors::TEXT_PRIMARY,
+        );
+        draw_metric_tile(
+            UiRect::new(
+                right_x + tile_w + tile_gap,
+                inner.y + 18.0 + tile_h + tile_gap,
+                tile_w,
+                tile_h,
+            ),
+            "Rides",
+            &game_state.rides_completed.to_string(),
+            colors::TEXT_PRIMARY,
+        );
+
+        let weather_rect = UiRect::new(
+            right_x,
+            inner.y + 18.0 + (tile_h + tile_gap) * 2.0,
+            right_w,
+            76.0,
+        );
+        draw_metric_tile(
+            weather_rect,
+            "Weather",
+            game_state.current_weather.weather_type.name(),
+            colors::ACCENT_SKY,
+        );
+
+        let earned_enough = game_state.earnings >= game_state.minimum_earnings;
+        let find_y = panel.bottom() - 72.0;
+        if earned_enough {
+            let action_gap = 14.0;
+            let action_w = (right_w - action_gap) / 2.0;
+            let end_rect = UiRect::new(right_x, find_y, action_w, 50.0);
+            if draw_glass_button(end_rect, "Cash Out Shift", colors::FUEL_GOOD, true) {
+                return UiAction::EndShift;
+            }
+            let find_rect = UiRect::new(right_x + action_w + action_gap, find_y, action_w, 50.0);
+            if draw_glass_button(
+                find_rect,
+                &data.localization.ui.game.waiting.find_passenger,
+                colors::CAB_YELLOW,
+                true,
+            ) {
+                return UiAction::Continue;
+            }
+            return UiAction::None;
+        }
+
+        let find_rect = UiRect::new(right_x, find_y, right_w, 50.0);
+        if draw_glass_button(
+            find_rect,
+            &data.localization.ui.game.waiting.find_passenger,
+            colors::CAB_YELLOW,
+            true,
+        ) {
+            return UiAction::Continue;
+        }
+
+        UiAction::None
+    } else {
+        UiAction::None
+    }
+}

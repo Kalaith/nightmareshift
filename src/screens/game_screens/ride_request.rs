@@ -1,0 +1,151 @@
+//! The ride offer screen: passenger portrait, fare, and accept/decline.
+
+use macroquad::prelude::*;
+
+use crate::data::{GameData, Rarity};
+use crate::state::GameState;
+use crate::ui::{
+    colors, draw_cockpit_background, draw_glass_button, draw_glass_panel, draw_passenger_portrait,
+    draw_small_caps, draw_wrapped_text, fonts, layout, spacing, UiAction, UiRect,
+};
+use macroquad_toolkit::ui::draw_ui_text;
+
+use super::scene::draw_bottom_taxi_scene;
+
+/// Draw the ride request screen
+pub fn draw_ride_request(game_state: &GameState, game_data: Option<&GameData>) -> UiAction {
+    draw_cockpit_background();
+
+    let scene_h = (screen_height() * 0.30).clamp(220.0, 320.0);
+    let scene_rect = UiRect::new(
+        70.0,
+        screen_height() - scene_h - 34.0,
+        screen_width() - 140.0,
+        scene_h,
+    );
+    draw_bottom_taxi_scene(scene_rect);
+
+    if let Some(ref passenger) = game_state.current_passenger {
+        let panel_w = screen_width().min(1040.0);
+        let panel_h = (screen_height() * 0.50).clamp(440.0, 540.0);
+        let panel = UiRect::centered_x(layout::STATUS_BAR_HEIGHT + 36.0, panel_w, panel_h);
+        draw_glass_panel(panel, colors::BORDER);
+        let inner = panel.inset(spacing::PADDING_MD);
+
+        let portrait_size = (inner.h - 12.0).min(inner.w * 0.47).clamp(360.0, 500.0);
+        let portrait_rect = UiRect::new(inner.x, inner.y, portrait_size, portrait_size);
+        draw_passenger_portrait(portrait_rect, passenger.id);
+
+        let info_x = portrait_rect.x + portrait_rect.w + 28.0;
+        let info_w = inner.x + inner.w - info_x;
+        let mut y = inner.y + 12.0;
+
+        draw_small_caps(
+            "Ride Request",
+            info_x,
+            y,
+            fonts::SIZE_SM,
+            colors::TEXT_MUTED,
+        );
+        y += 38.0;
+        draw_ui_text(
+            &passenger.name,
+            info_x,
+            y,
+            fonts::SIZE_XXL,
+            colors::CAB_YELLOW,
+        );
+        y += 30.0;
+
+        let rarity_text = format!("{:?}", passenger.rarity);
+        let rarity_color = match passenger.rarity {
+            Rarity::Common => colors::TEXT_MUTED,
+            Rarity::Uncommon => colors::ACCENT_PRIMARY,
+            Rarity::Rare => colors::ACCENT_SKY,
+            Rarity::Legendary => colors::ACCENT_GOLD,
+        };
+        draw_small_caps(&rarity_text, info_x, y, fonts::SIZE_XS, rarity_color);
+        y += 34.0;
+
+        y = draw_wrapped_text(
+            &passenger.description,
+            info_x,
+            y,
+            info_w,
+            fonts::SIZE_MD,
+            21.0,
+            colors::TEXT_SECONDARY,
+            2,
+        ) + 14.0;
+
+        let route = format!("{} -> {}", passenger.pickup, passenger.destination);
+        y = draw_wrapped_text(
+            &route,
+            info_x,
+            y,
+            info_w,
+            fonts::SIZE_MD,
+            21.0,
+            colors::TEXT_PRIMARY,
+            2,
+        ) + 18.0;
+
+        draw_ui_text(
+            &format!("${}", passenger.fare),
+            info_x,
+            y,
+            fonts::SIZE_XL,
+            colors::ACCENT_GOLD,
+        );
+        y += 42.0;
+
+        if let Some(dialogue_text) = game_state.current_passenger_dialogue.as_ref() {
+            let preview = if dialogue_text.len() > 100 {
+                format!("\"{}...\"", &dialogue_text[..100])
+            } else {
+                format!("\"{}\"", dialogue_text)
+            };
+            draw_wrapped_text(
+                &preview,
+                info_x,
+                y,
+                info_w,
+                fonts::SIZE_SM,
+                18.0,
+                colors::TEXT_MUTED,
+                3,
+            );
+        }
+
+        let (accept_text, decline_text) = if let Some(data) = game_data {
+            (
+                data.localization.ui.common.accept_space.as_str(),
+                data.localization.ui.common.decline_esc.as_str(),
+            )
+        } else {
+            ("Accept (SPACE)", "Decline (ESC)")
+        };
+
+        let btn_h = 48.0;
+        let gap = 14.0;
+        let btn_w = (info_w - gap) / 2.0;
+        let btn_y = panel.bottom() - spacing::PADDING_MD - btn_h;
+        if draw_glass_button(
+            UiRect::new(info_x, btn_y, btn_w, btn_h),
+            accept_text,
+            colors::ACCENT_PRIMARY,
+            true,
+        ) {
+            return UiAction::AcceptRide;
+        }
+        if draw_glass_button(
+            UiRect::new(info_x + btn_w + gap, btn_y, btn_w, btn_h),
+            decline_text,
+            colors::ACCENT_DANGER,
+            true,
+        ) {
+            return UiAction::DeclineRide;
+        }
+    }
+    UiAction::None
+}
