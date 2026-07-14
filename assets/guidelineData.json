@@ -2,7 +2,7 @@
   {
     "id": 1001,
     "title": "Never Make Eye Contact",
-    "description": "Avoid looking directly at passengers to prevent supernatural consequences",
+    "description": "Avoid looking directly at passengers to prevent supernatural consequences.",
     "difficulty": "medium",
     "type": "basic",
     "visible": true,
@@ -11,19 +11,26 @@
     "exceptions": [
       {
         "id": "eye_contact_lonely",
-        "passengerTypes": ["Ghost of former taxi passenger", "Lost child who doesn't realize he's been missing"],
+        "passengerIds": [
+          1,
+          6
+        ],
+        "passengerTypes": [
+          "Ghost of former taxi passenger",
+          "Lost child who doesn't realize he's been missing for decades"
+        ],
         "conditions": [
           {
             "type": "passenger_dialogue",
-            "value": "Why won't you look at me",
-            "operator": "contains",
-            "description": "Passenger asks for acknowledgment"
+            "value": "look at me",
+            "description": "Passenger begs to be seen",
+            "operator": "contains"
           },
           {
             "type": "passenger_behavior",
-            "value": 0.6,
-            "operator": "greater_than",
-            "description": "High stress level indicating need for comfort"
+            "value": 0.55,
+            "description": "Distress high enough to turn hostile if ignored",
+            "operator": "greater_than"
           }
         ],
         "tells": [
@@ -31,26 +38,20 @@
             "type": "verbal",
             "intensity": "obvious",
             "description": "Passenger asks 'Why won't you look at me?'",
-            "triggerPhrase": "Why won't you look at me",
-            "reliability": 0.9
+            "reliability": 0.9,
+            "triggerPhrase": "look at me",
+            "audioCue": "voice_escalation"
           },
           {
             "type": "behavioral",
             "intensity": "moderate",
-            "description": "Passenger fidgets nervously and glances at mirror repeatedly",
-            "animationCue": "fidget_glance",
-            "reliability": 0.7
-          },
-          {
-            "type": "verbal",
-            "intensity": "subtle",
-            "description": "Voice gets louder and more agitated over time",
-            "audioCue": "voice_escalation",
-            "reliability": 0.6
+            "description": "Fidgets and glances repeatedly at the mirror seeking acknowledgement",
+            "reliability": 0.7,
+            "animationCue": "fidget_glance"
           }
         ],
         "breakingSafer": true,
-        "description": "Lonely passengers need acknowledgment or they become hostile",
+        "description": "Lonely spirits need to be acknowledged, or their sorrow curdles into wrath.",
         "probability": 0.3,
         "requiredStage": "warning"
       }
@@ -59,7 +60,7 @@
       {
         "type": "survival",
         "value": 1,
-        "description": "Avoided supernatural gaze encounter",
+        "description": "You kept your eyes on the road and avoided the passenger's gaze.",
         "probability": 0.8
       }
     ],
@@ -67,7 +68,7 @@
       {
         "type": "death",
         "value": 1,
-        "description": "Made eye contact - face twisted into void",
+        "description": "You met their eyes and your reflection twisted into a screaming void.",
         "probability": 0.7
       }
     ],
@@ -75,14 +76,1369 @@
       {
         "type": "reputation",
         "value": 8,
-        "description": "Acknowledged a lonely spirit with compassion.",
+        "description": "You read the passenger correctly and earned a fragile trust.",
         "probability": 0.75
       },
       {
         "type": "story_unlock",
         "value": 1,
-        "description": "Unlocked a new memory from the restless passenger.",
-        "probability": 0.5
+        "description": "A sliver of the passenger's story reveals itself.",
+        "probability": 0.4
+      }
+    ]
+  },
+  {
+    "id": 1005,
+    "title": "Never Take Unscheduled Shortcuts",
+    "description": "Stay on approved roads. Shortcuts pass through places that do not appear on any map.",
+    "difficulty": "hard",
+    "type": "conditional",
+    "visible": true,
+    "isGuideline": true,
+    "defaultSafety": "safe",
+    "exceptions": [
+      {
+        "id": "shortcut_time_critical",
+        "passengerIds": [
+          2,
+          8
+        ],
+        "passengerTypes": [],
+        "conditions": [
+          {
+            "type": "passenger_behavior",
+            "value": 0.0,
+            "description": "Passenger's inner clock is running out",
+            "operator": "greater_than"
+          }
+        ],
+        "tells": [
+          {
+            "type": "behavioral",
+            "intensity": "obvious",
+            "description": "Checks a watch every few seconds, knuckles whitening",
+            "reliability": 0.85,
+            "animationCue": "watch_check"
+          },
+          {
+            "type": "verbal",
+            "intensity": "moderate",
+            "description": "Mutters that they need to arrive before something 'wakes up'",
+            "reliability": 0.7,
+            "triggerPhrase": "shortcut",
+            "audioCue": "hunger_growl"
+          }
+        ],
+        "breakingSafer": true,
+        "description": "Some passengers are racing an appetite. Get them there fast or become the meal.",
+        "probability": 0.35,
+        "requiredStage": "warning"
+      }
+    ],
+    "followConsequences": [
+      {
+        "type": "survival",
+        "value": 1,
+        "description": "You held the mandated route and nothing followed you off the map.",
+        "probability": 0.8
+      }
+    ],
+    "breakConsequences": [
+      {
+        "type": "death",
+        "value": 1,
+        "description": "The shortcut folded the road into somewhere older, and it did not let you back out.",
+        "probability": 0.7
+      }
+    ],
+    "exceptionRewards": [
+      {
+        "type": "reputation",
+        "value": 8,
+        "description": "You read the passenger correctly and earned a fragile trust.",
+        "probability": 0.75
+      },
+      {
+        "type": "story_unlock",
+        "value": 1,
+        "description": "A sliver of the passenger's story reveals itself.",
+        "probability": 0.4
+      }
+    ]
+  },
+  {
+    "id": 1004,
+    "title": "Obey the GPS Without Deviation",
+    "description": "Follow the navigation exactly. The routing avoids roads that should not be driven at night.",
+    "difficulty": "medium",
+    "type": "conditional",
+    "visible": true,
+    "isGuideline": true,
+    "defaultSafety": "safe",
+    "exceptions": [
+      {
+        "id": "gps_passenger_warning",
+        "passengerIds": [
+          3
+        ],
+        "passengerTypes": [],
+        "conditions": [
+          {
+            "type": "passenger_dialogue",
+            "value": "highway",
+            "description": "Passenger dreads the main roads",
+            "operator": "contains"
+          },
+          {
+            "type": "passenger_behavior",
+            "value": 0.6,
+            "description": "Panic spikes near on-ramps",
+            "operator": "greater_than"
+          }
+        ],
+        "tells": [
+          {
+            "type": "verbal",
+            "intensity": "obvious",
+            "description": "Pleads 'Don't take the highway - they use the main roads'",
+            "reliability": 0.9,
+            "triggerPhrase": "highway"
+          },
+          {
+            "type": "behavioral",
+            "intensity": "moderate",
+            "description": "Shrinks into the seat and watches the mirrors when a highway sign appears",
+            "reliability": 0.75,
+            "animationCue": "cower_watch"
+          }
+        ],
+        "breakingSafer": true,
+        "description": "This passenger is being hunted along the routes the GPS prefers. Deviate to survive.",
+        "probability": 0.4,
+        "requiredStage": "warning"
+      }
+    ],
+    "followConsequences": [
+      {
+        "type": "survival",
+        "value": 1,
+        "description": "You trusted the routing and the quiet back roads stayed quiet.",
+        "probability": 0.8
+      }
+    ],
+    "breakConsequences": [
+      {
+        "type": "death",
+        "value": 1,
+        "description": "You obeyed the GPS onto the highway and the things that use it found you both.",
+        "probability": 0.7
+      }
+    ],
+    "exceptionRewards": [
+      {
+        "type": "reputation",
+        "value": 8,
+        "description": "You read the passenger correctly and earned a fragile trust.",
+        "probability": 0.75
+      },
+      {
+        "type": "story_unlock",
+        "value": 1,
+        "description": "A sliver of the passenger's story reveals itself.",
+        "probability": 0.4
+      }
+    ]
+  },
+  {
+    "id": 1002,
+    "title": "Keep All Windows Sealed",
+    "description": "Windows stay up all shift. The city air carries more than smog after midnight.",
+    "difficulty": "medium",
+    "type": "conditional",
+    "visible": true,
+    "isGuideline": true,
+    "defaultSafety": "safe",
+    "exceptions": [
+      {
+        "id": "windows_suffocation",
+        "passengerIds": [
+          7
+        ],
+        "passengerTypes": [],
+        "conditions": [
+          {
+            "type": "passenger_dialogue",
+            "value": "breathe",
+            "description": "Passenger is drowning in remembered smoke",
+            "operator": "contains"
+          },
+          {
+            "type": "passenger_behavior",
+            "value": 0.6,
+            "description": "Panic from suffocation",
+            "operator": "greater_than"
+          }
+        ],
+        "tells": [
+          {
+            "type": "verbal",
+            "intensity": "obvious",
+            "description": "Gasps 'I can't breathe - there's too much smoke in here!'",
+            "reliability": 0.9,
+            "triggerPhrase": "breathe",
+            "audioCue": "distressed_breathing"
+          },
+          {
+            "type": "behavioral",
+            "intensity": "moderate",
+            "description": "Claws at the collar and the window seal",
+            "reliability": 0.7,
+            "animationCue": "claw_collar"
+          }
+        ],
+        "breakingSafer": true,
+        "description": "The fire that killed her never ended for her. Crack a window or she relives it into meltdown.",
+        "probability": 0.35,
+        "requiredStage": "warning"
+      },
+      {
+        "id": "windows_drowned_air",
+        "passengerIds": [
+          10
+        ],
+        "passengerTypes": [],
+        "conditions": [],
+        "tells": [
+          {
+            "type": "behavioral",
+            "intensity": "moderate",
+            "description": "Keeps reaching for the window crank, eyes fixed on distant water",
+            "reliability": 0.65,
+            "animationCue": "reach_window"
+          },
+          {
+            "type": "verbal",
+            "intensity": "subtle",
+            "description": "Insists the cabin is 'too dry, too still' without the night air",
+            "reliability": 0.55,
+            "triggerPhrase": "window"
+          }
+        ],
+        "breakingSafer": true,
+        "description": "The drowned fisherman calms only with open air on his face. Deny it and he brings the tide inside.",
+        "probability": 0.4,
+        "requiredStage": "warning"
+      }
+    ],
+    "followConsequences": [
+      {
+        "type": "survival",
+        "value": 1,
+        "description": "The seals held and nothing outside found a way in.",
+        "probability": 0.8
+      }
+    ],
+    "breakConsequences": [
+      {
+        "type": "death",
+        "value": 1,
+        "description": "You opened up for the wrong passenger and let the night reach into the cab.",
+        "probability": 0.7
+      }
+    ],
+    "exceptionRewards": [
+      {
+        "type": "reputation",
+        "value": 8,
+        "description": "You read the passenger correctly and earned a fragile trust.",
+        "probability": 0.75
+      },
+      {
+        "type": "story_unlock",
+        "value": 1,
+        "description": "A sliver of the passenger's story reveals itself.",
+        "probability": 0.4
+      }
+    ]
+  },
+  {
+    "id": 1003,
+    "title": "Maintain Complete Silence",
+    "description": "Do not speak to passengers. Your voice is an invitation some of them are waiting for.",
+    "difficulty": "hard",
+    "type": "conditional",
+    "visible": true,
+    "isGuideline": true,
+    "defaultSafety": "safe",
+    "exceptions": [
+      {
+        "id": "speak_nervous_passenger",
+        "passengerIds": [
+          8,
+          9
+        ],
+        "passengerTypes": [],
+        "conditions": [
+          {
+            "type": "passenger_dialogue",
+            "value": "talk to me",
+            "description": "Passenger is unraveling in the silence",
+            "operator": "contains"
+          },
+          {
+            "type": "passenger_behavior",
+            "value": 0.7,
+            "description": "Paranoia at breaking point",
+            "operator": "greater_than"
+          }
+        ],
+        "tells": [
+          {
+            "type": "verbal",
+            "intensity": "obvious",
+            "description": "Begs 'Please, just talk to me - I can't handle the silence'",
+            "reliability": 0.9,
+            "triggerPhrase": "talk to me",
+            "audioCue": "panicked_plea"
+          },
+          {
+            "type": "behavioral",
+            "intensity": "moderate",
+            "description": "Whips around to check the empty seat beside them, again and again",
+            "reliability": 0.7,
+            "animationCue": "check_seat"
+          }
+        ],
+        "breakingSafer": true,
+        "description": "For these two, silence is where the paranoia wins. A steady voice keeps them anchored.",
+        "probability": 0.35,
+        "requiredStage": "warning"
+      }
+    ],
+    "followConsequences": [
+      {
+        "type": "survival",
+        "value": 1,
+        "description": "You said nothing, and nothing answered from the back seat.",
+        "probability": 0.8
+      }
+    ],
+    "breakConsequences": [
+      {
+        "type": "death",
+        "value": 1,
+        "description": "You spoke first, and something in the passenger answered in a voice that was not theirs.",
+        "probability": 0.7
+      }
+    ],
+    "exceptionRewards": [
+      {
+        "type": "reputation",
+        "value": 8,
+        "description": "You read the passenger correctly and earned a fragile trust.",
+        "probability": 0.75
+      },
+      {
+        "type": "story_unlock",
+        "value": 1,
+        "description": "A sliver of the passenger's story reveals itself.",
+        "probability": 0.4
+      }
+    ]
+  },
+  {
+    "id": 1006,
+    "title": "Never Stop the Vehicle Mid-Ride",
+    "description": "Keep moving until the destination. A stopped taxi is an open door for whatever waits at the roadside.",
+    "difficulty": "hard",
+    "type": "conditional",
+    "visible": true,
+    "isGuideline": true,
+    "defaultSafety": "safe",
+    "exceptions": [
+      {
+        "id": "stop_emergency_need",
+        "passengerIds": [
+          4,
+          9
+        ],
+        "passengerTypes": [],
+        "conditions": [
+          {
+            "type": "passenger_dialogue",
+            "value": "stop",
+            "description": "Passenger is in real physical crisis",
+            "operator": "contains"
+          }
+        ],
+        "tells": [
+          {
+            "type": "verbal",
+            "intensity": "obvious",
+            "description": "Insists 'I need to stop - I feel sick, really sick'",
+            "reliability": 0.85,
+            "triggerPhrase": "stop",
+            "audioCue": "labored_breathing"
+          },
+          {
+            "type": "visual",
+            "intensity": "moderate",
+            "description": "Skin greying, a sheen of cold sweat under the streetlights",
+            "reliability": 0.7,
+            "animationCue": "sicken"
+          }
+        ],
+        "breakingSafer": true,
+        "description": "When the distress is genuine, refusing to stop pushes them past the point of no return.",
+        "probability": 0.35,
+        "requiredStage": "warning"
+      }
+    ],
+    "followConsequences": [
+      {
+        "type": "survival",
+        "value": 1,
+        "description": "You never stopped, and the roadside shapes never got their chance.",
+        "probability": 0.8
+      }
+    ],
+    "breakConsequences": [
+      {
+        "type": "death",
+        "value": 1,
+        "description": "You pulled over at the wrong moment and the dark at the verge climbed in.",
+        "probability": 0.7
+      }
+    ],
+    "exceptionRewards": [
+      {
+        "type": "reputation",
+        "value": 8,
+        "description": "You read the passenger correctly and earned a fragile trust.",
+        "probability": 0.75
+      },
+      {
+        "type": "story_unlock",
+        "value": 1,
+        "description": "A sliver of the passenger's story reveals itself.",
+        "probability": 0.4
+      }
+    ]
+  },
+  {
+    "id": 1007,
+    "title": "Do Not Trade or Sell Anything",
+    "description": "Refuse every offer to buy, sell, or barter. Deals struck in this cab are binding in ways you cannot read.",
+    "difficulty": "expert",
+    "type": "conflicting",
+    "visible": true,
+    "isGuideline": true,
+    "defaultSafety": "safe",
+    "exceptions": [
+      {
+        "id": "collector_temptation",
+        "passengerIds": [
+          5
+        ],
+        "passengerTypes": [],
+        "conditions": [
+          {
+            "type": "passenger_dialogue",
+            "value": "price",
+            "description": "The Collector is mid-pitch",
+            "operator": "contains"
+          }
+        ],
+        "tells": [
+          {
+            "type": "verbal",
+            "intensity": "obvious",
+            "description": "Purrs 'Everything has a price' while displaying a dazzling artifact",
+            "reliability": 0.9,
+            "triggerPhrase": "price"
+          },
+          {
+            "type": "visual",
+            "intensity": "moderate",
+            "description": "Lays out a trinket that seems to answer exactly what you've been lacking",
+            "reliability": 0.7,
+            "animationCue": "offer_artifact"
+          }
+        ],
+        "breakingSafer": false,
+        "description": "Every tell screams that this deal is fair. It is not. The only safe move is to refuse.",
+        "probability": 0.6,
+        "requiredStage": "warning"
+      }
+    ],
+    "followConsequences": [
+      {
+        "type": "survival",
+        "value": 1,
+        "description": "You declined every offer and kept what was yours - including your name.",
+        "probability": 0.8
+      }
+    ],
+    "breakConsequences": [
+      {
+        "type": "death",
+        "value": 1,
+        "description": "You accepted the trade, and the fine print was written in something wet and permanent.",
+        "probability": 0.7
+      }
+    ],
+    "exceptionRewards": [
+      {
+        "type": "reputation",
+        "value": 8,
+        "description": "You read the passenger correctly and earned a fragile trust.",
+        "probability": 0.75
+      },
+      {
+        "type": "story_unlock",
+        "value": 1,
+        "description": "A sliver of the passenger's story reveals itself.",
+        "probability": 0.4
+      }
+    ]
+  },
+  {
+    "id": 1008,
+    "title": "Play No Music",
+    "description": "Keep the cab silent of song. Certain passengers are conducted, not carried.",
+    "difficulty": "hard",
+    "type": "conflicting",
+    "visible": true,
+    "isGuideline": true,
+    "defaultSafety": "safe",
+    "exceptions": [
+      {
+        "id": "frank_melody_bait",
+        "passengerIds": [
+          12
+        ],
+        "passengerTypes": [],
+        "conditions": [
+          {
+            "type": "passenger_dialogue",
+            "value": "play",
+            "description": "The pianist is coaxing a tune out of you",
+            "operator": "contains"
+          }
+        ],
+        "tells": [
+          {
+            "type": "verbal",
+            "intensity": "obvious",
+            "description": "Hums a haunting melody and asks you to join in 'just this once'",
+            "reliability": 0.85,
+            "triggerPhrase": "play",
+            "audioCue": "haunting_hum"
+          },
+          {
+            "type": "behavioral",
+            "intensity": "subtle",
+            "description": "Fingers play silent chords on the door, waiting for accompaniment",
+            "reliability": 0.6,
+            "animationCue": "phantom_piano"
+          }
+        ],
+        "breakingSafer": false,
+        "description": "He wants you to complete the song. Finish his contract's melody and it transfers to you.",
+        "probability": 0.5,
+        "requiredStage": "warning"
+      }
+    ],
+    "followConsequences": [
+      {
+        "type": "survival",
+        "value": 1,
+        "description": "You kept the music off and his contract found no new signature.",
+        "probability": 0.8
+      }
+    ],
+    "breakConsequences": [
+      {
+        "type": "death",
+        "value": 1,
+        "description": "You hummed along, and the deal he made for his talent quietly changed hands to yours.",
+        "probability": 0.7
+      }
+    ],
+    "exceptionRewards": [
+      {
+        "type": "reputation",
+        "value": 8,
+        "description": "You read the passenger correctly and earned a fragile trust.",
+        "probability": 0.75
+      },
+      {
+        "type": "story_unlock",
+        "value": 1,
+        "description": "A sliver of the passenger's story reveals itself.",
+        "probability": 0.4
+      }
+    ]
+  },
+  {
+    "id": 1009,
+    "title": "Do Not Listen to Fortune-Telling",
+    "description": "Ignore any passenger who offers to read your future. Knowledge of what's coming has a toll.",
+    "difficulty": "medium",
+    "type": "conditional",
+    "visible": true,
+    "isGuideline": true,
+    "defaultSafety": "safe",
+    "exceptions": [
+      {
+        "id": "heed_prophecy",
+        "passengerIds": [
+          11
+        ],
+        "passengerTypes": [],
+        "conditions": [
+          {
+            "type": "passenger_dialogue",
+            "value": "future",
+            "description": "The seer is naming a specific danger ahead",
+            "operator": "contains"
+          }
+        ],
+        "tells": [
+          {
+            "type": "verbal",
+            "intensity": "obvious",
+            "description": "Warns 'I see danger in your immediate future' with unnerving precision",
+            "reliability": 0.85,
+            "triggerPhrase": "future"
+          },
+          {
+            "type": "visual",
+            "intensity": "moderate",
+            "description": "The cards she shuffles all turn up the same ruined road",
+            "reliability": 0.7,
+            "animationCue": "reveal_cards"
+          }
+        ],
+        "breakingSafer": true,
+        "description": "Her sight is genuine. Listening this once tells you which road not to take.",
+        "probability": 0.4,
+        "requiredStage": "warning"
+      }
+    ],
+    "followConsequences": [
+      {
+        "type": "survival",
+        "value": 1,
+        "description": "You tuned her out and kept your future your own.",
+        "probability": 0.8
+      }
+    ],
+    "breakConsequences": [
+      {
+        "type": "death",
+        "value": 1,
+        "description": "You leaned in to hear more, and paid the seer's price for borrowed sight.",
+        "probability": 0.7
+      }
+    ],
+    "exceptionRewards": [
+      {
+        "type": "reputation",
+        "value": 8,
+        "description": "You read the passenger correctly and earned a fragile trust.",
+        "probability": 0.75
+      },
+      {
+        "type": "story_unlock",
+        "value": 1,
+        "description": "A sliver of the passenger's story reveals itself.",
+        "probability": 0.4
+      }
+    ]
+  },
+  {
+    "id": 1010,
+    "title": "Decline All Blessings and Charms",
+    "description": "Accept no wards, blessings, or protective objects from passengers. Most are hooks wearing a halo.",
+    "difficulty": "medium",
+    "type": "conditional",
+    "visible": true,
+    "isGuideline": true,
+    "defaultSafety": "safe",
+    "exceptions": [
+      {
+        "id": "agnes_true_blessing",
+        "passengerIds": [
+          13
+        ],
+        "passengerTypes": [],
+        "conditions": [
+          {
+            "type": "passenger_dialogue",
+            "value": "bless",
+            "description": "The nun is offering genuine protection",
+            "operator": "contains"
+          }
+        ],
+        "tells": [
+          {
+            "type": "verbal",
+            "intensity": "obvious",
+            "description": "Offers to bless the car 'against what rides tonight'",
+            "reliability": 0.8,
+            "triggerPhrase": "bless"
+          },
+          {
+            "type": "visual",
+            "intensity": "subtle",
+            "description": "A small silver cross that stays warm and steady in the cold",
+            "reliability": 0.6,
+            "animationCue": "show_cross"
+          }
+        ],
+        "breakingSafer": true,
+        "description": "Sister Agnes is the rare real thing. Her blessing is armor you'll want before dawn.",
+        "probability": 0.4,
+        "requiredStage": "warning"
+      }
+    ],
+    "followConsequences": [
+      {
+        "type": "survival",
+        "value": 1,
+        "description": "You declined, and refused a hook that never was one.",
+        "probability": 0.8
+      }
+    ],
+    "breakConsequences": [
+      {
+        "type": "death",
+        "value": 1,
+        "description": "You waved off the one true blessing of the night and rode the rest of it unguarded.",
+        "probability": 0.7
+      }
+    ],
+    "exceptionRewards": [
+      {
+        "type": "reputation",
+        "value": 8,
+        "description": "You read the passenger correctly and earned a fragile trust.",
+        "probability": 0.75
+      },
+      {
+        "type": "story_unlock",
+        "value": 1,
+        "description": "A sliver of the passenger's story reveals itself.",
+        "probability": 0.4
+      }
+    ]
+  },
+  {
+    "id": 1011,
+    "title": "Comply With the Mayor's Instructions",
+    "description": "The Midnight Mayor governs the city's other half. His word is law after midnight - usually.",
+    "difficulty": "expert",
+    "type": "conflicting",
+    "visible": true,
+    "isGuideline": true,
+    "defaultSafety": "safe",
+    "exceptions": [
+      {
+        "id": "mayor_defiance",
+        "passengerIds": [
+          15
+        ],
+        "passengerTypes": [],
+        "conditions": [
+          {
+            "type": "passenger_dialogue",
+            "value": "compliance",
+            "description": "He is ordering you to break a survival rule",
+            "operator": "contains"
+          }
+        ],
+        "tells": [
+          {
+            "type": "verbal",
+            "intensity": "obvious",
+            "description": "Commands you to break a rule, calling your 'compliance appreciated'",
+            "reliability": 0.85,
+            "triggerPhrase": "compliance"
+          },
+          {
+            "type": "behavioral",
+            "intensity": "moderate",
+            "description": "Watches for your obedience with a collector's patience",
+            "reliability": 0.7,
+            "animationCue": "expectant_stare"
+          }
+        ],
+        "breakingSafer": true,
+        "description": "Obeying his command means breaking a rule that keeps you alive. Refuse him this once.",
+        "probability": 0.45,
+        "requiredStage": "warning"
+      }
+    ],
+    "followConsequences": [
+      {
+        "type": "survival",
+        "value": 1,
+        "description": "You did as instructed and stayed in his good graces.",
+        "probability": 0.8
+      }
+    ],
+    "breakConsequences": [
+      {
+        "type": "death",
+        "value": 1,
+        "description": "You obeyed the order to break your own rule, and the city closed over you.",
+        "probability": 0.7
+      }
+    ],
+    "exceptionRewards": [
+      {
+        "type": "reputation",
+        "value": 8,
+        "description": "You read the passenger correctly and earned a fragile trust.",
+        "probability": 0.75
+      },
+      {
+        "type": "story_unlock",
+        "value": 1,
+        "description": "A sliver of the passenger's story reveals itself.",
+        "probability": 0.4
+      }
+    ]
+  },
+  {
+    "id": 1012,
+    "title": "Do Not Answer Probing Questions",
+    "description": "Volunteer nothing about your other fares. What you reveal can be used to find them - and you.",
+    "difficulty": "medium",
+    "type": "conditional",
+    "visible": true,
+    "isGuideline": true,
+    "defaultSafety": "safe",
+    "exceptions": [
+      {
+        "id": "detective_probe",
+        "passengerIds": [
+          14
+        ],
+        "passengerTypes": [],
+        "conditions": [
+          {
+            "type": "passenger_dialogue",
+            "value": "cases",
+            "description": "He is fishing for details about your route and passengers",
+            "operator": "contains"
+          }
+        ],
+        "tells": [
+          {
+            "type": "verbal",
+            "intensity": "moderate",
+            "description": "Asks probing questions about 'unexplainable cases' you've driven",
+            "reliability": 0.75,
+            "triggerPhrase": "cases"
+          },
+          {
+            "type": "behavioral",
+            "intensity": "subtle",
+            "description": "Notes your answers in a worn pad without looking down",
+            "reliability": 0.6,
+            "animationCue": "take_notes"
+          }
+        ],
+        "breakingSafer": false,
+        "description": "He seems harmless and helpful. Talk and you hand a living hunter your whole night.",
+        "probability": 0.5,
+        "requiredStage": "warning"
+      }
+    ],
+    "followConsequences": [
+      {
+        "type": "survival",
+        "value": 1,
+        "description": "You kept your fares' secrets and gave the detective nothing to follow.",
+        "probability": 0.8
+      }
+    ],
+    "breakConsequences": [
+      {
+        "type": "death",
+        "value": 1,
+        "description": "You talked freely, and everything you'd survived became a lead in someone else's file.",
+        "probability": 0.7
+      }
+    ],
+    "exceptionRewards": [
+      {
+        "type": "reputation",
+        "value": 8,
+        "description": "You read the passenger correctly and earned a fragile trust.",
+        "probability": 0.75
+      },
+      {
+        "type": "story_unlock",
+        "value": 1,
+        "description": "A sliver of the passenger's story reveals itself.",
+        "probability": 0.4
+      }
+    ]
+  },
+  {
+    "id": 1013,
+    "title": "Never Trade Places or Accept Rest",
+    "description": "Do not swap seats, hand over the wheel, or accept an offer to 'take a break'. The shift ends only at dawn.",
+    "difficulty": "nightmare",
+    "type": "conflicting",
+    "visible": true,
+    "isGuideline": true,
+    "defaultSafety": "safe",
+    "exceptions": [
+      {
+        "id": "deaths_offer",
+        "passengerIds": [
+          16
+        ],
+        "passengerTypes": [],
+        "conditions": [
+          {
+            "type": "passenger_dialogue",
+            "value": "trade",
+            "description": "The reaper is offering to relieve you",
+            "operator": "contains"
+          }
+        ],
+        "tells": [
+          {
+            "type": "verbal",
+            "intensity": "obvious",
+            "description": "Offers, gently, to 'trade places' so you can finally rest",
+            "reliability": 0.9,
+            "triggerPhrase": "trade"
+          },
+          {
+            "type": "visual",
+            "intensity": "moderate",
+            "description": "For a moment the meter reads not fare but time remaining - yours",
+            "reliability": 0.7,
+            "animationCue": "meter_time"
+          }
+        ],
+        "breakingSafer": false,
+        "description": "The offer feels like mercy. Accepting ends your shift the way all his fares end.",
+        "probability": 0.6,
+        "requiredStage": "warning"
+      }
+    ],
+    "followConsequences": [
+      {
+        "type": "survival",
+        "value": 1,
+        "description": "You kept your seat and drove your own shift to its end.",
+        "probability": 0.8
+      }
+    ],
+    "breakConsequences": [
+      {
+        "type": "death",
+        "value": 1,
+        "description": "You let him take the wheel, and became the next name he comes to collect.",
+        "probability": 0.7
+      }
+    ],
+    "exceptionRewards": [
+      {
+        "type": "reputation",
+        "value": 8,
+        "description": "You read the passenger correctly and earned a fragile trust.",
+        "probability": 0.75
+      },
+      {
+        "type": "story_unlock",
+        "value": 1,
+        "description": "A sliver of the passenger's story reveals itself.",
+        "probability": 0.4
+      }
+    ]
+  },
+  {
+    "id": 1014,
+    "title": "Keep the Dashboard Lights Dimmed",
+    "description": "Run the cabin dark. Bright light draws attention from the things that prefer the edges.",
+    "difficulty": "easy",
+    "type": "basic",
+    "visible": true,
+    "isGuideline": true,
+    "defaultSafety": "safe",
+    "exceptions": [
+      {
+        "id": "chen_dim_request",
+        "passengerIds": [
+          1
+        ],
+        "passengerTypes": [],
+        "conditions": [
+          {
+            "type": "passenger_dialogue",
+            "value": "cold",
+            "description": "The old ghost is agitated by the glare",
+            "operator": "contains"
+          }
+        ],
+        "tells": [
+          {
+            "type": "behavioral",
+            "intensity": "moderate",
+            "description": "Flinches from the dashboard glow and shields her eyes",
+            "reliability": 0.7,
+            "animationCue": "shield_eyes"
+          },
+          {
+            "type": "verbal",
+            "intensity": "subtle",
+            "description": "Murmurs that the light 'hurts, dear' between her cold small talk",
+            "reliability": 0.6,
+            "triggerPhrase": "cold"
+          }
+        ],
+        "breakingSafer": false,
+        "description": "She asks for darkness, but her calm depends on being gently seen. Keep the lights low, not off.",
+        "probability": 0.4,
+        "requiredStage": "warning"
+      }
+    ],
+    "followConsequences": [
+      {
+        "type": "survival",
+        "value": 1,
+        "description": "You kept the cabin dim and drew no eyes from the dark.",
+        "probability": 0.8
+      }
+    ],
+    "breakConsequences": [
+      {
+        "type": "death",
+        "value": 1,
+        "description": "You flooded the cab with light and something at the roadside turned to look.",
+        "probability": 0.7
+      }
+    ],
+    "exceptionRewards": [
+      {
+        "type": "reputation",
+        "value": 8,
+        "description": "You read the passenger correctly and earned a fragile trust.",
+        "probability": 0.75
+      },
+      {
+        "type": "story_unlock",
+        "value": 1,
+        "description": "A sliver of the passenger's story reveals itself.",
+        "probability": 0.4
+      }
+    ]
+  },
+  {
+    "id": 1015,
+    "title": "Accept No Food or Drink",
+    "description": "Eat and drink nothing offered from the back seat. A shared meal is a shared fate.",
+    "difficulty": "medium",
+    "type": "basic",
+    "visible": true,
+    "isGuideline": true,
+    "defaultSafety": "safe",
+    "exceptions": [
+      {
+        "id": "hunger_shared_meal",
+        "passengerIds": [
+          2,
+          4
+        ],
+        "passengerTypes": [
+          "Vampire or undead worker",
+          "Former doctor who lost license for unethical experiments"
+        ],
+        "conditions": [],
+        "tells": [
+          {
+            "type": "behavioral",
+            "intensity": "moderate",
+            "description": "Presses something to eat on you with unusual insistence",
+            "reliability": 0.7,
+            "animationCue": "offer_food"
+          },
+          {
+            "type": "visual",
+            "intensity": "subtle",
+            "description": "What they offer looks fresh at a glance and wrong at a second one",
+            "reliability": 0.6,
+            "animationCue": "food_wrong"
+          }
+        ],
+        "breakingSafer": false,
+        "description": "The generosity is the trap. Whatever passes your lips binds you to their hunger.",
+        "probability": 0.5,
+        "requiredStage": "warning"
+      }
+    ],
+    "followConsequences": [
+      {
+        "type": "survival",
+        "value": 1,
+        "description": "You accepted nothing and owed nothing.",
+        "probability": 0.8
+      }
+    ],
+    "breakConsequences": [
+      {
+        "type": "death",
+        "value": 1,
+        "description": "You took a bite to be polite, and their hunger set up residence behind your ribs.",
+        "probability": 0.7
+      }
+    ],
+    "exceptionRewards": [
+      {
+        "type": "reputation",
+        "value": 8,
+        "description": "You read the passenger correctly and earned a fragile trust.",
+        "probability": 0.75
+      },
+      {
+        "type": "story_unlock",
+        "value": 1,
+        "description": "A sliver of the passenger's story reveals itself.",
+        "probability": 0.4
+      }
+    ]
+  },
+  {
+    "id": 1016,
+    "title": "Never Brake for Roadside Figures",
+    "description": "Do not slow for people standing at the edge of the road. Real passengers wait where they're supposed to.",
+    "difficulty": "hard",
+    "type": "conditional",
+    "visible": true,
+    "isGuideline": true,
+    "defaultSafety": "safe",
+    "exceptions": [
+      {
+        "id": "roadside_lure",
+        "passengerIds": [
+          3,
+          8
+        ],
+        "passengerTypes": [
+          "Escaped from something in the woods",
+          "Runner who encountered something supernatural in the woods"
+        ],
+        "conditions": [
+          {
+            "type": "passenger_dialogue",
+            "value": "following",
+            "description": "Passenger has seen the figures before",
+            "operator": "contains"
+          }
+        ],
+        "tells": [
+          {
+            "type": "verbal",
+            "intensity": "obvious",
+            "description": "Hisses 'Did you see that behind us?' and 'don't slow down'",
+            "reliability": 0.85,
+            "triggerPhrase": "following"
+          },
+          {
+            "type": "behavioral",
+            "intensity": "moderate",
+            "description": "Locks the door and stares at the treeline sliding past",
+            "reliability": 0.7,
+            "animationCue": "lock_door"
+          }
+        ],
+        "breakingSafer": false,
+        "description": "The figures wear familiar shapes to make you brake. Slowing is how they board.",
+        "probability": 0.55,
+        "requiredStage": "warning"
+      }
+    ],
+    "followConsequences": [
+      {
+        "type": "survival",
+        "value": 1,
+        "description": "You held your speed and left the roadside shapes behind.",
+        "probability": 0.8
+      }
+    ],
+    "breakConsequences": [
+      {
+        "type": "death",
+        "value": 1,
+        "description": "You braked for a figure that wore a friendly face, and it was in the cab before it changed.",
+        "probability": 0.7
+      }
+    ],
+    "exceptionRewards": [
+      {
+        "type": "reputation",
+        "value": 8,
+        "description": "You read the passenger correctly and earned a fragile trust.",
+        "probability": 0.75
+      },
+      {
+        "type": "story_unlock",
+        "value": 1,
+        "description": "A sliver of the passenger's story reveals itself.",
+        "probability": 0.4
+      }
+    ]
+  },
+  {
+    "id": 1017,
+    "title": "Keep Control of the Vehicle",
+    "description": "No passenger touches the wheel, the shifter, or the pedals. The moment you share control, it stops being yours.",
+    "difficulty": "expert",
+    "type": "conflicting",
+    "visible": true,
+    "isGuideline": true,
+    "defaultSafety": "safe",
+    "exceptions": [
+      {
+        "id": "control_surrender",
+        "passengerIds": [
+          15,
+          16
+        ],
+        "passengerTypes": [],
+        "conditions": [],
+        "tells": [
+          {
+            "type": "behavioral",
+            "intensity": "moderate",
+            "description": "Reaches, casually, toward the wheel or the handbrake",
+            "reliability": 0.75,
+            "animationCue": "reach_wheel"
+          },
+          {
+            "type": "verbal",
+            "intensity": "subtle",
+            "description": "Suggests, reasonably, that they 'know a better way from here'",
+            "reliability": 0.6,
+            "triggerPhrase": "better way"
+          }
+        ],
+        "breakingSafer": false,
+        "description": "Handing over control feels efficient. It is the last decision you get to make.",
+        "probability": 0.55,
+        "requiredStage": "warning"
+      }
+    ],
+    "followConsequences": [
+      {
+        "type": "survival",
+        "value": 1,
+        "description": "You kept your hands on the wheel and the cab answered only to you.",
+        "probability": 0.8
+      }
+    ],
+    "breakConsequences": [
+      {
+        "type": "death",
+        "value": 1,
+        "description": "You let them steer 'just for a block', and the road they chose had no way back.",
+        "probability": 0.7
+      }
+    ],
+    "exceptionRewards": [
+      {
+        "type": "reputation",
+        "value": 8,
+        "description": "You read the passenger correctly and earned a fragile trust.",
+        "probability": 0.75
+      },
+      {
+        "type": "story_unlock",
+        "value": 1,
+        "description": "A sliver of the passenger's story reveals itself.",
+        "probability": 0.4
+      }
+    ]
+  },
+  {
+    "id": 1018,
+    "title": "Do Not Hold the Rearview Mirror",
+    "description": "Glance, don't stare. Held too long, the mirror shows the passenger as they truly are.",
+    "difficulty": "medium",
+    "type": "hidden",
+    "visible": false,
+    "isGuideline": true,
+    "defaultSafety": "safe",
+    "exceptions": [
+      {
+        "id": "mirror_truth",
+        "passengerIds": [
+          1,
+          11
+        ],
+        "passengerTypes": [
+          "Psychic who sees too much of what's coming",
+          "Ghost of former taxi passenger"
+        ],
+        "conditions": [],
+        "tells": [
+          {
+            "type": "visual",
+            "intensity": "moderate",
+            "description": "In the mirror their reflection lags a half-second behind them",
+            "reliability": 0.7,
+            "animationCue": "reflection_lag"
+          },
+          {
+            "type": "environmental",
+            "intensity": "subtle",
+            "description": "The glass fogs from the inside though the cabin is warm",
+            "reliability": 0.55,
+            "animationCue": "mirror_fog"
+          }
+        ],
+        "breakingSafer": false,
+        "description": "Looking longer promises answers. It only lets the true shape look back.",
+        "probability": 0.5,
+        "requiredStage": "warning"
+      }
+    ],
+    "followConsequences": [
+      {
+        "type": "survival",
+        "value": 1,
+        "description": "You kept your glances brief and never met the mirror's second face.",
+        "probability": 0.8
+      }
+    ],
+    "breakConsequences": [
+      {
+        "type": "death",
+        "value": 1,
+        "description": "You held the reflection too long and it finished turning toward you.",
+        "probability": 0.7
+      }
+    ],
+    "exceptionRewards": [
+      {
+        "type": "reputation",
+        "value": 8,
+        "description": "You read the passenger correctly and earned a fragile trust.",
+        "probability": 0.75
+      },
+      {
+        "type": "story_unlock",
+        "value": 1,
+        "description": "A sliver of the passenger's story reveals itself.",
+        "probability": 0.4
       }
     ]
   }
