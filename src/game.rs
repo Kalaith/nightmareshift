@@ -522,16 +522,17 @@ impl Game {
             }
 
             // Update guideline decision timer
+            let mut guideline_timed_out = false;
             if self.game_state.game_phase == GamePhase::GuidelineDecision {
                 if let Some(start_time) = self.game_state.guideline_decision_start_time {
                     let elapsed = (current_time - start_time) as f32;
                     self.game_state.guideline_time_remaining = (30.0 - elapsed).max(0.0);
-
-                    // Time's up - force a decision (default to following the guideline)
-                    if self.game_state.guideline_time_remaining <= 0.0 {
-                        // We can't modify state here, so we'll handle this in the handle_action
-                    }
+                    guideline_timed_out = self.game_state.guideline_time_remaining <= 0.0;
                 }
+            }
+            // Time's up: force the decision, defaulting to following the guideline.
+            if guideline_timed_out {
+                self.evaluate_guideline_decision(GuidelineAction::Follow);
             }
 
             // Proactive tell detection during rides

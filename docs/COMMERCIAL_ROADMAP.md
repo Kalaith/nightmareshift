@@ -32,7 +32,7 @@ Every run is the same single static 480-minute shift (`constants.json`), ending 
 - [ ] 🟠 Deepen the skill tree past 12 shallow nodes toward meaningful build identity/branches.
 - [ ] 🟠 **Seeded runs**: the toolkit ships a serializable `SeededRng` built exactly for this, but the game uses only macroquad's global unseeded RNG (zero hits for `srand`/`SeededRng` in `src/`). Adopting it enables daily runs, challenge seeds, reproducible bugs, and deterministic tests (§7).
 - [ ] 🟡 Run modifiers / relic-style variety and unlock-gated content for long-tail replay.
-- [ ] 🟡 Resolve the guideline-timeout no-op: the 30 s decision timer expires without forcing a decision (`game.rs:507-517`, "We can't modify state here").
+- [x] 🟡 Resolve the guideline-timeout no-op: the 30 s decision timer expired without forcing a decision (`game.rs:507-517`, "We can't modify state here"). *(Done 2026-07-14: the comment was stale — the timer block runs inside `update(&mut self)`, so state is mutable. Now sets a `guideline_timed_out` flag and, on expiry, calls `evaluate_guideline_decision(GuidelineAction::Follow)` — the same handler the Follow button uses — so a lapsed timer resolves the decision instead of hanging in `GuidelineDecision` forever.)*
 
 ## 3. Audio — completely absent 🔴
 
