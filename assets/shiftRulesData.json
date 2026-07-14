@@ -293,7 +293,9 @@
         "description": "Always take the fastest route when passenger is in distress",
         "difficulty": "hard",
         "type": "conflicting",
-        "conflictsWith": [5],
+        "conflictsWith": [
+            5
+        ],
         "visible": true
     },
     {
@@ -302,7 +304,9 @@
         "description": "Always comply with reasonable passenger requests",
         "difficulty": "medium",
         "type": "conflicting",
-        "conflictsWith": [4],
+        "conflictsWith": [
+            4
+        ],
         "visible": true
     },
     {
@@ -311,7 +315,9 @@
         "description": "Make eye contact with passengers to ensure they're alert",
         "difficulty": "hard",
         "type": "conflicting",
-        "conflictsWith": [1],
+        "conflictsWith": [
+            1
+        ],
         "visible": true
     },
     {
@@ -400,5 +406,383 @@
         "visible": false,
         "trigger": "heavy_wind",
         "violationMessage": "The wind carried something in that you shouldn't have let inside..."
+    },
+    {
+        "id": 15,
+        "title": "Headlights Stay Lit",
+        "description": "Never drive with the headlights off, no matter who asks.",
+        "difficulty": "medium",
+        "type": "basic",
+        "visible": true,
+        "actionKey": "drive_dark",
+        "actionType": "forbidden",
+        "defaultSafety": "safe",
+        "defaultOutcome": "Your lights hold the roadside shapes at the edge of the beam.",
+        "exceptions": [],
+        "followConsequences": [
+            {
+                "type": "survival",
+                "value": 1,
+                "description": "You kept the lights burning and the dark kept its distance.",
+                "probability": 0.85
+            }
+        ],
+        "breakConsequences": [
+            {
+                "type": "death",
+                "value": 1,
+                "description": "You killed the lights and the dark poured into the space they held.",
+                "probability": 0.7
+            }
+        ],
+        "exceptionRewards": [
+            {
+                "type": "reputation",
+                "value": 8,
+                "description": "You judged the one stretch where darkness was mercy, not invitation.",
+                "probability": 0.7
+            },
+            {
+                "type": "story_unlock",
+                "value": 1,
+                "description": "A fragment of why this rule exists surfaces.",
+                "probability": 0.4
+            }
+        ],
+        "followNeedAdjustment": 4,
+        "breakNeedAdjustment": 16,
+        "exceptionNeedAdjustment": -22,
+        "violationMessage": "You drove into blindness on purpose. Something in it had been waiting for exactly that."
+    },
+    {
+        "id": 19,
+        "title": "The Unlit Mile",
+        "description": "Past the last streetlight, the headlights must stay on until dawn.",
+        "difficulty": "hard",
+        "type": "conditional",
+        "visible": true,
+        "actionKey": "drive_dark",
+        "actionType": "forbidden",
+        "defaultSafety": "safe",
+        "defaultOutcome": "Light is the only fare the far road accepts.",
+        "exceptions": [],
+        "followConsequences": [
+            {
+                "type": "survival",
+                "value": 1,
+                "description": "You held the beams steady through the dead miles and arrived whole.",
+                "probability": 0.85
+            }
+        ],
+        "breakConsequences": [
+            {
+                "type": "death",
+                "value": 1,
+                "description": "You went dark on the unlit road and the road kept you.",
+                "probability": 0.7
+            }
+        ],
+        "exceptionRewards": [
+            {
+                "type": "reputation",
+                "value": 8,
+                "description": "You read the single moment the dark wanted watching, not feeding.",
+                "probability": 0.7
+            },
+            {
+                "type": "story_unlock",
+                "value": 1,
+                "description": "A fragment of why this rule exists surfaces.",
+                "probability": 0.4
+            }
+        ],
+        "followNeedAdjustment": 5,
+        "breakNeedAdjustment": 18,
+        "exceptionNeedAdjustment": -24,
+        "violationMessage": "You extinguished the last light between you and whatever owns that mile."
+    },
+    {
+        "id": 16,
+        "title": "No Climate Control",
+        "description": "Do not run the air conditioning. The cold in the cab is not yours to change.",
+        "difficulty": "medium",
+        "type": "basic",
+        "visible": true,
+        "actionKey": "use_ac",
+        "actionType": "forbidden",
+        "defaultSafety": "safe",
+        "defaultOutcome": "The unnatural chill is a truce; disturbing it ends the truce.",
+        "exceptions": [],
+        "followConsequences": [
+            {
+                "type": "survival",
+                "value": 1,
+                "description": "You let the cold sit and the passenger stayed settled in it.",
+                "probability": 0.85
+            }
+        ],
+        "breakConsequences": [
+            {
+                "type": "death",
+                "value": 1,
+                "description": "You forced the air and something reached through the vents to answer.",
+                "probability": 0.7
+            }
+        ],
+        "exceptionRewards": [
+            {
+                "type": "reputation",
+                "value": 8,
+                "description": "You sensed the passenger who needed warmth, not the ritual cold.",
+                "probability": 0.7
+            },
+            {
+                "type": "story_unlock",
+                "value": 1,
+                "description": "A fragment of why this rule exists surfaces.",
+                "probability": 0.4
+            }
+        ],
+        "followNeedAdjustment": 3,
+        "breakNeedAdjustment": 14,
+        "exceptionNeedAdjustment": -20,
+        "violationMessage": "You changed air that wasn't yours to move. It moved back."
+    },
+    {
+        "id": 20,
+        "title": "Let the Cold Be",
+        "description": "When your breath fogs but theirs does not, leave every vent shut.",
+        "difficulty": "hard",
+        "type": "conditional",
+        "visible": true,
+        "actionKey": "use_ac",
+        "actionType": "forbidden",
+        "defaultSafety": "safe",
+        "defaultOutcome": "The dead keep the temperature they died in; matching it keeps the peace.",
+        "exceptions": [],
+        "followConsequences": [
+            {
+                "type": "survival",
+                "value": 1,
+                "description": "You endured the cold and the frost never spread past the glass.",
+                "probability": 0.85
+            }
+        ],
+        "breakConsequences": [
+            {
+                "type": "death",
+                "value": 1,
+                "description": "You fought the chill and it climbed into your chest to stay.",
+                "probability": 0.7
+            }
+        ],
+        "exceptionRewards": [
+            {
+                "type": "reputation",
+                "value": 8,
+                "description": "You caught the once that the cold was cruelty, not covenant.",
+                "probability": 0.7
+            },
+            {
+                "type": "story_unlock",
+                "value": 1,
+                "description": "A fragment of why this rule exists surfaces.",
+                "probability": 0.4
+            }
+        ],
+        "followNeedAdjustment": 4,
+        "breakNeedAdjustment": 17,
+        "exceptionNeedAdjustment": -22,
+        "violationMessage": "You warmed a cabin that a dead thing had claimed. It took the warmth from you."
+    },
+    {
+        "id": 17,
+        "title": "Leave the Wipers Still",
+        "description": "Do not run the wipers. What streaks the glass tonight is not always rain.",
+        "difficulty": "medium",
+        "type": "basic",
+        "visible": true,
+        "actionKey": "use_wipers",
+        "actionType": "forbidden",
+        "defaultSafety": "safe",
+        "defaultOutcome": "Ignoring the smears on the windshield denies them your attention.",
+        "exceptions": [],
+        "followConsequences": [
+            {
+                "type": "survival",
+                "value": 1,
+                "description": "You left the glass alone and never saw what it was trying to show you.",
+                "probability": 0.85
+            }
+        ],
+        "breakConsequences": [
+            {
+                "type": "death",
+                "value": 1,
+                "description": "You wiped the glass clear and met what had been pressed against it.",
+                "probability": 0.7
+            }
+        ],
+        "exceptionRewards": [
+            {
+                "type": "reputation",
+                "value": 8,
+                "description": "You knew the once the glass truly needed clearing to drive safe.",
+                "probability": 0.7
+            },
+            {
+                "type": "story_unlock",
+                "value": 1,
+                "description": "A fragment of why this rule exists surfaces.",
+                "probability": 0.4
+            }
+        ],
+        "followNeedAdjustment": 3,
+        "breakNeedAdjustment": 15,
+        "exceptionNeedAdjustment": -20,
+        "violationMessage": "You cleaned the windshield and gave the thing behind the smear a clear look back."
+    },
+    {
+        "id": 21,
+        "title": "The Glass Stays Wet",
+        "description": "Through the whole ride, never once clear the windshield.",
+        "difficulty": "hard",
+        "type": "conditional",
+        "visible": true,
+        "actionKey": "use_wipers",
+        "actionType": "forbidden",
+        "defaultSafety": "safe",
+        "defaultOutcome": "The film on the glass is a veil; lifting it works both ways.",
+        "exceptions": [],
+        "followConsequences": [
+            {
+                "type": "survival",
+                "value": 1,
+                "description": "You drove behind the blur and whatever watched never found your eyes.",
+                "probability": 0.85
+            }
+        ],
+        "breakConsequences": [
+            {
+                "type": "death",
+                "value": 1,
+                "description": "You cleared the veil and the watching thing found them at once.",
+                "probability": 0.7
+            }
+        ],
+        "exceptionRewards": [
+            {
+                "type": "reputation",
+                "value": 8,
+                "description": "You judged the single wipe that kept the road, not the ritual, safe.",
+                "probability": 0.7
+            },
+            {
+                "type": "story_unlock",
+                "value": 1,
+                "description": "A fragment of why this rule exists surfaces.",
+                "probability": 0.4
+            }
+        ],
+        "followNeedAdjustment": 4,
+        "breakNeedAdjustment": 17,
+        "exceptionNeedAdjustment": -22,
+        "violationMessage": "You lifted the veil off the glass and it lifted the veil off you."
+    },
+    {
+        "id": 18,
+        "title": "Never Stop Between Fares",
+        "description": "Do not stop the cab until the passenger reaches their destination.",
+        "difficulty": "hard",
+        "type": "basic",
+        "visible": true,
+        "actionKey": "stop_vehicle",
+        "actionType": "forbidden",
+        "defaultSafety": "safe",
+        "defaultOutcome": "A moving cab is a closed door; a stopped one is an open invitation.",
+        "exceptions": [],
+        "followConsequences": [
+            {
+                "type": "survival",
+                "value": 1,
+                "description": "You kept rolling and the roadside things never got their moment.",
+                "probability": 0.85
+            }
+        ],
+        "breakConsequences": [
+            {
+                "type": "death",
+                "value": 1,
+                "description": "You stopped where you shouldn't and the verge climbed in with you.",
+                "probability": 0.7
+            }
+        ],
+        "exceptionRewards": [
+            {
+                "type": "reputation",
+                "value": 8,
+                "description": "You read the genuine emergency that made stopping the mercy it looked like.",
+                "probability": 0.7
+            },
+            {
+                "type": "story_unlock",
+                "value": 1,
+                "description": "A fragment of why this rule exists surfaces.",
+                "probability": 0.4
+            }
+        ],
+        "followNeedAdjustment": 5,
+        "breakNeedAdjustment": 18,
+        "exceptionNeedAdjustment": -25,
+        "violationMessage": "You put the cab in park in the wrong dark. The dark got in.",
+        "relatedGuidelineId": 1006
+    },
+    {
+        "id": 22,
+        "title": "Keep Rolling Till Dawn",
+        "description": "No full stops on any leg tonight - ease, crawl, but never halt.",
+        "difficulty": "expert",
+        "type": "conditional",
+        "visible": true,
+        "actionKey": "stop_vehicle",
+        "actionType": "forbidden",
+        "defaultSafety": "safe",
+        "defaultOutcome": "Momentum itself is the ward on nights like this.",
+        "exceptions": [],
+        "followConsequences": [
+            {
+                "type": "survival",
+                "value": 1,
+                "description": "You never fully stopped and the ward held to sunrise.",
+                "probability": 0.85
+            }
+        ],
+        "breakConsequences": [
+            {
+                "type": "death",
+                "value": 1,
+                "description": "You came to a dead halt and the ward broke around you.",
+                "probability": 0.7
+            }
+        ],
+        "exceptionRewards": [
+            {
+                "type": "reputation",
+                "value": 8,
+                "description": "You caught the one halt that saved a life instead of ending yours.",
+                "probability": 0.7
+            },
+            {
+                "type": "story_unlock",
+                "value": 1,
+                "description": "A fragment of why this rule exists surfaces.",
+                "probability": 0.4
+            }
+        ],
+        "followNeedAdjustment": 5,
+        "breakNeedAdjustment": 20,
+        "exceptionNeedAdjustment": -26,
+        "violationMessage": "You stopped dead when the rule said crawl. What was pacing you caught up.",
+        "relatedGuidelineId": 1006
     }
 ]
