@@ -11,7 +11,6 @@ pub struct RouteCosts {
     pub fuel: u32,
     pub time: u32,
     pub risk: u32,
-    pub risk_tags: Vec<RiskTag>,
 }
 
 /// Route calculation service
@@ -162,13 +161,10 @@ impl RouteService {
             risk = (risk - risk_reduction).max(0.0);
         }
 
-        let risk_tags = Self::generate_risk_tags(route, weather, time_of_day, passenger, None);
-
         RouteCosts {
             fuel: fuel.round() as u32,
             time: time.round() as u32,
             risk: risk.round().clamp(0.0, 5.0) as u32,
-            risk_tags,
         }
     }
 

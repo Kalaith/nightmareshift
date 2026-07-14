@@ -12,6 +12,7 @@ pub struct GameData {
     pub almanac: AlmanacData,
     pub guidelines: Vec<Guideline>,
     pub localization: Localization,
+    pub events: Vec<EventTemplate>,
 }
 
 impl GameData {
@@ -26,6 +27,7 @@ impl GameData {
             almanac: load_almanac(),
             guidelines: load_guidelines(),
             localization: load_localization(),
+            events: load_events(),
         }
     }
 
@@ -99,6 +101,15 @@ pub fn load_guidelines() -> Vec<Guideline> {
     let json = include_str!("../../assets/guidelineData.json");
     serde_json::from_str(json).unwrap_or_else(|e| {
         eprintln!("Failed to parse guidelines: {}", e);
+        Vec::new()
+    })
+}
+
+/// Load the mid-ride event deck from embedded JSON
+pub fn load_events() -> Vec<EventTemplate> {
+    let json = include_str!("../../assets/eventData.json");
+    serde_json::from_str(json).unwrap_or_else(|e| {
+        eprintln!("Failed to parse events: {}", e);
         Vec::new()
     })
 }

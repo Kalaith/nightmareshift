@@ -1,0 +1,542 @@
+[
+  {
+    "id": "stalled_hearse",
+    "title": "Stalled Hearse",
+    "description": "A black hearse sits dead across both lanes, engine ticking, no driver in sight. The rear door is open.",
+    "weight": 1.0,
+    "routes": [],
+    "choices": [
+      {
+        "description": "Ease around it slowly, eyes forward",
+        "risk_type": "SpiritualDisturbance",
+        "consequence": {
+          "Fuel": 3.0
+        },
+        "required_trait": null
+      },
+      {
+        "description": "Gun it past before anything climbs out",
+        "risk_type": "StrangeNoises",
+        "consequence": {
+          "Risk": 2
+        },
+        "required_trait": null
+      },
+      {
+        "description": "Back up and find another way",
+        "risk_type": "RoadConstruction",
+        "consequence": {
+          "Time": 9
+        },
+        "required_trait": null
+      }
+    ]
+  },
+  {
+    "id": "wrong_reflection",
+    "title": "The Wrong Reflection",
+    "description": "In the rearview the street behind you is empty - but the reflection shows headlights that aren't there.",
+    "weight": 1.0,
+    "routes": [],
+    "choices": [
+      {
+        "description": "Keep your eyes on the road ahead",
+        "risk_type": "StrangeNoises",
+        "consequence": {
+          "Stress": 4
+        },
+        "required_trait": null
+      },
+      {
+        "description": "Speed up to lose whatever follows",
+        "risk_type": "SlipperyRoads",
+        "consequence": {
+          "Risk": 2
+        },
+        "required_trait": null
+      },
+      {
+        "description": "Pull the mirror aside and drive blind",
+        "risk_type": "HighTraffic",
+        "consequence": {
+          "Fuel": 2.0
+        },
+        "required_trait": null
+      }
+    ]
+  },
+  {
+    "id": "hitchhiker_crossroads",
+    "title": "Figure at the Crossroads",
+    "description": "Someone stands motionless at the intersection ahead, one arm half-raised, face lost in shadow.",
+    "weight": 1.0,
+    "routes": [],
+    "choices": [
+      {
+        "description": "Roll through without slowing",
+        "risk_type": "GangActivity",
+        "consequence": {
+          "Stress": 5
+        },
+        "required_trait": null
+      },
+      {
+        "description": "Slow to look - maybe they need help",
+        "risk_type": "SpiritualDisturbance",
+        "consequence": {
+          "Risk": 3
+        },
+        "required_trait": null
+      },
+      {
+        "description": "Take the long way around the block",
+        "risk_type": "RoadConstruction",
+        "consequence": {
+          "Time": 8
+        },
+        "required_trait": null
+      }
+    ]
+  },
+  {
+    "id": "meter_bleeds",
+    "title": "The Meter Bleeds",
+    "description": "The fare meter flickers and, for a heartbeat, counts down instead of up. The passenger goes very still.",
+    "weight": 1.0,
+    "routes": [],
+    "choices": [
+      {
+        "description": "Tap the meter and keep driving",
+        "risk_type": "StrangeNoises",
+        "consequence": {
+          "Fuel": 2.0
+        },
+        "required_trait": null
+      },
+      {
+        "description": "Ignore it entirely, say nothing",
+        "risk_type": "SpiritualDisturbance",
+        "consequence": {
+          "Stress": 6
+        },
+        "required_trait": null
+      },
+      {
+        "description": "Pull over briefly to reset it",
+        "risk_type": "HighTraffic",
+        "consequence": {
+          "Time": 7
+        },
+        "required_trait": null
+      }
+    ]
+  },
+  {
+    "id": "engine_whisper",
+    "title": "Something in the Engine",
+    "description": "A wet, rhythmic knocking rises from under the hood - almost like a word, repeated.",
+    "weight": 1.0,
+    "routes": [],
+    "choices": [
+      {
+        "description": "Nurse the throttle and press on gently",
+        "risk_type": "Potholes",
+        "consequence": {
+          "Fuel": 4.0
+        },
+        "required_trait": null
+      },
+      {
+        "description": "Redline it and drown the sound out",
+        "risk_type": "SlipperyRoads",
+        "consequence": {
+          "Risk": 2
+        },
+        "required_trait": null
+      },
+      {
+        "description": "Coast to check the temperature",
+        "risk_type": "HighTraffic",
+        "consequence": {
+          "Time": 6
+        },
+        "required_trait": null
+      }
+    ]
+  },
+  {
+    "id": "detour_sign",
+    "title": "Unlisted Detour",
+    "description": "A fresh detour sign points down a road your GPS swears does not exist. The paint is still wet.",
+    "weight": 1.0,
+    "routes": [],
+    "choices": [
+      {
+        "description": "Trust the map, ignore the sign",
+        "risk_type": "SpiritualDisturbance",
+        "consequence": {
+          "Stress": 4
+        },
+        "required_trait": null
+      },
+      {
+        "description": "Follow the detour into the dark",
+        "risk_type": "DenseFog",
+        "consequence": {
+          "Risk": 3
+        },
+        "required_trait": null
+      },
+      {
+        "description": "Sit and wait for another car to follow",
+        "risk_type": "HighTraffic",
+        "consequence": {
+          "Time": 10
+        },
+        "required_trait": null
+      }
+    ]
+  },
+  {
+    "id": "passenger_hum",
+    "title": "The Humming Starts",
+    "description": "The passenger begins to hum a tune you almost recognize. The radio, switched off, hums the same note back.",
+    "weight": 1.0,
+    "routes": [],
+    "choices": [
+      {
+        "description": "Let them hum, stay silent",
+        "risk_type": "StrangeNoises",
+        "consequence": {
+          "Stress": 3
+        },
+        "required_trait": null
+      },
+      {
+        "description": "Ask them, sharply, to stop",
+        "risk_type": "SpiritualDisturbance",
+        "consequence": {
+          "Risk": 2
+        },
+        "required_trait": null
+      },
+      {
+        "description": "Crack a window for the night air",
+        "risk_type": "SlipperyRoads",
+        "consequence": {
+          "Fuel": 2.0
+        },
+        "required_trait": null
+      }
+    ]
+  },
+  {
+    "id": "cold_spot",
+    "title": "Sudden Cold",
+    "description": "The temperature drops so fast the windshield frosts from the inside. Your breath fogs. The passenger's does not.",
+    "weight": 1.0,
+    "routes": [],
+    "choices": [
+      {
+        "description": "Turn the heat up and drive steady",
+        "risk_type": "DenseFog",
+        "consequence": {
+          "Fuel": 3.0
+        },
+        "required_trait": null
+      },
+      {
+        "description": "Pretend not to notice the frost",
+        "risk_type": "SpiritualDisturbance",
+        "consequence": {
+          "Stress": 5
+        },
+        "required_trait": null
+      },
+      {
+        "description": "Wipe the glass and slow down",
+        "risk_type": "SlipperyRoads",
+        "consequence": {
+          "Time": 6
+        },
+        "required_trait": null
+      }
+    ]
+  },
+  {
+    "id": "shortcut_toll",
+    "title": "The Shortcut's Toll",
+    "description": "The shortcut narrows to a single lane between black trees. A weathered booth blocks the way, its window dark.",
+    "weight": 1.0,
+    "routes": [
+      "shortcut"
+    ],
+    "choices": [
+      {
+        "description": "Leave a coin on the sill and pass",
+        "risk_type": "SpiritualDisturbance",
+        "consequence": {
+          "Fuel": 2.0
+        },
+        "required_trait": null
+      },
+      {
+        "description": "Drive through the barrier without paying",
+        "risk_type": "GangActivity",
+        "consequence": {
+          "Risk": 3
+        },
+        "required_trait": null
+      },
+      {
+        "description": "Reverse out the way you came",
+        "risk_type": "RoadConstruction",
+        "consequence": {
+          "Time": 11
+        },
+        "required_trait": null
+      }
+    ]
+  },
+  {
+    "id": "shortcut_loop",
+    "title": "The Road Repeats",
+    "description": "You pass the same dead oak for the third time. The shortcut is folding back on itself.",
+    "weight": 1.0,
+    "routes": [
+      "shortcut"
+    ],
+    "choices": [
+      {
+        "description": "Keep driving and trust it ends",
+        "risk_type": "DenseFog",
+        "consequence": {
+          "Stress": 5
+        },
+        "required_trait": null
+      },
+      {
+        "description": "Floor it to break the loop",
+        "risk_type": "SlipperyRoads",
+        "consequence": {
+          "Risk": 2
+        },
+        "required_trait": null
+      },
+      {
+        "description": "Stop, breathe, and reorient",
+        "risk_type": "StrangeNoises",
+        "consequence": {
+          "Time": 8
+        },
+        "required_trait": null
+      }
+    ]
+  },
+  {
+    "id": "scenic_overlook",
+    "title": "The Overlook",
+    "description": "The scenic road opens onto a cliff view of the city. Something down in the lights is looking back up at you.",
+    "weight": 1.0,
+    "routes": [
+      "scenic"
+    ],
+    "choices": [
+      {
+        "description": "Admire it a moment, then drive on",
+        "risk_type": "SpiritualDisturbance",
+        "consequence": {
+          "Stress": 4
+        },
+        "required_trait": null
+      },
+      {
+        "description": "Kill the headlights so it can't see you",
+        "risk_type": "DenseFog",
+        "consequence": {
+          "Risk": 2
+        },
+        "required_trait": null
+      },
+      {
+        "description": "Speed past the overlook entirely",
+        "risk_type": "SlipperyRoads",
+        "consequence": {
+          "Fuel": 3.0
+        },
+        "required_trait": null
+      }
+    ]
+  },
+  {
+    "id": "scenic_procession",
+    "title": "Night Procession",
+    "description": "A slow line of mourners crosses the scenic road, candles guttering, none of them casting shadows.",
+    "weight": 1.0,
+    "routes": [
+      "scenic"
+    ],
+    "choices": [
+      {
+        "description": "Wait respectfully for them to pass",
+        "risk_type": "SpiritualDisturbance",
+        "consequence": {
+          "Time": 9
+        },
+        "required_trait": null
+      },
+      {
+        "description": "Edge through a gap in the line",
+        "risk_type": "GangActivity",
+        "consequence": {
+          "Risk": 3
+        },
+        "required_trait": null
+      },
+      {
+        "description": "Douse your lights and idle quietly",
+        "risk_type": "StrangeNoises",
+        "consequence": {
+          "Fuel": 2.0
+        },
+        "required_trait": null
+      }
+    ]
+  },
+  {
+    "id": "checkpoint",
+    "title": "Midnight Checkpoint",
+    "description": "Flares and a patrol car ahead. An officer waves a light, but his badge number is one you saw on a grave.",
+    "weight": 1.0,
+    "routes": [
+      "police"
+    ],
+    "choices": [
+      {
+        "description": "Stop and answer nothing but the basics",
+        "risk_type": "PolicePatrol",
+        "consequence": {
+          "Time": 7
+        },
+        "required_trait": null
+      },
+      {
+        "description": "Nod, roll slowly through the flares",
+        "risk_type": "StrangeNoises",
+        "consequence": {
+          "Risk": 2
+        },
+        "required_trait": null
+      },
+      {
+        "description": "Turn off before the checkpoint",
+        "risk_type": "RoadConstruction",
+        "consequence": {
+          "Fuel": 3.0
+        },
+        "required_trait": null
+      }
+    ]
+  },
+  {
+    "id": "escort",
+    "title": "Unwanted Escort",
+    "description": "A patrol car falls in behind you and matches your speed exactly, block after block, its cabin empty.",
+    "weight": 1.0,
+    "routes": [
+      "police"
+    ],
+    "choices": [
+      {
+        "description": "Drive the limit and give no reason to stop",
+        "risk_type": "PolicePatrol",
+        "consequence": {
+          "Stress": 4
+        },
+        "required_trait": null
+      },
+      {
+        "description": "Take a sudden turn to shake it",
+        "risk_type": "SlipperyRoads",
+        "consequence": {
+          "Risk": 2
+        },
+        "required_trait": null
+      },
+      {
+        "description": "Pull over and let it pass",
+        "risk_type": "HighTraffic",
+        "consequence": {
+          "Time": 6
+        },
+        "required_trait": null
+      }
+    ]
+  },
+  {
+    "id": "flooded_underpass",
+    "title": "Flooded Underpass",
+    "description": "Black water fills the underpass ahead, deeper than it should be. Something breaks the surface, then sinks.",
+    "weight": 1.0,
+    "routes": [],
+    "choices": [
+      {
+        "description": "Creep through the shallow edge",
+        "risk_type": "FlashFloods",
+        "consequence": {
+          "Fuel": 4.0
+        },
+        "required_trait": null
+      },
+      {
+        "description": "Charge across before it rises",
+        "risk_type": "SlipperyRoads",
+        "consequence": {
+          "Risk": 3
+        },
+        "required_trait": null
+      },
+      {
+        "description": "Go around by the high road",
+        "risk_type": "RoadConstruction",
+        "consequence": {
+          "Time": 10
+        },
+        "required_trait": null
+      }
+    ]
+  },
+  {
+    "id": "child_in_road",
+    "title": "Child in the Road",
+    "description": "A small figure stands in your lane, back turned, perfectly still despite your horn.",
+    "weight": 1.0,
+    "routes": [],
+    "choices": [
+      {
+        "description": "Steer wide and do not stop",
+        "risk_type": "SpiritualDisturbance",
+        "consequence": {
+          "Stress": 6
+        },
+        "required_trait": null
+      },
+      {
+        "description": "Brake hard to avoid it",
+        "risk_type": "SlipperyRoads",
+        "consequence": {
+          "Risk": 3
+        },
+        "required_trait": null
+      },
+      {
+        "description": "Edge forward and hope it moves",
+        "risk_type": "StrangeNoises",
+        "consequence": {
+          "Fuel": 2.0
+        },
+        "required_trait": null
+      }
+    ]
+  }
+]

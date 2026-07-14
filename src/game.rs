@@ -164,13 +164,10 @@ impl Game {
     }
 
     /// Accept current ride
-    /// Accept current ride
     fn accept_ride(&mut self) {
-        if let Some(ref data) = self.game_data {
-            if let Err(reason) = RideService::accept_ride(&mut self.game_state, data) {
-                self.game_state.game_over_reason = Some(reason);
-                self.end_shift(false);
-            }
+        if let Err(reason) = RideService::accept_ride(&mut self.game_state) {
+            self.game_state.game_over_reason = Some(reason);
+            self.end_shift(false);
         }
     }
 
@@ -630,9 +627,7 @@ impl Game {
             }
             UiAction::SelectEventChoice(idx) => {
                 if self.screen == Screen::Game {
-                    if let Some(ref data) = self.game_data {
-                        RideService::resolve_event_choice(&mut self.game_state, data, idx);
-                    }
+                    RideService::resolve_event_choice(&mut self.game_state, idx);
                 }
             }
             UiAction::Continue => {

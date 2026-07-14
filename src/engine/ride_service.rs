@@ -53,7 +53,7 @@ impl RideService {
 
     /// Accept the current ride request.
     /// Returns Ok if successful, Err(reason) if failed (e.g. not enough fuel).
-    pub fn accept_ride(state: &mut GameState, data: &GameData) -> Result<(), String> {
+    pub fn accept_ride(state: &mut GameState) -> Result<(), String> {
         if state.fuel < layout::MINIMUM_FUEL_FOR_RIDE {
             return Err("You ran out of fuel with a passenger in the car.".to_string());
         }
@@ -78,8 +78,6 @@ impl RideService {
             timestamp: current_time,
         });
 
-        // Print route options for the first leg
-        Self::debug_route_options(state, data);
         Ok(())
     }
 
@@ -640,7 +638,8 @@ impl RideService {
 
                 if ride_legs <= 1 {
                     // First leg -> Mid-Ride Event
-                    state.current_event = Some(Self::generate_mid_ride_event(state, stats, route));
+                    state.current_event =
+                        Some(Self::generate_mid_ride_event(state, data, stats, route));
                     state.game_phase = GamePhase::Interaction;
                     RouteOutcome::Success
                 } else {
@@ -658,334 +657,150 @@ impl RideService {
         }
     }
 
-    /// Generate a random mid-ride event
+    /// Generate a mid-ride event by drawing from the authored event deck.
+    ///
+    /// Picks a route-eligible template (weighted), then optionally appends a
+    /// passenger-specific "use your ability" choice when the player has both the
+    /// almanac knowledge and the matching skill unlocked, and shuffles.
     fn generate_mid_ride_event(
         state: &GameState,
+        data: &GameData,
         stats: &PlayerStats,
         route: RouteType,
     ) -> MidRideEvent {
-        // let mut rng = macroquad_toolkit::rng::rand();
+        let eligible: Vec<&EventTemplate> = data
+            .events
+            .iter()
+            .filter(|e| e.eligible_for(route))
+            .collect();
 
-        // 1. Determine potential risks based on route costs (which has the risk tags)
-        // We need to re-calculate or retrieve the risk tags for this route.
-        // For simplicity, we regenerate them here, but ideally we'd pass them through.
-        // It's stateless so it's consistent if inputs are same, but Passenger/Weather might be.
-        // Wait, route costs are calculated in choose_route.
-        // We should probably store the selected route costs or just regenerate tags.
-        let risk_tags = RouteService::generate_risk_tags(
-            route,
-            Some(&state.current_weather),
-            Some(&state.time_of_day),
-            state.current_passenger.as_ref(),
-            None,
-        );
-
-        // 2. Base Event Templates (can be moved to a JSON file later)
-        let templates = [
-            (
-                "Strange Obstruction",
-                "Something is blocking the path ahead.",
+        let (title, description, mut choices) = match Self::pick_weighted_event(&eligible) {
+            Some(tpl) => (
+                tpl.title.clone(),
+                tpl.description.clone(),
+                tpl.choices.clone(),
             ),
-            ("Unsettling Atmosphere", "The air grows heavy and silent."),
-            ("Mechanical Noise", "The car makes a worrying sound."),
-            ("Passenger Request", "The passenger leans forward abruptly."),
-        ];
+            None => Self::fallback_event(),
+        };
 
-        // Pick a template
-        let (title, desc) = *macroquad_toolkit::rng::choose(&templates).unwrap();
-
-        // 3. Generate Choices
-        let mut choices = Vec::new();
-
-        // Strategy: Create 4 choices.
-        // 1 Safe/Standard
-        // 1 Risky but Fast
-        // 1 Passenger Trait Related (if applicable)
-        // 1 Random Risk Mitigation
-
-        // Helper to make a choice
-        let make_choice =
-            |desc: &str, risk: RiskTag, cons: EventConsequence, trait_req: Option<String>| {
-                EventChoice {
-                    description: desc.to_string(),
-                    risk_type: risk,
-                    consequence: cons,
-                    required_trait: trait_req,
-                }
-            };
-
-        // Standard choice - safe but costs fuel (extra caution)
-        let risk1 = risk_tags.first().copied().unwrap_or(RiskTag::HighTraffic);
-        choices.push(make_choice(
-            "Proceed carefully",
-            risk1,
-            EventConsequence::Fuel(3.0),
-            None,
-        ));
-
-        // Risky choice - fast but increases danger
-        let risk2 = risk_tags.get(1).copied().unwrap_or(RiskTag::Potholes);
-        choices.push(make_choice(
-            "Speed through it",
-            risk2,
-            EventConsequence::Risk(2),
-            None,
-        ));
-
-        // Trait Choice (if passenger has one AND player has the skill unlocked)
+        // Passenger ability choice: strongest option, gated behind almanac + skill.
         if let Some(p) = &state.current_passenger {
-            // Check both conditions:
-            // 1. Almanac knowledge level >= 1 (know about the passenger's abilities)
-            // 2. Player has the skill unlocked in skill tree (can use the ability)
             let almanac_unlocked = stats.get_almanac_entry(p.id).knowledge_level >= 1;
-
             if let Some(trait_name) = p.traits.first() {
-                // Convert trait name to skill ID format (e.g., "Night Vision" -> "night_vision")
                 let skill_id = trait_name.to_lowercase().replace(' ', "_");
-                let skill_unlocked = stats.is_skill_unlocked(&skill_id);
-
-                if almanac_unlocked && skill_unlocked {
-                    // Player has both knowledge AND the skill - show the ability option (BEST choice)
-                    println!(
-                        "[DEBUG] Generating Trait Choice for trait: {} (skill '{}' is UNLOCKED)",
-                        trait_name, skill_id
-                    );
-                    choices.push(make_choice(
-                        &format!("Utilize {} ability", trait_name),
-                        RiskTag::SpiritualDisturbance,
-                        EventConsequence::Stress(-10), // Positive effect - reduces stress
-                        Some(trait_name.clone()),
-                    ));
-                } else {
-                    // Skill not unlocked - "Ignore it" causes passenger stress (unresolved tension)
-                    if !skill_unlocked {
-                        println!(
-                            "[DEBUG] Trait '{}' requires skill '{}' which is NOT UNLOCKED.",
-                            trait_name, skill_id
-                        );
-                    }
-                    if !almanac_unlocked {
-                        println!(
-                            "[DEBUG] Almanac knowledge for passenger {} is too low.",
-                            p.id
-                        );
-                    }
-                    choices.push(make_choice(
-                        "Ignore it",
-                        RiskTag::StrangeNoises,
-                        EventConsequence::Stress(5),
-                        None,
-                    ));
+                if almanac_unlocked && stats.is_skill_unlocked(&skill_id) {
+                    choices.push(EventChoice {
+                        description: format!("Use your {} to steady the moment", trait_name),
+                        risk_type: RiskTag::SpiritualDisturbance,
+                        consequence: EventConsequence::Stress(-10),
+                        required_trait: Some(trait_name.clone()),
+                    });
                 }
-            } else {
-                // No traits on passenger - ignoring still causes mild stress
-                choices.push(make_choice(
-                    "Ignore it",
-                    RiskTag::StrangeNoises,
-                    EventConsequence::Stress(5),
-                    None,
-                ));
             }
-        } else {
-            choices.push(make_choice(
-                "Ignore it",
-                RiskTag::StrangeNoises,
-                EventConsequence::Stress(5),
-                None,
-            ));
         }
 
-        // 4th choice - safe detour but costs time
-        let risk3 = risk_tags.get(2).copied().unwrap_or(RiskTag::DenseFog);
-        choices.push(make_choice(
-            "Take a detour",
-            risk3,
-            EventConsequence::Time(8),
-            None,
-        ));
-
-        // Shuffle choices so the trait one isn't always 3rd
         macroquad_toolkit::rng::shuffle(&mut choices);
 
-        println!("[DEBUG] --- EVENT GENERATED: {} ---", title);
-        println!("[DEBUG] Description: {}", desc);
-        for (i, c) in choices.iter().enumerate() {
-            println!(
-                "[DEBUG] Option {}: \"{}\" -> Consequence: {:?}",
-                i + 1,
-                c.description,
-                c.consequence
-            );
-            if let Some(trait_req) = &c.required_trait {
-                println!("[DEBUG]   (Requires Trait: {})", trait_req);
-            }
-        }
-        println!("[DEBUG] -----------------------------------");
-
         MidRideEvent {
-            title: title.to_string(),
-            description: desc.to_string(),
+            title,
+            description,
             choices,
         }
     }
 
-    /// Resolve a mid-ride event choice
-    pub fn resolve_event_choice(state: &mut GameState, data: &GameData, choice_index: usize) {
+    /// Pick one event weighted by its `weight` field.
+    fn pick_weighted_event<'a>(events: &[&'a EventTemplate]) -> Option<&'a EventTemplate> {
+        if events.is_empty() {
+            return None;
+        }
+        let total: f32 = events.iter().map(|e| e.weight.max(0.0)).sum();
+        if total <= 0.0 {
+            return macroquad_toolkit::rng::choose(events).copied();
+        }
+        let mut roll = macroquad_toolkit::rng::rand() * total;
+        for e in events {
+            roll -= e.weight.max(0.0);
+            if roll <= 0.0 {
+                return Some(*e);
+            }
+        }
+        events.last().copied()
+    }
+
+    /// Generic event used only if the deck is empty (e.g. data failed to load).
+    fn fallback_event() -> (String, String, Vec<EventChoice>) {
+        (
+            "Unsettling Atmosphere".to_string(),
+            "The air grows heavy and silent.".to_string(),
+            vec![
+                EventChoice {
+                    description: "Proceed carefully".to_string(),
+                    risk_type: RiskTag::DenseFog,
+                    consequence: EventConsequence::Fuel(3.0),
+                    required_trait: None,
+                },
+                EventChoice {
+                    description: "Speed through it".to_string(),
+                    risk_type: RiskTag::StrangeNoises,
+                    consequence: EventConsequence::Risk(2),
+                    required_trait: None,
+                },
+                EventChoice {
+                    description: "Take a detour".to_string(),
+                    risk_type: RiskTag::RoadConstruction,
+                    consequence: EventConsequence::Time(8),
+                    required_trait: None,
+                },
+            ],
+        )
+    }
+
+    /// Resolve a mid-ride event choice, applying its consequence and returning
+    /// to route selection for the second leg of the journey.
+    pub fn resolve_event_choice(state: &mut GameState, choice_index: usize) {
         if let Some(event) = &state.current_event {
             if let Some(choice) = event.choices.get(choice_index) {
-                // Apply consequence
-                println!("[DEBUG] Selected Choice: '{}'", choice.description);
-                println!("[DEBUG] Applying Consequence: {:?}", choice.consequence);
-
                 match choice.consequence {
                     EventConsequence::Fuel(amount) => {
                         state.fuel = (state.fuel - amount).max(0.0);
-                        println!(
-                            "[DEBUG] Fuel reduced by {}. New Fuel: {}",
-                            amount, state.fuel
-                        );
                     }
                     EventConsequence::Time(amount) => {
                         state.time_remaining = state.time_remaining.saturating_sub(amount);
-                        println!(
-                            "[DEBUG] Time reduced by {}. Remaining: {}",
-                            amount, state.time_remaining
-                        );
                     }
                     EventConsequence::Risk(amount) => {
-                        if let (Some(mut need), Some(passenger)) = (
-                            state.current_passenger_need_state.clone(),
-                            state.current_passenger.clone(),
-                        ) {
-                            let old_level = need.level;
-                            let triggered = PassengerStateMachine::apply_stress_delta(
-                                &mut need,
-                                &passenger,
-                                amount * 8,
-                                macroquad::prelude::get_time(),
-                            );
-                            state.current_passenger_need_state = Some(need);
-                            PassengerStateMachine::merge_detected_tells(
-                                &mut state.detected_tells,
-                                triggered,
-                                passenger.id,
-                                macroquad::prelude::get_time(),
-                            );
-                            if let Some(updated) = &state.current_passenger_need_state {
-                                println!(
-                                    "[DEBUG] Risk Consequence: Level changed from {} to {}",
-                                    old_level, updated.level
-                                );
-                            }
-                        }
+                        Self::apply_event_stress(state, amount * 8);
                     }
                     EventConsequence::Stress(amount) => {
-                        if let (Some(mut need), Some(passenger)) = (
-                            state.current_passenger_need_state.clone(),
-                            state.current_passenger.clone(),
-                        ) {
-                            let old_level = need.level;
-                            let triggered = PassengerStateMachine::apply_stress_delta(
-                                &mut need,
-                                &passenger,
-                                amount,
-                                macroquad::prelude::get_time(),
-                            );
-                            state.current_passenger_need_state = Some(need);
-                            PassengerStateMachine::merge_detected_tells(
-                                &mut state.detected_tells,
-                                triggered,
-                                passenger.id,
-                                macroquad::prelude::get_time(),
-                            );
-                            if let Some(updated) = &state.current_passenger_need_state {
-                                println!("[DEBUG] Stress Consequence: Level changed from {} to {} (Amount: {})", old_level, updated.level, amount);
-                            }
-                        }
+                        Self::apply_event_stress(state, amount);
                     }
-                    EventConsequence::None => {
-                        println!("[DEBUG] No consequence applied.");
-                    }
+                    EventConsequence::None => {}
                 }
             }
         }
 
-        // Transition back to Driving (Pickup) for "2nd Leg" of the journey
-        // This will present route options again.
+        // Return to Driving (Pickup) to present route options for the second leg.
+        // transition_driving_phase completes the ride after the second leg.
         state.game_phase = GamePhase::Driving;
         state.driving_phase = Some(DrivingPhase::Pickup);
-
-        // Print route options for the second leg
-        Self::debug_route_options(state, data);
-
-        // NOTE: If we wanted to check if this was the last event, we could logic here,
-        // but our logic in transition_driving_phase handles the "Stop after 2nd leg" part.
-        // So here we ALWAYS assume "Back to Route Selection" after an event.
-        // If we want multiple events, this loops correctly.
-
-        // Clear event?
-        // state.current_event = None; // Keep for history/ref? UI will show route selection so it's hidden.
-
-        // Clear event? Or keep it for log?
-        // state.current_event = None; // Keep it maybe for history, but UI might show it again if we don't clear or check phase.
-        // Actually, game_phase change hides it. Keeping it allows reference.
     }
 
-    /// Helper to print debug info about available routes
-    fn debug_route_options(state: &GameState, data: &GameData) {
-        println!("[DEBUG] --- AVAILABLE ROUTES ANALYSIS ---");
-        let routes = [
-            RouteType::Normal,
-            RouteType::Shortcut,
-            RouteType::Scenic,
-            RouteType::Police,
-        ];
-        let no_mastery = std::collections::HashMap::new();
-        for route in routes {
-            let passenger_risk = state
-                .current_passenger
-                .as_ref()
-                .and_then(|p| data.get_location(&p.pickup).map(|l| l.risk_level))
-                .unwrap_or(1);
-
-            let seed = state.rides_completed as u64
-                + state
-                    .current_passenger
-                    .as_ref()
-                    .map(|p| p.id as u64)
-                    .unwrap_or(0)
-                + (route as u64);
-            let costs = RouteService::calculate_route_costs(
-                route,
-                &data.constants,
-                passenger_risk,
-                Some(&state.current_weather),
-                Some(&state.time_of_day),
-                &state.environmental_hazards,
-                &no_mastery,
-                state.current_passenger.as_ref(), // Pass passenger
-            );
-            let risk_tags = RouteService::generate_risk_tags(
-                route,
-                Some(&state.current_weather),
-                Some(&state.time_of_day),
-                state.current_passenger.as_ref(),
-                Some(seed),
-            );
-
-            // Base Fare Modifier (approximate)
-            let fare_mod = match route {
-                RouteType::Scenic => "1.3x",
-                RouteType::Shortcut => "1.0x (Speed)",
-                RouteType::Police => "1.0x (Safe)",
-                RouteType::Normal => "1.0x",
-            };
-
-            println!(
-                "[DEBUG] Route {:?}: FuelCost={:.1}, TimeCost={:.1}, RiskScore={:.1}, FareMod={}, Risks={:?}, CostRisks={:?}",
-                route, costs.fuel, costs.time, costs.risk, fare_mod, risk_tags, costs.risk_tags
+    /// Apply a stress delta from an event choice to the current passenger's need
+    /// state, merging any tells the change triggers.
+    fn apply_event_stress(state: &mut GameState, amount: i32) {
+        if let (Some(mut need), Some(passenger)) = (
+            state.current_passenger_need_state.clone(),
+            state.current_passenger.clone(),
+        ) {
+            let now = macroquad::prelude::get_time();
+            let triggered =
+                PassengerStateMachine::apply_stress_delta(&mut need, &passenger, amount, now);
+            state.current_passenger_need_state = Some(need);
+            PassengerStateMachine::merge_detected_tells(
+                &mut state.detected_tells,
+                triggered,
+                passenger.id,
+                now,
             );
         }
-        println!("[DEBUG] ---------------------------------");
     }
 }
