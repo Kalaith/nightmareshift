@@ -201,6 +201,7 @@ impl GameEngine {
         consecutive_streak: Option<&RouteStreak>,
         reputation: Option<&PassengerReputation>,
         constants: &ConstantsData,
+        destination_fare_modifier: f32,
     ) -> u32 {
         // Route fare multiplier
         let route_mult = match route {
@@ -233,7 +234,12 @@ impl GameEngine {
             .unwrap_or(1.0);
 
         // Calculate with all multipliers
-        let fare = base_fare as f32 * route_mult * pref_mult * streak_mult * rep_mult;
+        let fare = base_fare as f32
+            * route_mult
+            * pref_mult
+            * streak_mult
+            * rep_mult
+            * destination_fare_modifier;
 
         // Add variation (±$5)
         let variation = macroquad_toolkit::rng::gen_range(-5.0, 5.0);

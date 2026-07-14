@@ -103,6 +103,10 @@ impl RideService {
         if let Some(ref passenger) = state.current_passenger.clone() {
             // Calculate fare
             let reputation = state.passenger_reputation.get(&passenger.id);
+            let destination_fare_modifier = data
+                .get_location(&passenger.destination)
+                .map(|l| l.fare_modifier)
+                .unwrap_or(1.0);
             let fare = GameEngine::calculate_fare(
                 passenger.fare,
                 route,
@@ -110,6 +114,7 @@ impl RideService {
                 state.consecutive_route_streak.as_ref(),
                 reputation,
                 &data.constants,
+                destination_fare_modifier,
             );
 
             // Add earnings
