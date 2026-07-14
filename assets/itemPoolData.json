@@ -1,0 +1,38 @@
+{
+    "ghost": [
+        "Old Locket",
+        "Withered Flowers",
+        "Faded Photograph",
+        "Dusty Mirror"
+    ],
+    "vampire": [
+        "Blood Vial",
+        "Ancient Coin",
+        "Velvet Cloak Scrap",
+        "Ornate Ring"
+    ],
+    "demon": [
+        "Sulfur Crystal",
+        "Burning Coal",
+        "Contract Fragment",
+        "Cursed Dice"
+    ],
+    "occult": [
+        "Crystal Pendant",
+        "Tarot Card",
+        "Incense Bundle",
+        "Rune Stone"
+    ],
+    "holy": [
+        "Blessed Medallion",
+        "Holy Water Vial",
+        "Prayer Beads",
+        "Saint's Icon"
+    ],
+    "common": [
+        "Forgotten Wallet",
+        "Lost Phone",
+        "Crumpled Note",
+        "Old Key"
+    ]
+}

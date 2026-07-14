@@ -60,9 +60,9 @@ impl ItemService {
         passenger: &Passenger,
         route_type: RouteType,
         backstory_unlocked: bool,
-
         current_time: f64,
         constants: &ConstantsData,
+        item_pools: &ItemPools,
     ) -> Option<ItemDrop> {
         let drop_chance =
             Self::calculate_drop_chance(passenger, route_type, backstory_unlocked, constants);
@@ -72,13 +72,29 @@ impl ItemService {
         }
 
         // Determine item based on passenger
-        let item = Self::select_item_for_passenger(passenger, current_time);
+        let item = Self::select_item_for_passenger(passenger, current_time, item_pools);
 
         Some(ItemDrop { item })
     }
 
+    /// Map a passenger's supernatural type to an item-pool category.
+    fn item_category(supernatural: &str) -> &'static str {
+        match supernatural {
+            "ghost" | "specter" => "ghost",
+            "vampire" => "vampire",
+            "demon" => "demon",
+            "psychic" | "fortune_teller" => "occult",
+            "priest" | "nun" => "holy",
+            _ => "common",
+        }
+    }
+
     /// Select an appropriate item for a passenger to drop
-    fn select_item_for_passenger(passenger: &Passenger, current_time: f64) -> InventoryItem {
+    fn select_item_for_passenger(
+        passenger: &Passenger,
+        current_time: f64,
+        item_pools: &ItemPools,
+    ) -> InventoryItem {
         // Check if passenger has specific drop items
         if !passenger.drop_items.is_empty() {
             let idx = macroquad_toolkit::rng::gen_range(0, passenger.drop_items.len());
@@ -87,71 +103,8 @@ impl ItemService {
         }
 
         // Otherwise generate based on supernatural type
-        let item_name = match passenger.supernatural.as_str() {
-            "ghost" | "specter" => Self::random_ghost_item(),
-            "vampire" => Self::random_vampire_item(),
-            "demon" => Self::random_demon_item(),
-            "psychic" | "fortune_teller" => Self::random_occult_item(),
-            "priest" | "nun" => Self::random_holy_item(),
-            _ => Self::random_common_item(),
-        };
-
+        let item_name = item_pools.pick(Self::item_category(&passenger.supernatural));
         ItemDatabase::create_item(&item_name, &passenger.name, current_time)
-    }
-
-    fn random_ghost_item() -> String {
-        let items = [
-            "Old Locket",
-            "Withered Flowers",
-            "Faded Photograph",
-            "Dusty Mirror",
-        ];
-        items[macroquad_toolkit::rng::gen_range(0, items.len())].to_string()
-    }
-
-    fn random_vampire_item() -> String {
-        let items = [
-            "Blood Vial",
-            "Ancient Coin",
-            "Velvet Cloak Scrap",
-            "Ornate Ring",
-        ];
-        items[macroquad_toolkit::rng::gen_range(0, items.len())].to_string()
-    }
-
-    fn random_demon_item() -> String {
-        let items = [
-            "Sulfur Crystal",
-            "Burning Coal",
-            "Contract Fragment",
-            "Cursed Dice",
-        ];
-        items[macroquad_toolkit::rng::gen_range(0, items.len())].to_string()
-    }
-
-    fn random_occult_item() -> String {
-        let items = [
-            "Crystal Pendant",
-            "Tarot Card",
-            "Incense Bundle",
-            "Rune Stone",
-        ];
-        items[macroquad_toolkit::rng::gen_range(0, items.len())].to_string()
-    }
-
-    fn random_holy_item() -> String {
-        let items = [
-            "Blessed Medallion",
-            "Holy Water Vial",
-            "Prayer Beads",
-            "Saint's Icon",
-        ];
-        items[macroquad_toolkit::rng::gen_range(0, items.len())].to_string()
-    }
-
-    fn random_common_item() -> String {
-        let items = ["Forgotten Wallet", "Lost Phone", "Crumpled Note", "Old Key"];
-        items[macroquad_toolkit::rng::gen_range(0, items.len())].to_string()
     }
 
     /// Check if a passenger wants to trade
@@ -160,6 +113,7 @@ impl ItemService {
         inventory: &[InventoryItem],
         constants: &ConstantsData,
         current_time: f64,
+        item_pools: &ItemPools,
     ) -> Option<TradeOffer> {
         // Only some passengers trade
         if !passenger.wants_trade {
@@ -175,7 +129,7 @@ impl ItemService {
             || macroquad_toolkit::rng::chance(constants.probabilities.trade_offer_chance)
         {
             // Generate a trade offer
-            let offered_item = Self::select_item_for_passenger(passenger, current_time);
+            let offered_item = Self::select_item_for_passenger(passenger, current_time, item_pools);
 
             return Some(TradeOffer {
                 passenger_name: passenger.name.clone(),

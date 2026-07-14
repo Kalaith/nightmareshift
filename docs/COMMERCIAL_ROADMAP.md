@@ -18,8 +18,8 @@ The signature mechanic (read tells → follow or break passenger guidelines) has
 - [ ] 🟠 Grow the passenger roster beyond 16 (target 30–40 for a roguelite). *(Now unblocked by the data-driven selection above — new passengers need only a JSON entry. Gated on portrait art: ids 1–16 have `assets/passengers/N.png`; new entries fall back to the procedural silhouette until art exists.)*
 - [ ] 🟠 Make the 24 locations mechanically distinct — currently name/description/atmosphere + one risk number (`locationData.json`), pure flavor.
 - [ ] 🟠 Expand shift rules beyond the current 20 (`shiftRulesData.json`) — depth per rule is good; count is thin for replay.
-- [ ] 🟡 Move item names out of hardcoded string arrays in `item_service.rs:102-155` into data.
-- [ ] 🟡 Delete the dead legacy `assets/gameData.json` (empty stub).
+- [x] 🟡 Move item names out of hardcoded string arrays in `item_service.rs:102-155` into data. *(Done 2026-07-14: extracted the six per-category item-name arrays into `assets/itemPoolData.json` (24 names across ghost/vampire/demon/occult/holy/common). New `ItemPools` type + `load_item_pools()` loader; `select_item_for_passenger` now picks from the data pool via `ItemPools::pick`, and the six `random_*_item` functions are gone. Pools thread through `generate_drop`/`check_trade_offer` from `GameData`.)*
+- [x] 🟡 Delete the dead legacy `assets/gameData.json` (empty stub). *(Done 2026-07-14: removed; confirmed zero source references — nothing `include_str!`s or loads it.)*
 
 ## 2. Game structure, progression & endings 🔴
 

@@ -3,6 +3,45 @@
 use super::passenger::Rarity;
 use serde::{Deserialize, Serialize};
 
+/// Named item-name pools keyed by supernatural category, loaded from
+/// `itemPoolData.json`. Used to generate an item drop when a passenger has no
+/// explicit `dropItems`.
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct ItemPools {
+    #[serde(default)]
+    pub ghost: Vec<String>,
+    #[serde(default)]
+    pub vampire: Vec<String>,
+    #[serde(default)]
+    pub demon: Vec<String>,
+    #[serde(default)]
+    pub occult: Vec<String>,
+    #[serde(default)]
+    pub holy: Vec<String>,
+    #[serde(default)]
+    pub common: Vec<String>,
+}
+
+impl ItemPools {
+    /// Pick a random item name from the named category, falling back to the
+    /// common pool (and finally a hardcoded name) if a pool is empty.
+    pub fn pick(&self, category: &str) -> String {
+        let pool = match category {
+            "ghost" => &self.ghost,
+            "vampire" => &self.vampire,
+            "demon" => &self.demon,
+            "occult" => &self.occult,
+            "holy" => &self.holy,
+            _ => &self.common,
+        };
+        let pool = if pool.is_empty() { &self.common } else { pool };
+        if pool.is_empty() {
+            return "Old Key".to_string();
+        }
+        pool[macroquad_toolkit::rng::gen_range(0, pool.len())].clone()
+    }
+}
+
 /// Type of inventory item
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]

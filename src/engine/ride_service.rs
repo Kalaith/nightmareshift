@@ -153,6 +153,7 @@ impl RideService {
                 backstory_unlocked.is_some(),
                 current_time,
                 &data.constants,
+                &data.item_pools,
             ) {
                 items_received.push(drop.item.clone());
                 state.inventory.push(drop.item);
@@ -164,6 +165,7 @@ impl RideService {
                 &state.inventory,
                 &data.constants,
                 current_time,
+                &data.item_pools,
             ) {
                 state.pending_trade =
                     Some((trade.passenger_name.clone(), trade.offered_item.clone()));

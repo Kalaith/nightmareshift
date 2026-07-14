@@ -13,6 +13,7 @@ pub struct GameData {
     pub guidelines: Vec<Guideline>,
     pub localization: Localization,
     pub events: Vec<EventTemplate>,
+    pub item_pools: ItemPools,
 }
 
 impl GameData {
@@ -28,6 +29,7 @@ impl GameData {
             guidelines: load_guidelines(),
             localization: load_localization(),
             events: load_events(),
+            item_pools: load_item_pools(),
         }
     }
 
@@ -111,6 +113,15 @@ pub fn load_events() -> Vec<EventTemplate> {
     serde_json::from_str(json).unwrap_or_else(|e| {
         eprintln!("Failed to parse events: {}", e);
         Vec::new()
+    })
+}
+
+/// Load item name pools from embedded JSON
+pub fn load_item_pools() -> ItemPools {
+    let json = include_str!("../../assets/itemPoolData.json");
+    serde_json::from_str(json).unwrap_or_else(|e| {
+        eprintln!("Failed to parse item pools: {}", e);
+        ItemPools::default()
     })
 }
 
