@@ -63,7 +63,7 @@ pub(super) fn draw_bottom_taxi_scene(rect: UiRect) {
     let scale = (rect.w / 1100.0).clamp(0.85, 1.35);
     let body_w = 350.0 * scale;
     let body_h = 74.0 * scale;
-    let body_x = rect.center_x() - body_w / 2.0;
+    let body_x = rect.center().x - body_w / 2.0;
     let body_y = rect.y + rect.h * 0.48;
     draw_rectangle(
         body_x,

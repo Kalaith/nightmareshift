@@ -28,7 +28,12 @@ pub fn draw_waiting(game_state: &GameState, game_data: Option<&GameData>) -> UiA
     if let Some(data) = game_data {
         let panel_w = (screen_width() - 140.0).min(1060.0);
         let panel_h = (scene_rect.y - layout::STATUS_BAR_HEIGHT - 78.0).clamp(390.0, 470.0);
-        let panel = UiRect::centered_x(layout::STATUS_BAR_HEIGHT + 36.0, panel_w, panel_h);
+        let panel = UiRect::centered_x(
+            screen_width(),
+            layout::STATUS_BAR_HEIGHT + 36.0,
+            panel_w,
+            panel_h,
+        );
         draw_glass_panel(panel, colors::BORDER);
         let inner = panel.inset(spacing::PADDING_MD);
         let left_w = inner.w * 0.56;

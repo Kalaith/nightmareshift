@@ -16,7 +16,7 @@ pub fn draw_game_over(game_state: &GameState, game_data: Option<&GameData>) -> U
     let center_x = screen_width() / 2.0;
 
     if let Some(data) = game_data {
-        let panel = UiRect::centered_x(112.0, screen_width().min(540.0), 330.0);
+        let panel = UiRect::centered_x(screen_width(), 112.0, screen_width().min(540.0), 330.0);
         draw_glass_panel(panel, colors::ACCENT_DANGER);
         let inner = panel.inset(spacing::PADDING_LG);
 
@@ -81,7 +81,7 @@ pub fn draw_success(game_state: &GameState, game_data: Option<&GameData>) -> UiA
     let center_x = screen_width() / 2.0;
 
     if let Some(data) = game_data {
-        let panel = UiRect::centered_x(104.0, screen_width().min(540.0), 350.0);
+        let panel = UiRect::centered_x(screen_width(), 104.0, screen_width().min(540.0), 350.0);
         draw_glass_panel(panel, colors::ACCENT_GOLD);
         let inner = panel.inset(spacing::PADDING_LG);
 

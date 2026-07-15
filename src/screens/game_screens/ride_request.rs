@@ -28,7 +28,12 @@ pub fn draw_ride_request(game_state: &GameState, game_data: Option<&GameData>) -
     if let Some(ref passenger) = game_state.current_passenger {
         let panel_w = screen_width().min(1040.0);
         let panel_h = (screen_height() * 0.50).clamp(440.0, 540.0);
-        let panel = UiRect::centered_x(layout::STATUS_BAR_HEIGHT + 36.0, panel_w, panel_h);
+        let panel = UiRect::centered_x(
+            screen_width(),
+            layout::STATUS_BAR_HEIGHT + 36.0,
+            panel_w,
+            panel_h,
+        );
         draw_glass_panel(panel, colors::BORDER);
         let inner = panel.inset(spacing::PADDING_MD);
 

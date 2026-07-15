@@ -157,6 +157,7 @@ impl Game {
         );
 
         let panel = UiRect::centered_x(
+            screen_width(),
             (screen_height() - 360.0) / 2.0,
             screen_width().min(520.0),
             360.0,

@@ -32,7 +32,12 @@ pub fn draw_interaction(
     if let Some(event) = &game_state.current_event {
         let rect_w = (screen_width() - 140.0).min(980.0);
         let rect_h = (scene_rect.y - layout::STATUS_BAR_HEIGHT - 76.0).clamp(430.0, 520.0);
-        let rect = UiRect::centered_x(layout::STATUS_BAR_HEIGHT + 34.0, rect_w, rect_h);
+        let rect = UiRect::centered_x(
+            screen_width(),
+            layout::STATUS_BAR_HEIGHT + 34.0,
+            rect_w,
+            rect_h,
+        );
         draw_glass_panel(rect, colors::BORDER);
 
         let inner = rect.inset(spacing::PADDING_MD);
@@ -154,7 +159,7 @@ pub fn draw_interaction(
         // My implementation in RideService sets current_event when transitioning to Interaction.
         // So `current_event` SHOULD be present.
         // But if I want to support legacy behavior just in case:
-        let rect = UiRect::centered_x(150.0, 500.0, 150.0);
+        let rect = UiRect::centered_x(screen_width(), 150.0, 500.0, 150.0);
         draw_glass_panel(rect, colors::BORDER);
 
         let inner = rect.inset(spacing::PADDING_MD);

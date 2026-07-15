@@ -69,52 +69,14 @@ pub mod fonts {
     pub const SIZE_XXL: f32 = 36.0;
 }
 
-/// A positioned rectangle for UI layouts
-#[derive(Debug, Clone, Copy)]
-pub struct UiRect {
-    pub x: f32,
-    pub y: f32,
-    pub w: f32,
-    pub h: f32,
-}
-
-impl UiRect {
-    pub fn new(x: f32, y: f32, w: f32, h: f32) -> Self {
-        Self { x, y, w, h }
-    }
-
-    pub fn centered_x(y: f32, w: f32, h: f32) -> Self {
-        Self {
-            x: (screen_width() - w) / 2.0,
-            y,
-            w,
-            h,
-        }
-    }
-
-    pub fn bottom(&self) -> f32 {
-        self.y + self.h
-    }
-
-    pub fn center_x(&self) -> f32 {
-        self.x + self.w / 2.0
-    }
-
-    pub fn inset(&self, amount: f32) -> Self {
-        Self {
-            x: self.x + amount,
-            y: self.y + amount,
-            w: self.w - amount * 2.0,
-            h: self.h - amount * 2.0,
-        }
-    }
-}
+/// A positioned rectangle for UI layouts (shared toolkit type).
+pub use macroquad_toolkit::ui::UiRect;
 
 pub fn draw_glass_panel(rect: UiRect, border: Color) {
     let surface = macroquad_toolkit::ui::SurfaceStyle::new(colors::GLASS)
         .with_top_highlight(1.0, Color::new(1.0, 1.0, 1.0, 0.12))
         .with_border(1.0, border);
-    macroquad_toolkit::ui::draw_surface(Rect::new(rect.x, rect.y, rect.w, rect.h), &surface);
+    macroquad_toolkit::ui::draw_surface(rect.rect(), &surface);
 }
 
 pub fn draw_divider(x: f32, y: f32, h: f32) {
@@ -127,9 +89,7 @@ pub fn draw_small_caps(text: &str, x: f32, y: f32, size: f32, color: Color) {
 
 pub fn draw_glass_button(rect: UiRect, label: &str, accent: Color, enabled: bool) -> bool {
     let clicked = enabled && button(rect.x, rect.y, rect.w, rect.h, "");
-    let (mx, my) = mouse_position();
-    let hovered =
-        enabled && mx >= rect.x && mx <= rect.x + rect.w && my >= rect.y && my <= rect.y + rect.h;
+    let hovered = enabled && rect.contains_mouse();
     let bg = if hovered {
         colors::GLASS_LIGHT
     } else {
@@ -141,7 +101,7 @@ pub fn draw_glass_button(rect: UiRect, label: &str, accent: Color, enabled: bool
         .with_left_accent(4.0, border)
         .with_top_highlight(1.0, Color::new(1.0, 1.0, 1.0, 0.10))
         .with_border(1.0, border);
-    macroquad_toolkit::ui::draw_surface(Rect::new(rect.x, rect.y, rect.w, rect.h), &surface);
+    macroquad_toolkit::ui::draw_surface(rect.rect(), &surface);
 
     let text_color = if enabled {
         colors::TEXT_PRIMARY
@@ -512,7 +472,7 @@ pub fn draw_passenger_portrait(rect: UiRect, seed: u32) {
         );
     }
 
-    let cx = rect.center_x();
+    let cx = rect.center().x;
     let cy = rect.y + rect.h * 0.48;
     draw_circle(cx, cy - 25.0, 28.0, Color::new(0.420, 0.360, 0.300, 1.0));
     draw_circle(cx, cy - 34.0, 31.0, Color::new(0.050, 0.045, 0.043, 1.0));

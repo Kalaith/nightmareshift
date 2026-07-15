@@ -139,7 +139,7 @@ pub fn draw_almanac(
 
         let mut y = content_top - scroll_offset;
         let mut right_y = content_top - scroll_offset;
-        let mouse_pos = mouse_position();
+        let mouse_y = mouse_position().1;
         let mouse_clicked = is_mouse_button_pressed(MouseButton::Left);
 
         for (idx, passenger) in data.passengers.iter().enumerate() {
@@ -167,24 +167,16 @@ pub fn draw_almanac(
             if card_y + card_height > content_top && card_y < content_bottom {
                 // Calculate button area first to exclude from card click
                 let btn_y = card_y + card_height - 42.0;
-                let btn_rect = (card_x + card_width - 220.0, btn_y, 198.0, 30.0);
+                let btn_rect = UiRect::new(card_x + card_width - 220.0, btn_y, 198.0, 30.0);
                 let can_show_button = entry.encountered && entry.knowledge_level < 3;
 
                 // Check if mouse is over the button area
-                let is_over_button = can_show_button
-                    && mouse_pos.0 >= btn_rect.0
-                    && mouse_pos.0 <= btn_rect.0 + btn_rect.2
-                    && mouse_pos.1 >= btn_rect.1
-                    && mouse_pos.1 <= btn_rect.1 + btn_rect.3;
+                let is_over_button = can_show_button && btn_rect.contains_mouse();
 
                 // Check for click on card (but NOT on button)
-                let card_rect = (card_x, card_y, card_width, card_height);
-                let is_hovered = mouse_pos.0 >= card_rect.0
-                    && mouse_pos.0 <= card_rect.0 + card_rect.2
-                    && mouse_pos.1 >= card_rect.1
-                    && mouse_pos.1 <= card_rect.1 + card_rect.3
-                    && mouse_pos.1 > content_top
-                    && mouse_pos.1 < content_bottom;
+                let card_rect = UiRect::new(card_x, card_y, card_width, card_height);
+                let is_hovered =
+                    card_rect.contains_mouse() && mouse_y > content_top && mouse_y < content_bottom;
 
                 // Only toggle expand if clicking on card but NOT on the button
                 if is_hovered && mouse_clicked && entry.encountered && !is_over_button {
@@ -437,19 +429,14 @@ pub fn draw_almanac(
                     let button_text = cost_text;
 
                     if can_afford {
-                        if draw_glass_button(
-                            UiRect::new(btn_rect.0, btn_rect.1, btn_rect.2, btn_rect.3),
-                            &button_text,
-                            colors::ACCENT_GOLD,
-                            true,
-                        ) {
+                        if draw_glass_button(btn_rect, &button_text, colors::ACCENT_GOLD, true) {
                             return UiAction::UpgradeAlmanacKnowledge(passenger.id);
                         }
                     } else {
                         draw_small_caps(
                             &button_text,
-                            card_x + card_width - 220.0,
-                            btn_y + 20.0,
+                            btn_rect.x,
+                            btn_rect.y + 20.0,
                             fonts::SIZE_XS,
                             colors::TEXT_MUTED,
                         );

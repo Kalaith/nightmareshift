@@ -30,7 +30,12 @@ pub fn draw_guideline_decision(game_state: &GameState, game_data: Option<&GameDa
             let center_x = screen_width() / 2.0;
             let rect_w = (screen_width() - 140.0).min(860.0);
             let rect_h = (scene_rect.y - layout::STATUS_BAR_HEIGHT - 76.0).clamp(440.0, 520.0);
-            let rect = UiRect::centered_x(layout::STATUS_BAR_HEIGHT + 34.0, rect_w, rect_h);
+            let rect = UiRect::centered_x(
+                screen_width(),
+                layout::STATUS_BAR_HEIGHT + 34.0,
+                rect_w,
+                rect_h,
+            );
             draw_glass_panel(rect, colors::ACCENT_WARNING);
 
             let inner = rect.inset(spacing::PADDING_LG);

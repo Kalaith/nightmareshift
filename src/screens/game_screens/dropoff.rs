@@ -28,7 +28,12 @@ pub fn draw_dropoff(game_state: &GameState, game_data: Option<&GameData>) -> UiA
     if let Some(ref completion) = game_state.last_ride_completion {
         let rect_w = (screen_width() - 140.0).min(880.0);
         let rect_h = (scene_rect.y - layout::STATUS_BAR_HEIGHT - 76.0).clamp(440.0, 520.0);
-        let rect = UiRect::centered_x(layout::STATUS_BAR_HEIGHT + 34.0, rect_w, rect_h);
+        let rect = UiRect::centered_x(
+            screen_width(),
+            layout::STATUS_BAR_HEIGHT + 34.0,
+            rect_w,
+            rect_h,
+        );
         // CompletionSummary now needs game_data
         let completion_action = CompletionSummary::draw(completion, rect, game_data);
 
@@ -60,7 +65,8 @@ pub fn draw_dropoff(game_state: &GameState, game_data: Option<&GameData>) -> UiA
                     screen_height(),
                     Color::new(0.0, 0.0, 0.0, 0.50),
                 );
-                let trade_rect = UiRect::centered_x(146.0, screen_width().min(460.0), 330.0);
+                let trade_rect =
+                    UiRect::centered_x(screen_width(), 146.0, screen_width().min(460.0), 330.0);
                 draw_glass_panel(trade_rect, colors::ACCENT_SKY);
 
                 let inner = trade_rect.inset(spacing::PADDING_MD);
