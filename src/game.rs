@@ -95,6 +95,21 @@ impl Game {
                 self.start_game();
                 self.start_shift();
             }
+            // The inventory holding a cursed item and a plain one, so the
+            // curse line and its way out are visible in the capture.
+            "inventory" => {
+                self.start_game();
+                self.start_shift();
+                self.spawn_passenger();
+                if let Some(data) = &self.game_data {
+                    let now = get_time();
+                    for name in ["Old Locket", "Crystal Pendant", "Crumpled Note"] {
+                        let item = data.items.create_item(name, "Mrs. Chen", now);
+                        self.game_state.inventory.push(item);
+                    }
+                }
+                self.show_inventory = true;
+            }
             // The rules panel mid-ride, so each rule's authored reason for
             // existing is visible in the capture.
             "rules_panel" => {

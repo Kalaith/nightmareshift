@@ -143,7 +143,7 @@ impl ItemService {
         // Check if player has something the passenger wants
         let wanted_item = inventory
             .iter()
-            .find(|item| passenger.wanted_items.contains(&item.name) && item.can_trade);
+            .find(|item| passenger.wanted_items.contains(&item.name) && item.can_be_given_away());
 
         if wanted_item.is_some()
             || macroquad_toolkit::rng::chance(constants.probabilities.trade_offer_chance)

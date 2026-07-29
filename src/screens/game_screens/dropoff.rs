@@ -160,7 +160,7 @@ pub fn draw_dropoff(game_state: &GameState, game_data: Option<&GameData>) -> UiA
                     .inventory
                     .iter()
                     .enumerate()
-                    .filter(|(_, item)| item.can_trade)
+                    .filter(|(_, item)| item.can_be_given_away())
                     .take(3)
                     .collect();
 

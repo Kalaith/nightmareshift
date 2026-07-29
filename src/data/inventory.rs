@@ -195,6 +195,23 @@ impl InventoryItem {
         }
     }
 
+    /// Whether this item can be handed to a passenger.
+    ///
+    /// `canTrade` says whether it is the sort of thing anyone would take;
+    /// a curse's `canBeRemoved` says whether it will let itself be given away
+    /// at all. The Contract Fragment has the driver's name on it and refuses.
+    /// Both were authored and only the first was read, so a binding contract
+    /// could be traded off like a spare coin.
+    pub fn can_be_given_away(&self) -> bool {
+        if !self.can_trade {
+            return false;
+        }
+        self.cursed_properties
+            .as_ref()
+            .map(|curse| curse.can_be_removed)
+            .unwrap_or(true)
+    }
+
     /// Check if item is broken (durability depleted)
     pub fn is_broken(&self) -> bool {
         self.durability.map(|d| d == 0).unwrap_or(false)
@@ -361,6 +378,50 @@ mod tests {
             .map(|(name, _)| name)
             .collect();
         assert!(inert.is_empty(), "items with no effect at all: {inert:?}");
+    }
+
+    /// Every curse must tell the player how to be rid of it, or the penalty
+    /// is something that happens to them with no way to act on it.
+    #[test]
+    fn every_curse_names_its_way_out() {
+        let catalog = load_item_catalog();
+        let mut names = catalog.names();
+        names.sort();
+        for name in names {
+            let Some(curse) = catalog.get(&name).cursed_properties else {
+                continue;
+            };
+            if !curse.can_be_removed {
+                continue;
+            }
+            let condition = curse.removal_condition.unwrap_or_default();
+            assert!(
+                !condition.trim().is_empty(),
+                "{name:?} can be removed but does not say how"
+            );
+        }
+    }
+
+    /// A curse that refuses to be given away must not also be marked
+    /// tradeable, or the inventory offers a way out that the trade refuses.
+    #[test]
+    fn an_unremovable_curse_is_not_offered_for_trade() {
+        let catalog = load_item_catalog();
+        let mut names = catalog.names();
+        names.sort();
+        for name in names {
+            let template = catalog.get(&name);
+            let Some(curse) = &template.cursed_properties else {
+                continue;
+            };
+            if curse.can_be_removed {
+                continue;
+            }
+            assert!(
+                !template.can_trade,
+                "{name:?} cannot be removed but is marked canTrade"
+            );
+        }
     }
 
     /// A usable item must actually have effects to apply, or "Use" is a no-op

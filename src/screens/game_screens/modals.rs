@@ -81,7 +81,7 @@ pub fn draw_inventory_modal(game_state: &GameState, game_data: Option<&GameData>
                 colors::TEXT_MUTED,
             );
         } else {
-            let row_h = 72.0;
+            let row_h = 92.0;
             for (i, item) in game_state.inventory.iter().enumerate() {
                 // Item background
                 let item_bg = if i % 2 == 0 {
@@ -135,6 +135,36 @@ pub fn draw_inventory_modal(game_state: &GameState, game_data: Option<&GameData>
                     fonts::SIZE_XS,
                     colors::TEXT_MUTED,
                 );
+
+                // What a curse is doing to you, and the way out of it.
+                // The inventory named the item and who left it and nothing
+                // else, so a driver carrying the Old Locket had no way to
+                // learn it was drawing danger, let alone that Sister Agnes
+                // would take it off their hands.
+                if let Some(curse) = &item.cursed_properties {
+                    let penalty = match curse.penalty_type {
+                        data::CursePenalty::FuelDrain => "burns fuel",
+                        data::CursePenalty::TimeAcceleration => "eats the clock",
+                        data::CursePenalty::AttractingDanger => "draws danger",
+                        data::CursePenalty::ForcedChoices => "narrows the road",
+                    };
+                    let way_out = curse
+                        .removal_condition
+                        .as_deref()
+                        .filter(|_| curse.can_be_removed)
+                        .unwrap_or("Cannot be given away");
+                    draw_ui_text(
+                        &format!("Cursed - {} | {}", penalty, way_out),
+                        inner.x + 10.0,
+                        y + 55.0,
+                        fonts::SIZE_XS,
+                        if curse.can_be_removed {
+                            colors::ACCENT_WARNING
+                        } else {
+                            colors::FUEL_CRITICAL
+                        },
+                    );
+                }
 
                 // Can use indicator
                 if item.can_use {
