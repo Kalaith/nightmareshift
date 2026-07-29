@@ -307,6 +307,24 @@ impl GameEngine {
             .any(|exception| state.stage >= Self::required_stage(exception))
     }
 
+    /// Whether a hidden-rule violation actually lands.
+    ///
+    /// `PROBABILITIES.HIDDEN_RULE_VIOLATION` is authored at 0.3 and was read
+    /// by nothing, so breaking a rule the player had no way to know about
+    /// caught them every single time. Every sibling in that block --
+    /// supernatural encounters, high-risk encounters, item drops, kin spawns,
+    /// trade offers -- gates whether an event fires, so this one reads the
+    /// same way: a hidden rule is a lurking thing that mostly does not notice,
+    /// not a guaranteed sentence on a rule nobody could have read.
+    ///
+    /// A miss reveals nothing. Getting away with it has to teach the player
+    /// nothing, or the rule would out itself the first time and the Glimpse
+    /// skill -- which buys exactly that knowledge -- would have nothing left
+    /// to sell.
+    pub fn hidden_violation_lands(constants: &ConstantsData) -> bool {
+        macroquad_toolkit::rng::chance(constants.probabilities.hidden_rule_violation)
+    }
+
     /// The rule in force tonight that this passenger's exception belongs to.
     ///
     /// This is the rule they need broken. Whether it is among tonight's rules
@@ -655,6 +673,41 @@ mod tests {
         assert!(
             !GameEngine::passenger_has_exception(other_rule, Some(&need), &guidelines),
             "an unrelated rule still relieves her"
+        );
+    }
+
+    /// A hidden-rule violation lands about as often as it is authored to.
+    ///
+    /// Averaged over many rolls because a probability cannot be checked with
+    /// one: a single call proves nothing and would pass whatever the constant
+    /// said. The band is wide on purpose -- this is asserting that the number
+    /// is consulted at all, not pinning the RNG.
+    #[test]
+    fn a_hidden_violation_lands_about_as_often_as_authored() {
+        let constants = load_constants();
+        let authored = constants.probabilities.hidden_rule_violation;
+
+        const ROLLS: u32 = 4000;
+        let landed = (0..ROLLS)
+            .filter(|_| GameEngine::hidden_violation_lands(&constants))
+            .count() as f32;
+        let observed = landed / ROLLS as f32;
+
+        assert!(
+            (observed - authored).abs() < 0.05,
+            "hidden violations landed {observed:.3} of the time, authored {authored:.3}"
+        );
+    }
+
+    /// And the authored number has to leave both outcomes possible. At 1.0 a
+    /// hidden rule is the guaranteed sentence it used to be; at 0.0 the whole
+    /// hidden layer -- and the Glimpse skill that reveals it -- is inert.
+    #[test]
+    fn a_hidden_violation_is_neither_certain_nor_impossible() {
+        let authored = load_constants().probabilities.hidden_rule_violation;
+        assert!(
+            authored > 0.0 && authored < 1.0,
+            "HIDDEN_RULE_VIOLATION is {authored}, which makes the hidden layer              either harmless or unsurvivable"
         );
     }
 

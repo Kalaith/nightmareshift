@@ -30,7 +30,7 @@ impl RideService {
         }
 
         // 2. Check rule violations
-        if let Some(outcome) = Self::check_route_rules(state, route) {
+        if let Some(outcome) = Self::check_route_rules(state, route, &data.constants) {
             return outcome;
         }
 
@@ -133,7 +133,11 @@ impl RideService {
     }
 
     /// Check for rule violations specific to the route
-    fn check_route_rules(state: &mut GameState, route: RouteType) -> Option<RouteOutcome> {
+    fn check_route_rules(
+        state: &mut GameState,
+        route: RouteType,
+        constants: &ConstantsData,
+    ) -> Option<RouteOutcome> {
         if route == RouteType::Shortcut {
             // Check visible rules
             let violation = GameEngine::check_rule_violation(
@@ -155,7 +159,7 @@ impl RideService {
                 &state.current_guidelines,
             );
 
-            if hidden_violation.violation {
+            if hidden_violation.violation && GameEngine::hidden_violation_lands(constants) {
                 return Self::resolve_rule_violation(state, hidden_violation, true);
             }
         }
@@ -176,7 +180,7 @@ impl RideService {
             &state.current_weather,
             &state.time_of_day,
         );
-        if hidden_weather_violation.violation {
+        if hidden_weather_violation.violation && GameEngine::hidden_violation_lands(constants) {
             return Self::resolve_rule_violation(state, hidden_weather_violation, true);
         }
 

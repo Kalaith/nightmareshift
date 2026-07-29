@@ -51,7 +51,20 @@ impl Game {
         );
 
         if hidden.violation || hidden.rule.is_some() {
-            self.resolve_cab_rule_action(hidden, true, &action_key, current_time);
+            let lands = self
+                .game_data
+                .as_ref()
+                .is_some_and(|data| GameEngine::hidden_violation_lands(&data.constants));
+            if !hidden.violation || lands {
+                self.resolve_cab_rule_action(hidden, true, &action_key, current_time);
+                return;
+            }
+            // Got away with it, and learned nothing by getting away with it.
+            self.game_state.current_dialogue = Some(CurrentDialogue {
+                text: "Something shifts in the cab, thinks better of it, and settles.".to_string(),
+                speaker: DialogueSpeaker::Narrator,
+                timestamp: current_time,
+            });
             return;
         }
 
