@@ -1,6 +1,7 @@
 //! Route cost calculation service.
 
 use crate::data::*;
+use crate::state::{GameState, PlayerStats};
 use std::collections::hash_map::DefaultHasher;
 use std::collections::HashMap;
 use std::hash::{Hash, Hasher};
@@ -17,6 +18,51 @@ pub struct RouteCosts {
 pub struct RouteService;
 
 impl RouteService {
+    /// The cost of a route as the game will actually charge it.
+    ///
+    /// The driving screen used to print the raw `GAME_CONSTANTS` base costs
+    /// while the engine charged the modified ones — weather, hazards, route
+    /// mastery, curse pressure and skills all move the figure — so a player
+    /// could read "25 min", pick it with thirty on the clock, and lose the
+    /// shift to "Not enough time for this route". Both sides now come through
+    /// here, so the quoted price is the price.
+    ///
+    /// Curse and streak pressure are deliberately excluded: both mutate
+    /// `GameState` when applied, and a screen must not change the game by
+    /// drawing it. They can only push the cost up, so the quote is a floor.
+    pub fn quote_route(
+        route: RouteType,
+        state: &GameState,
+        data: &GameData,
+        stats: &PlayerStats,
+    ) -> RouteCosts {
+        let mut passenger_risk = state
+            .current_passenger
+            .as_ref()
+            .and_then(|p| data.get_location(&p.pickup).map(|l| l.risk_level))
+            .unwrap_or(1);
+        if let Some(passenger) = state.current_passenger.as_ref() {
+            if let Some(reputation) = state.passenger_reputation.get(&passenger.id) {
+                let adjusted =
+                    passenger_risk as i32 + reputation.risk_modifier(&data.constants.reputation);
+                passenger_risk =
+                    adjusted.clamp(0, data.constants.risk.max_risk_level as i32) as u32;
+            }
+        }
+
+        Self::calculate_route_costs(
+            route,
+            &data.constants,
+            passenger_risk,
+            Some(&state.current_weather),
+            Some(&state.time_of_day),
+            &state.environmental_hazards,
+            &stats.route_mastery_map(),
+            state.current_passenger.as_ref(),
+            &crate::engine::SkillModifiers::from_unlocked(&data.skills, &stats.unlocked_skills),
+        )
+    }
+
     /// Calculate costs for a route type with all modifiers
     #[allow(clippy::too_many_arguments)]
     pub fn calculate_route_costs(
@@ -294,5 +340,39 @@ impl RouteService {
         };
 
         applies_to.eq_ignore_ascii_case(route_key) || applies_to.eq_ignore_ascii_case("all")
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::data::loader::load_constants;
+
+    /// The soft warning must land far enough ahead of the hard one to be
+    /// worth acting on, and both must clear the cost of a single route —
+    /// a warning that arrives with no affordable move left is just an
+    /// announcement that the shift is over.
+    #[test]
+    fn the_shift_end_warning_leaves_room_to_act() {
+        let constants = load_constants();
+        let timing = &constants.timing;
+        assert!(
+            timing.shift_end_warning_threshold > timing.critical_time_threshold,
+            "warning at {} is not ahead of critical at {}",
+            timing.shift_end_warning_threshold,
+            timing.critical_time_threshold
+        );
+
+        let game = &constants.game_constants;
+        let cheapest_route = game
+            .time_cost_shortcut
+            .min(game.time_cost_normal)
+            .min(game.time_cost_scenic)
+            .min(game.time_cost_police);
+        assert!(
+            timing.shift_end_warning_threshold > cheapest_route,
+            "the warning at {} arrives with no route affordable (cheapest is {})",
+            timing.shift_end_warning_threshold,
+            cheapest_route
+        );
     }
 }

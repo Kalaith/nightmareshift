@@ -1,7 +1,7 @@
 //! Automated playtest bot for smoke-testing the core gameplay loop.
 
 use crate::data::{GameData, Passenger, PreferenceLevel, RouteType};
-use crate::engine::{RouteService, SkillModifiers};
+use crate::engine::RouteService;
 use crate::screens::Screen;
 use crate::state::{AlmanacEntry, GamePhase, GameState, PlayerStats, RouteStreak};
 use crate::ui::UiAction;
@@ -355,33 +355,38 @@ impl PlaytestBot {
 
         let knowledge = stats.get_almanac_entry(passenger.id).knowledge_level;
         if knowledge < 2 {
-            let idx = candidates[self.route_cursor % candidates.len()];
+            // Without almanac knowledge the bot still picks blindly, but it
+            // may only pick something it can pay for — the driving screen
+            // refuses unaffordable routes, so a bot that took them would
+            // measure a difficulty no player can encounter.
+            let affordable: Vec<usize> = candidates
+                .iter()
+                .copied()
+                .filter(|idx| {
+                    let costs =
+                        RouteService::quote_route(route_for_index(*idx), state, data, stats);
+                    state.fuel >= costs.fuel as f32 && state.time_remaining >= costs.time
+                })
+                .collect();
+            let pool = if affordable.is_empty() {
+                candidates
+            } else {
+                &affordable
+            };
+            let idx = pool[self.route_cursor % pool.len()];
             self.route_cursor += 1;
             return idx;
         }
 
-        let passenger_risk = state
-            .current_passenger
-            .as_ref()
-            .and_then(|p| data.get_location(&p.pickup).map(|l| l.risk_level))
-            .unwrap_or(1);
-        let route_mastery = stats.route_mastery_map();
-        let skill_mods = SkillModifiers::from_unlocked(&data.skills, &stats.unlocked_skills);
         let mut evaluated = Vec::new();
 
         for idx in candidates {
             let route = route_for_index(*idx);
-            let costs = RouteService::calculate_route_costs(
-                route,
-                &data.constants,
-                passenger_risk,
-                Some(&state.current_weather),
-                Some(&state.time_of_day),
-                &state.environmental_hazards,
-                &route_mastery,
-                Some(passenger),
-                &skill_mods,
-            );
+            // The same quote the engine charges and the driving screen shows.
+            // The bot used to rebuild this itself and omitted the reputation
+            // adjustment to passenger risk, so it could talk itself into a
+            // route it could not actually pay for.
+            let costs = RouteService::quote_route(route, state, data, stats);
 
             if state.fuel < costs.fuel as f32 || state.time_remaining < costs.time {
                 continue;

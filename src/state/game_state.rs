@@ -252,6 +252,8 @@ pub struct GameState {
     pub night: u32,
     /// True once the final night of a run has been survived.
     pub run_complete: bool,
+    /// Whether the one-shot end-of-shift warning has already been given.
+    pub shift_end_warning_shown: bool,
     pub earnings: u32,
     pub time_remaining: u32,
     pub rides_completed: u32,
@@ -319,6 +321,7 @@ impl GameState {
             max_fuel: 100.0,
             night: 1,
             run_complete: false,
+            shift_end_warning_shown: false,
             earnings: 0,
             time_remaining: constants.initial_time,
             rides_completed: 0,
@@ -384,6 +387,7 @@ impl GameState {
         self.driving_phase = None;
         self.used_passengers.clear();
         self.shift_start_time = Some(current_time);
+        self.shift_end_warning_shown = false;
         self.current_passenger_need_state = None;
         self.detected_tells.clear();
         self.route_history.clear();
@@ -406,6 +410,23 @@ impl GameState {
     /// Check if time is running out
     pub fn is_time_critical(&self, constants: &ConstantsData) -> bool {
         self.time_remaining <= constants.timing.critical_time_threshold
+    }
+
+    /// Announce, once per shift, that the night is nearly over.
+    ///
+    /// `TIMING.SHIFT_END_WARNING_THRESHOLD` is authored at sixty minutes and
+    /// was read by nothing; only `CRITICAL_TIME_THRESHOLD` reached the game,
+    /// and at fifteen minutes it recolours the clock too late to act on —
+    /// every route costs between eighteen and thirty-two. This fires while
+    /// there is still a decision to make: one more fare, or bank the night.
+    pub fn take_shift_end_warning(&mut self, constants: &ConstantsData) -> bool {
+        if self.shift_end_warning_shown
+            || self.time_remaining > constants.timing.shift_end_warning_threshold
+        {
+            return false;
+        }
+        self.shift_end_warning_shown = true;
+        true
     }
 
     /// Check if shift should end

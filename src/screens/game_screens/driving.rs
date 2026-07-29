@@ -260,39 +260,31 @@ pub fn draw_driving(
                 0
             };
 
+            // Quote what the engine will actually charge, not the base
+            // constants. The two used to differ by everything weather,
+            // hazards, mastery and skills contribute.
+            let quote = crate::engine::RouteService::quote_route(
+                *route_type,
+                game_state,
+                data,
+                player_stats,
+            );
+            let (time_cost, fuel_cost, risk) = (quote.time, quote.fuel, quote.risk);
+            // A route you cannot pay for is a lost shift the moment you pick
+            // it, so it is refused here rather than in `validate_resources`.
+            let unaffordable =
+                (game_state.fuel as u32) < quote.fuel || game_state.time_remaining < quote.time;
+            let selectable = !is_blocked && !unaffordable;
+
             let card = UiRect::new(left_x, route_y, left_w, route_h);
-            if !is_blocked && draw_glass_button(card, "", border, true) {
+            if selectable && draw_glass_button(card, "", border, true) {
                 return UiAction::SelectRoute(i);
             }
-            if is_blocked {
+            if !selectable {
                 draw_glass_button(card, "", colors::ACCENT_DANGER, false);
             }
             draw_rectangle(card.x, card.y, card.w, card.h, tint);
             draw_rectangle_lines(card.x, card.y, card.w, card.h, 1.0, border);
-
-            let route_constants = &data.constants.game_constants;
-            let (time_cost, fuel_cost, risk) = match route_type {
-                RouteType::Normal => (
-                    route_constants.time_cost_normal,
-                    route_constants.fuel_cost_normal,
-                    route_constants.risk_normal,
-                ),
-                RouteType::Shortcut => (
-                    route_constants.time_cost_shortcut,
-                    route_constants.fuel_cost_shortcut,
-                    route_constants.risk_shortcut,
-                ),
-                RouteType::Scenic => (
-                    route_constants.time_cost_scenic,
-                    route_constants.fuel_cost_scenic,
-                    route_constants.risk_scenic,
-                ),
-                RouteType::Police => (
-                    route_constants.time_cost_police,
-                    route_constants.fuel_cost_police,
-                    route_constants.risk_police,
-                ),
-            };
 
             let (risk_label, risk_color) = if !route_risk_known {
                 ("Unknown", colors::TEXT_MUTED)

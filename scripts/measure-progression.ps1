@@ -20,6 +20,12 @@
 
     The existing save is backed up and restored.
 
+    Runs are reproducible: nothing calls `srand`, so a cleared save plus the
+    same arguments and the same build always produce the same shifts. That
+    makes this a reliable regression check — but it also means a difference
+    between two runs is always a code change, never noise. Do not read a
+    movement here as sampling variation.
+
 .EXAMPLE
     ./scripts/measure-progression.ps1
     ./scripts/measure-progression.ps1 -Shifts 40

@@ -4,7 +4,7 @@
 use crate::data::*;
 use crate::engine::{
     GameEngine, PassengerStateMachine, ProtectionService, RouteCosts, RouteService,
-    RuleEvaluationResult, SkillModifiers,
+    RuleEvaluationResult,
 };
 use crate::state::*;
 
@@ -19,33 +19,8 @@ impl RideService {
         route: RouteType,
         current_time: f64,
     ) -> RouteOutcome {
-        // Calculate route costs
-        let mut passenger_risk = state
-            .current_passenger
-            .as_ref()
-            .and_then(|p| data.get_location(&p.pickup).map(|l| l.risk_level))
-            .unwrap_or(1);
-        if let Some(passenger) = state.current_passenger.as_ref() {
-            if let Some(reputation) = state.passenger_reputation.get(&passenger.id) {
-                let adjusted =
-                    passenger_risk as i32 + reputation.risk_modifier(&data.constants.reputation);
-                passenger_risk = adjusted.clamp(0, 5) as u32;
-            }
-        }
-
-        let route_mastery = stats.route_mastery_map();
-        let skill_mods = SkillModifiers::from_unlocked(&data.skills, &stats.unlocked_skills);
-        let mut costs = RouteService::calculate_route_costs(
-            route,
-            &data.constants,
-            passenger_risk,
-            Some(&state.current_weather),
-            Some(&state.time_of_day),
-            &state.environmental_hazards,
-            &route_mastery,
-            state.current_passenger.as_ref(),
-            &skill_mods,
-        );
+        // The same quote the driving screen showed the player.
+        let mut costs = RouteService::quote_route(route, state, data, stats);
         Self::apply_curse_route_pressure(state, &mut costs, &data.constants);
         Self::apply_route_streak_pressure(state, &mut costs, route, &data.constants, current_time);
 
@@ -62,6 +37,18 @@ impl RideService {
         // 3. Apply costs and record history
         Self::apply_transit_effects(state, &costs, route, current_time);
         stats.record_route_usage(route);
+
+        // 3a. The night is winding down — say so while it can still be acted on.
+        if state.take_shift_end_warning(&data.constants) {
+            state.current_dialogue = Some(CurrentDialogue {
+                text: format!(
+                    "Dispatch: {} minutes left on the shift. Make them count or bring it in.",
+                    state.time_remaining
+                ),
+                speaker: DialogueSpeaker::Narrator,
+                timestamp: current_time,
+            });
+        }
 
         // 3b. A risky leg can cost more than its stated price.
         let encounter = Self::apply_risk_encounters(state, &costs, &data.constants, current_time);
