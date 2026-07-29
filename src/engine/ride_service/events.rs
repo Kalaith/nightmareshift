@@ -37,9 +37,14 @@ impl RideService {
         // Passenger ability choice: strongest option, gated behind almanac + skill.
         if let Some(p) = &state.current_passenger {
             let almanac_unlocked = stats.get_almanac_entry(p.id).knowledge_level >= 1;
-            if let Some(trait_name) = p.traits.first() {
-                let skill_id = trait_name.to_lowercase().replace(' ', "_");
-                if almanac_unlocked && stats.is_skill_unlocked(&skill_id) {
+            if almanac_unlocked {
+                // Any matching trait qualifies, not just the first one listed —
+                // a passenger's second and third traits were unreachable before.
+                let matched = p
+                    .traits
+                    .iter()
+                    .find(|trait_name| stats.is_skill_unlocked(&Self::trait_skill_id(trait_name)));
+                if let Some(trait_name) = matched {
                     choices.push(EventChoice {
                         description: format!("Use your {} to steady the moment", trait_name),
                         risk_type: RiskTag::SpiritualDisturbance,
@@ -57,6 +62,12 @@ impl RideService {
             description,
             choices,
         }
+    }
+
+    /// The skill-tree id that grants a passenger trait's ability choice.
+    /// `"Night Vision"` and the `night_vision` skill are the same thing.
+    pub(crate) fn trait_skill_id(trait_name: &str) -> String {
+        trait_name.to_lowercase().replace(' ', "_")
     }
 
     /// Pick one event weighted by its `weight` field.

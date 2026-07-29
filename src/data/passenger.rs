@@ -264,6 +264,10 @@ pub struct Passenger {
     pub wanted_items: Vec<String>,
     #[serde(rename = "isSupernatural", default)]
     pub is_supernatural: bool,
+    /// Which `itemPoolData.json` pool this passenger's generic drops come from.
+    /// Authored explicitly because `supernatural` is descriptive prose, not a key.
+    #[serde(rename = "itemCategory", default)]
+    pub item_category: Option<String>,
 
     // NEW traits field
     #[serde(default)]

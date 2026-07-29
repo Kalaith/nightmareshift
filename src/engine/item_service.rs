@@ -78,16 +78,33 @@ impl ItemService {
         Some(ItemDrop { item })
     }
 
-    /// Map a passenger's supernatural type to an item-pool category.
-    fn item_category(supernatural: &str) -> &'static str {
-        match supernatural {
-            "ghost" | "specter" => "ghost",
-            "vampire" => "vampire",
-            "demon" => "demon",
-            "psychic" | "fortune_teller" => "occult",
-            "priest" | "nun" => "holy",
-            _ => "common",
+    /// Which item pool a passenger's generic drops come from.
+    ///
+    /// `itemCategory` is authored per passenger; the keyword scan over the
+    /// `supernatural` prose is only a fallback for entries that omit it.
+    fn item_category(passenger: &Passenger) -> &str {
+        if let Some(category) = passenger.item_category.as_deref() {
+            return category;
         }
+        let prose = passenger.supernatural.to_lowercase();
+        for (keyword, category) in [
+            ("ghost", "ghost"),
+            ("specter", "ghost"),
+            ("drowned", "ghost"),
+            ("vampire", "vampire"),
+            ("undead", "vampire"),
+            ("demon", "demon"),
+            ("reaper", "demon"),
+            ("psychic", "occult"),
+            ("fortune", "occult"),
+            ("nun", "holy"),
+            ("priest", "holy"),
+        ] {
+            if prose.contains(keyword) {
+                return category;
+            }
+        }
+        "common"
     }
 
     /// Select an appropriate item for a passenger to drop
@@ -105,7 +122,7 @@ impl ItemService {
         }
 
         // Otherwise generate based on supernatural type
-        let item_name = item_pools.pick(Self::item_category(&passenger.supernatural));
+        let item_name = item_pools.pick(Self::item_category(passenger));
         catalog.create_item(&item_name, &passenger.name, current_time)
     }
 
@@ -281,6 +298,101 @@ impl ItemService {
                     }
                 }
             }
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::data::loader::{
+        load_item_catalog, load_item_pools, load_passengers, load_skill_tree,
+    };
+    use crate::engine::RideService;
+    use std::collections::HashSet;
+
+    /// Every authored `itemCategory` must name a real, non-empty pool.
+    /// A typo here silently demotes a passenger to the common pool.
+    #[test]
+    fn every_passenger_category_names_a_stocked_pool() {
+        let pools = load_item_pools();
+        for passenger in load_passengers() {
+            let category = ItemService::item_category(&passenger);
+            let stocked = match category {
+                "ghost" => &pools.ghost,
+                "vampire" => &pools.vampire,
+                "demon" => &pools.demon,
+                "occult" => &pools.occult,
+                "holy" => &pools.holy,
+                "common" => &pools.common,
+                other => panic!("{} maps to unknown pool {other:?}", passenger.name),
+            };
+            assert!(
+                !stocked.is_empty(),
+                "{} draws from empty pool {category:?}",
+                passenger.name
+            );
+        }
+    }
+
+    /// Every pool must be reachable from at least one passenger, otherwise the
+    /// items authored in it can never drop.
+    #[test]
+    fn every_pool_is_reachable_from_the_roster() {
+        let passengers = load_passengers();
+        let reached: HashSet<&str> = passengers.iter().map(ItemService::item_category).collect();
+        for pool in ["ghost", "vampire", "demon", "occult", "holy", "common"] {
+            assert!(reached.contains(pool), "no passenger draws from {pool:?}");
+        }
+    }
+
+    /// Trade wants are matched against inventory item names, so every wanted
+    /// name must exist in the catalog and be tradeable — a want for an
+    /// untradeable item can never be satisfied.
+    #[test]
+    fn wanted_items_exist_and_are_tradeable() {
+        let catalog = load_item_catalog();
+        for passenger in load_passengers() {
+            for name in &passenger.wanted_items {
+                assert!(
+                    catalog.contains(name),
+                    "{} wants unknown item {name:?}",
+                    passenger.name
+                );
+                assert!(
+                    catalog.get(name).can_trade,
+                    "{} wants untradeable item {name:?}",
+                    passenger.name
+                );
+            }
+        }
+    }
+
+    /// Someone must want to trade, or the whole trade modal is unreachable.
+    #[test]
+    fn some_passenger_wants_to_trade() {
+        assert!(load_passengers().iter().any(|p| p.wants_trade));
+    }
+
+    /// Every `ability_unlock` skill must be earnable-into-use: some passenger
+    /// carries the matching trait, or the skill is bank balance thrown away.
+    #[test]
+    fn every_ability_skill_has_a_passenger_that_uses_it() {
+        let passengers = load_passengers();
+        let traits: HashSet<String> = passengers
+            .iter()
+            .flat_map(|p| p.traits.iter())
+            .map(|t| RideService::trait_skill_id(t))
+            .collect();
+        for skill in load_skill_tree() {
+            if skill.effect.effect_type != "ability_unlock" {
+                continue;
+            }
+            assert!(
+                traits.contains(&skill.effect.target),
+                "no passenger has a trait for ability skill {:?}",
+                skill.id
+            );
         }
     }
 }
