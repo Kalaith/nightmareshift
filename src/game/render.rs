@@ -189,7 +189,10 @@ impl Game {
             (
                 "Fuel",
                 format!("{:.0}%", self.game_state.fuel),
-                get_fuel_color(self.game_state.fuel),
+                self.game_data
+                    .as_ref()
+                    .map(|data| get_fuel_color(self.game_state.fuel, &data.constants.fuel))
+                    .unwrap_or(colors::TEXT_PRIMARY),
             ),
             (
                 "Earned",

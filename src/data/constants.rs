@@ -75,6 +75,8 @@ pub struct FuelConstants {
     pub low_fuel_warning: u32,
     #[serde(rename = "CRITICAL_FUEL")]
     pub critical_fuel: u32,
+    #[serde(rename = "MEDIUM_FUEL", default = "default_medium_fuel")]
+    pub medium_fuel: u32,
     #[serde(rename = "EMPTY_TANK")]
     pub empty_tank: u32,
     #[serde(rename = "FUEL_CHECK_MINIMUM")]
@@ -279,3 +281,62 @@ pub struct ConstantsData {
 
 // No default() implementation - all values MUST come from constants.json
 // If JSON fails to parse, it's a development error that should fail compilation
+
+fn default_medium_fuel() -> u32 {
+    40
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::data::loader::load_constants;
+
+    /// Fuel thresholds must descend, or the gauge colours and the status text
+    /// disagree about what "low" means. They used to be duplicated as Rust
+    /// constants; nothing but this ordering now stops a bad edit.
+    #[test]
+    fn fuel_thresholds_descend() {
+        let fuel = load_constants().fuel;
+        assert!(
+            fuel.medium_fuel > fuel.low_fuel_warning,
+            "medium {} is not above low {}",
+            fuel.medium_fuel,
+            fuel.low_fuel_warning
+        );
+        assert!(
+            fuel.low_fuel_warning > fuel.critical_fuel,
+            "low {} is not above critical {}",
+            fuel.low_fuel_warning,
+            fuel.critical_fuel
+        );
+        assert!(fuel.critical_fuel > fuel.empty_tank);
+    }
+
+    /// A ride must be refusable before the tank is empty, or the
+    /// "ran out of fuel with a passenger in the car" guard never fires early
+    /// enough to be a warning.
+    #[test]
+    fn a_ride_is_refused_before_the_tank_empties() {
+        let fuel = load_constants().fuel;
+        assert!(fuel.fuel_check_minimum > fuel.empty_tank);
+        assert!(fuel.fuel_check_minimum <= fuel.critical_fuel);
+    }
+
+    /// The streak warning must be reachable, and the violation threshold is
+    /// authored at 999 deliberately — that is the data saying no violation,
+    /// not a value to wire up.
+    #[test]
+    fn route_streak_warning_is_reachable() {
+        let streak = load_constants().consecutive_route;
+        assert!(streak.warning_threshold > 0);
+        assert!(
+            streak.warning_threshold < streak.violation_threshold,
+            "warning {} is not below violation {}",
+            streak.warning_threshold,
+            streak.violation_threshold
+        );
+        assert!(
+            streak.risk_increase_per_repeat > 0,
+            "a streak adds no risk, so the warning has nothing behind it"
+        );
+    }
+}

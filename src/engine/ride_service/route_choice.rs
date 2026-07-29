@@ -47,6 +47,7 @@ impl RideService {
             &skill_mods,
         );
         Self::apply_curse_route_pressure(state, &mut costs, &data.constants);
+        Self::apply_route_streak_pressure(state, &mut costs, route, &data.constants, current_time);
 
         // 1. Check resources
         if let Some(outcome) = Self::validate_resources(state, &costs) {
@@ -259,6 +260,46 @@ impl RideService {
                 &state.current_guidelines,
             );
         }
+    }
+
+    /// Taking the same road over and over draws attention.
+    ///
+    /// `CONSECUTIVE_ROUTE.PENALTY_PER_REPEAT` already trimmed the fare, but
+    /// `WARNING_THRESHOLD` and `RISK_INCREASE_PER_REPEAT` were unread, so a
+    /// streak cost money and nothing else — and the player was never told it
+    /// was building. `VIOLATION_THRESHOLD` is authored at 999, which is the
+    /// data saying "no violation", and is left alone rather than invented.
+    fn apply_route_streak_pressure(
+        state: &mut GameState,
+        costs: &mut RouteCosts,
+        route: RouteType,
+        constants: &ConstantsData,
+        current_time: f64,
+    ) {
+        let streak = &constants.consecutive_route;
+        let repeats = state
+            .consecutive_route_streak
+            .as_ref()
+            .filter(|s| s.route_type == route)
+            .map(|s| s.count)
+            .unwrap_or(0);
+
+        if repeats < streak.warning_threshold {
+            return;
+        }
+
+        let over = repeats + 1 - streak.warning_threshold;
+        let added = (over * streak.risk_increase_per_repeat).min(constants.risk.max_risk_level);
+        costs.risk = (costs.risk + added).min(constants.risk.max_risk_level);
+
+        state.current_dialogue = Some(CurrentDialogue {
+            text: format!(
+                "That is {} runs the same way. The road is starting to expect you.",
+                repeats + 1
+            ),
+            speaker: DialogueSpeaker::Narrator,
+            timestamp: current_time,
+        });
     }
 
     fn apply_curse_route_pressure(

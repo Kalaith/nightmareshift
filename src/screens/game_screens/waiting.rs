@@ -53,10 +53,10 @@ pub fn draw_waiting(game_state: &GameState, game_data: Option<&GameData>) -> UiA
         y += 52.0;
 
         let fuel_pct = game_state.fuel;
-        let fuel_color = get_fuel_color(fuel_pct);
-        let fuel_status = if fuel_pct <= 10.0 {
+        let fuel_color = get_fuel_color(fuel_pct, &data.constants.fuel);
+        let fuel_status = if fuel_pct <= data.constants.fuel.critical_fuel as f32 {
             &data.localization.ui.game.waiting.fuel_status.critical
-        } else if fuel_pct <= 20.0 {
+        } else if fuel_pct <= data.constants.fuel.low_fuel_warning as f32 {
             &data.localization.ui.game.waiting.fuel_status.low
         } else if fuel_pct <= 40.0 {
             &data.localization.ui.game.waiting.fuel_status.medium

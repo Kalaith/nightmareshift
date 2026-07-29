@@ -13,7 +13,6 @@ use crate::engine::{
     SkillModifiers,
 };
 use crate::state::*;
-use crate::ui::layout; // For constants like MINIMUM_FUEL_FOR_RIDE
 
 /// Outcome of a route choice
 #[derive(Debug, PartialEq, Eq)]
@@ -108,8 +107,8 @@ impl RideService {
 
     /// Accept the current ride request.
     /// Returns Ok if successful, Err(reason) if failed (e.g. not enough fuel).
-    pub fn accept_ride(state: &mut GameState) -> Result<(), String> {
-        if state.fuel < layout::MINIMUM_FUEL_FOR_RIDE {
+    pub fn accept_ride(state: &mut GameState, constants: &ConstantsData) -> Result<(), String> {
+        if state.fuel < constants.fuel.fuel_check_minimum as f32 {
             return Err("You ran out of fuel with a passenger in the car.".to_string());
         }
 

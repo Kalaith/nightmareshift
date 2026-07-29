@@ -51,12 +51,6 @@ pub mod layout {
     // Game timing defaults
     pub const DEFAULT_START_HOUR: u32 = 20; // 8 PM
     pub const DEFAULT_MONTH: u32 = 10; // October
-
-    // Fuel thresholds
-    pub const FUEL_CRITICAL_THRESHOLD: f32 = 10.0;
-    pub const FUEL_LOW_THRESHOLD: f32 = 20.0;
-    pub const FUEL_MEDIUM_THRESHOLD: f32 = 40.0;
-    pub const MINIMUM_FUEL_FOR_RIDE: f32 = 5.0;
 }
 
 /// Font sizes
@@ -499,13 +493,19 @@ pub fn draw_passenger_portrait(rect: UiRect, seed: u32) {
     draw_rectangle_lines(rect.x, rect.y, rect.w, rect.h, 1.0, colors::BORDER);
 }
 
-/// Get color for fuel level
-pub fn get_fuel_color(fuel: f32) -> Color {
-    if fuel <= layout::FUEL_CRITICAL_THRESHOLD {
+/// Get color for fuel level.
+///
+/// The thresholds live in `constants.json` under `FUEL`. They used to be
+/// duplicated as `layout::FUEL_*_THRESHOLD` constants that happened to match,
+/// so editing the authored values — the file the data-driven rule tells you
+/// to edit — changed the numbers the game reasoned with but not the ones it
+/// coloured the gauge by.
+pub fn get_fuel_color(fuel: f32, fuel_constants: &crate::data::FuelConstants) -> Color {
+    if fuel <= fuel_constants.critical_fuel as f32 {
         colors::FUEL_CRITICAL // Red - Critical
-    } else if fuel <= layout::FUEL_LOW_THRESHOLD {
+    } else if fuel <= fuel_constants.low_fuel_warning as f32 {
         colors::FUEL_LOW // Red/Orange - Low
-    } else if fuel <= layout::FUEL_MEDIUM_THRESHOLD {
+    } else if fuel <= fuel_constants.medium_fuel as f32 {
         colors::ACCENT_WARNING // Yellow - Medium
     } else {
         colors::FUEL_GOOD // Green - Good

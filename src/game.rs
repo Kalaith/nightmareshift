@@ -286,7 +286,10 @@ impl Game {
 
     /// Accept current ride
     fn accept_ride(&mut self) {
-        if let Err(reason) = RideService::accept_ride(&mut self.game_state) {
+        let Some(constants) = self.game_data.as_ref().map(|data| data.constants.clone()) else {
+            return;
+        };
+        if let Err(reason) = RideService::accept_ride(&mut self.game_state, &constants) {
             self.game_state.game_over_reason = Some(reason);
             self.end_shift(false);
         }

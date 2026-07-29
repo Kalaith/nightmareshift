@@ -46,7 +46,7 @@ impl StatusBar {
             let stat_x = |idx: usize| padding + stat_slot_w * idx as f32;
             let divider_x = |idx: usize| padding + stat_slot_w * idx as f32 - 10.0;
 
-            let fuel_color = get_fuel_color(state.fuel);
+            let fuel_color = get_fuel_color(state.fuel, &data.constants.fuel);
             let fuel_value = ascii_trimmed(
                 data.localization
                     .ui
