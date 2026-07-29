@@ -111,9 +111,14 @@ mod tests {
     /// fell back to the literal "Session" for every entry — ten identical
     /// labels on a screen whose only job is distinguishing ten runs. The
     /// wasm branch has to derive its label from something that changes.
+    ///
+    /// This reads the source, so it breaks when the code moves — which it
+    /// did, when the shift lifecycle came out of `game.rs`. That is the
+    /// honest cost of the technique and preferable to the alternative, since
+    /// the branch cannot be evaluated on this target at all.
     #[test]
     fn the_web_leaderboard_label_varies_between_runs() {
-        let source = include_str!("../game.rs");
+        let source = include_str!("../game/shift.rs");
         let branch = source
             .split(r#"#[cfg(target_arch = "wasm32")]"#)
             .find(|chunk| chunk.trim_start().starts_with("let date_str"))
