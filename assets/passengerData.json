@@ -68,10 +68,10 @@
       "exceptionId": "eye_contact_lonely",
       "tellIntensities": {
         "warning": [
-          "moderate"
+          "subtle"
         ],
         "critical": [
-          "obvious"
+          "moderate"
         ]
       },
       "dialogueByStage": {
@@ -748,10 +748,10 @@
       "exceptionId": "collector_temptation",
       "tellIntensities": {
         "warning": [
-          "moderate"
+          "subtle"
         ],
         "critical": [
-          "obvious"
+          "moderate"
         ]
       },
       "dialogueByStage": {
@@ -1703,10 +1703,10 @@
       "exceptionId": "heed_prophecy",
       "tellIntensities": {
         "warning": [
-          "moderate"
+          "subtle"
         ],
         "critical": [
-          "obvious"
+          "moderate"
         ]
       },
       "dialogueByStage": {
@@ -2010,10 +2010,10 @@
       "exceptionId": "agnes_true_blessing",
       "tellIntensities": {
         "warning": [
-          "moderate"
+          "subtle"
         ],
         "critical": [
-          "obvious"
+          "moderate"
         ]
       },
       "dialogueByStage": {
@@ -2154,10 +2154,10 @@
       "exceptionId": "detective_probe",
       "tellIntensities": {
         "warning": [
-          "moderate"
+          "subtle"
         ],
         "critical": [
-          "obvious"
+          "moderate"
         ]
       },
       "dialogueByStage": {
@@ -2331,7 +2331,7 @@
       "exceptionId": "mayor_defiance",
       "tellIntensities": {
         "warning": [
-          "moderate"
+          "subtle"
         ],
         "critical": [
           "obvious"
@@ -2372,6 +2372,13 @@
         "intensity": "obvious",
         "description": "Streetlights hold green wherever he is looking",
         "reliability": 0.85
+      },
+      {
+        "type": "behavioral",
+        "intensity": "subtle",
+        "description": "Speaks of the route as a decision already taken",
+        "triggerPhrase": "the route I name",
+        "reliability": 0.6
       }
     ]
   },
@@ -2494,7 +2501,7 @@
       "exceptionId": "deaths_offer",
       "tellIntensities": {
         "warning": [
-          "moderate"
+          "subtle"
         ],
         "critical": [
           "obvious"
@@ -2535,6 +2542,12 @@
         "intensity": "obvious",
         "description": "No breath fogs the glass beside him",
         "reliability": 0.85
+      },
+      {
+        "type": "visual",
+        "intensity": "subtle",
+        "description": "The meter reading does not change between blocks",
+        "reliability": 0.6
       }
     ]
   }

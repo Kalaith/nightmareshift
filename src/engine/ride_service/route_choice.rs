@@ -333,10 +333,14 @@ impl RideService {
                 triggered_tells.extend(weather_tells);
             }
 
+            // A verbal tell that just fired is the most specific thing the
+            // passenger is doing, so it outranks both the route reaction and
+            // the generic stage line.
+            let spoken_tell = PassengerStateMachine::spoken_tell(&triggered_tells);
             let route_dialogue = Self::route_reaction_dialogue(&passenger, route);
             let stage_dialogue =
                 PassengerStateMachine::get_dialogue_for_stage(&passenger, &need_state);
-            let dialogue = route_dialogue.or(stage_dialogue);
+            let dialogue = spoken_tell.or(route_dialogue).or(stage_dialogue);
 
             state.current_passenger_need_state = Some(need_state);
 
