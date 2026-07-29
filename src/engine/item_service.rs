@@ -148,9 +148,15 @@ impl ItemService {
         if wanted_item.is_some()
             || macroquad_toolkit::rng::chance(constants.probabilities.trade_offer_chance)
         {
-            // Generate a trade offer
-            let offered_item =
-                Self::select_item_for_passenger(passenger, current_time, item_pools, catalog);
+            // Someone holding what this passenger came for is offered their
+            // own work, when they have any to give.
+            let reward = wanted_item.and(passenger.trade_reward.as_deref());
+            let offered_item = match reward.filter(|name| catalog.contains(name)) {
+                Some(name) => catalog.create_item(name, &passenger.name, current_time),
+                None => {
+                    Self::select_item_for_passenger(passenger, current_time, item_pools, catalog)
+                }
+            };
 
             return Some(TradeOffer {
                 passenger_name: passenger.name.clone(),
@@ -405,6 +411,125 @@ mod tests {
         for pool in ["ghost", "vampire", "demon", "occult", "holy", "common"] {
             assert!(reached.contains(pool), "no passenger draws from {pool:?}");
         }
+    }
+
+    /// Every item in the catalogue has to be obtainable somehow.
+    ///
+    /// This is the test that found the Soul Protection Ward: legendary, the
+    /// only thing that turns away Death's Taxi Driver, and reachable from
+    /// nowhere in the game. It sat in the item file and in one unit test while
+    /// no pool listed it, no passenger dropped it, and no code created it.
+    ///
+    /// An unobtainable item is worse than a missing one. It reads as content,
+    /// it is balanced against, and it is checked for in `ProtectionService`.
+    #[test]
+    fn every_item_can_be_obtained() {
+        let catalog = load_item_catalog();
+        let pools = load_item_pools();
+        let passengers = load_passengers();
+
+        let mut reachable: HashSet<String> = HashSet::new();
+        for pool in ["ghost", "vampire", "demon", "occult", "holy", "common"] {
+            for _ in 0..200 {
+                reachable.insert(pools.pick(pool).to_lowercase());
+            }
+        }
+        for passenger in &passengers {
+            for name in &passenger.drop_items {
+                reachable.insert(name.to_lowercase());
+            }
+            if let Some(reward) = &passenger.trade_reward {
+                reachable.insert(reward.to_lowercase());
+            }
+        }
+
+        let mut names = catalog.names();
+        names.sort();
+        let orphans: Vec<String> = names
+            .into_iter()
+            .filter(|name| !reachable.contains(&name.to_lowercase()))
+            .collect();
+        assert!(
+            orphans.is_empty(),
+            "nothing in the game can give the player: {orphans:?}"
+        );
+    }
+
+    /// Carrying what the crafter wants gets his work offered; carrying
+    /// nothing he wants does not.
+    ///
+    /// This covers the wire rather than the data. The offer is built before the
+    /// player picks what to hand over, so "already holding something wanted"
+    /// is the only condition available at that moment -- and it has to be the
+    /// condition, or the ward is either unreachable again or free.
+    #[test]
+    fn the_crafter_offers_his_work_to_someone_holding_what_he_wants() {
+        let constants = load_constants();
+        let catalog = load_item_catalog();
+        let pools = load_item_pools();
+        let collector = load_passengers()
+            .into_iter()
+            .find(|p| p.trade_reward.is_some())
+            .expect("a passenger offering a trade reward");
+        let reward = collector.trade_reward.clone().expect("the reward");
+        let wanted = collector.wanted_items.first().cloned().expect("a want");
+
+        let offer_with = |inventory: Vec<crate::data::InventoryItem>| {
+            ItemService::check_trade_offer(
+                &collector, &inventory, &constants, 0.0, &pools, &catalog,
+            )
+            .map(|offer| offer.offered_item.name)
+        };
+
+        let holding = vec![catalog.create_item(&wanted, "test", 0.0)];
+        assert_eq!(
+            offer_with(holding).as_deref(),
+            Some(reward.as_str()),
+            "holding what he wants did not get his work offered"
+        );
+
+        // Something he has no interest in. Any offer at all here is a roll, so
+        // the assertion is only that it is never the reward.
+        let unwanted = "Burning Coal";
+        assert!(
+            !collector.wanted_items.iter().any(|w| w == unwanted),
+            "pick an item this passenger does not want"
+        );
+        for _ in 0..200 {
+            let carrying = vec![catalog.create_item(unwanted, "test", 0.0)];
+            if let Some(offered) = offer_with(carrying) {
+                assert_ne!(
+                    offered, reward,
+                    "his work was offered to someone carrying nothing he wants"
+                );
+            }
+        }
+    }
+
+    /// A `tradeReward` naming something the catalogue does not define would
+    /// hand the player a placeholder, since `create_item` substitutes rather
+    /// than failing.
+    #[test]
+    fn every_trade_reward_is_a_real_item() {
+        let catalog = load_item_catalog();
+        let mut authored = 0;
+        for passenger in load_passengers() {
+            let Some(reward) = &passenger.trade_reward else {
+                continue;
+            };
+            assert!(
+                catalog.contains(reward),
+                "{} offers {reward:?}, which is not in the catalogue",
+                passenger.name
+            );
+            assert!(
+                !passenger.wanted_items.is_empty(),
+                "{} offers a reward for a want they do not have",
+                passenger.name
+            );
+            authored += 1;
+        }
+        assert!(authored > 0, "no passenger offers a trade reward any more");
     }
 
     /// The Crystal Pendant's charge is conditional, and the condition has to

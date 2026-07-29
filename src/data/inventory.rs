@@ -262,7 +262,10 @@ impl ItemCatalog {
     }
 
     /// True when the catalog defines this name.
-    #[cfg(test)]
+    ///
+    /// No longer test-only: a passenger's authored `tradeReward` is checked
+    /// against the catalogue before being offered, because `create_item` on an
+    /// unknown name would hand the player a placeholder rather than fail.
     pub fn contains(&self, name: &str) -> bool {
         self.templates.contains_key(&name.to_lowercase())
     }

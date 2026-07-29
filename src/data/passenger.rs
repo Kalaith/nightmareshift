@@ -311,6 +311,18 @@ pub struct Passenger {
     pub wants_trade: bool,
     #[serde(rename = "wantedItems", default)]
     pub wanted_items: Vec<String>,
+    /// What this passenger offers in trade to someone already carrying
+    /// something on their `wantedItems` list, instead of a pick from their
+    /// drop pool.
+    ///
+    /// The Collector authors the Soul Protection Ward here. It is the only
+    /// thing in the catalogue that stops Death's Taxi Driver, its description
+    /// says he crafted it, and before this nothing in the game could give it
+    /// to a player at all -- it existed in the item file and in one unit test.
+    /// Gating it on holding what he wants means his best work is earned rather
+    /// than rolled for.
+    #[serde(rename = "tradeReward", default)]
+    pub trade_reward: Option<String>,
     #[serde(rename = "isSupernatural", default)]
     pub is_supernatural: bool,
     /// Which `itemPoolData.json` pool this passenger's generic drops come from.
