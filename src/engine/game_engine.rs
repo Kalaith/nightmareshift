@@ -187,23 +187,22 @@ impl GameEngine {
     pub fn check_rule_violation(
         rules: &[Rule],
         action: &str,
-        passenger: Option<&Passenger>,
         need_state: Option<&PassengerNeedState>,
         guidelines: &[Guideline],
     ) -> RuleEvaluationResult {
         for rule in rules {
             if rule.forbids_action(action) {
-                // Check for passenger-specific exceptions
-                if let Some(p) = passenger {
-                    if Self::passenger_has_exception(rule, p, need_state, guidelines) {
-                        return RuleEvaluationResult {
-                            violation: false,
-                            rule: Some(rule.clone()),
-                            message: Some("Exception applies - action is safe".to_string()),
-                            need_adjustment: rule.exception_need_adjustment.unwrap_or(0),
-                            triggered_exception: None,
-                        };
-                    }
+                // A need state only exists while a passenger is aboard, so it
+                // carries the "is anyone here" check the passenger argument
+                // used to make.
+                if Self::passenger_has_exception(rule, need_state, guidelines) {
+                    return RuleEvaluationResult {
+                        violation: false,
+                        rule: Some(rule.clone()),
+                        message: Some("Exception applies - action is safe".to_string()),
+                        need_adjustment: rule.exception_need_adjustment.unwrap_or(0),
+                        triggered_exception: None,
+                    };
                 }
 
                 return RuleEvaluationResult {
@@ -267,7 +266,12 @@ impl GameEngine {
     }
 
     /// Check if passenger has an exception to a rule
-    /// Whether breaking `rule` is what this passenger actually needs.
+    /// Whether breaking `rule` is what the current passenger actually needs.
+    ///
+    /// The passenger is identified entirely by their `need_state`, whose
+    /// profile carries the `exceptionId`; the passenger itself became an
+    /// unused parameter once `rule_modification` stopped short-circuiting
+    /// here, so it is gone rather than underscored.
     ///
     /// The rule argument used to be `_rule` — ignored entirely — so any
     /// forbidden cab action relieved any stressed passenger by that rule's
@@ -277,16 +281,14 @@ impl GameEngine {
     /// guideline that owns the passenger's own exception.
     fn passenger_has_exception(
         rule: &Rule,
-        passenger: &Passenger,
         need_state: Option<&PassengerNeedState>,
         guidelines: &[Guideline],
     ) -> bool {
-        // A passenger who rewrites the rules is a law unto themselves.
-        if let Some(modification) = &passenger.rule_modification {
-            if modification.can_modify {
-                return true;
-            }
-        }
+        // `rule_modification` used to short-circuit to true here, which
+        // excused The Collector, Madame Zelda and the Midnight Mayor from
+        // every rule for the whole ride. What they can do is rewrite the
+        // night's rules once as they get in — `RuleModificationService` — not
+        // ignore the ones that remain.
 
         let Some(state) = need_state else {
             return false;
@@ -501,11 +503,11 @@ mod tests {
         let other_rule = rules.iter().find(|r| r.id == 4).expect("Windows Sealed");
 
         assert!(
-            GameEngine::passenger_has_exception(own_rule, chen, Some(&need), &guidelines),
+            GameEngine::passenger_has_exception(own_rule, Some(&need), &guidelines),
             "breaking her own rule does not relieve her"
         );
         assert!(
-            !GameEngine::passenger_has_exception(other_rule, chen, Some(&need), &guidelines),
+            !GameEngine::passenger_has_exception(other_rule, Some(&need), &guidelines),
             "an unrelated rule still relieves her"
         );
     }
@@ -527,7 +529,6 @@ mod tests {
 
         assert!(!GameEngine::passenger_has_exception(
             own_rule,
-            &chen,
             Some(&need),
             &guidelines
         ));

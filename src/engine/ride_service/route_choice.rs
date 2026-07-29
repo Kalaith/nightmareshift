@@ -108,7 +108,6 @@ impl RideService {
             let violation = GameEngine::check_rule_violation(
                 &state.current_rules,
                 "take_shortcut",
-                state.current_passenger.as_ref(),
                 state.current_passenger_need_state.as_ref(),
                 &state.current_guidelines,
             );
@@ -121,7 +120,6 @@ impl RideService {
             let hidden_violation = GameEngine::check_rule_violation(
                 &state.hidden_rules,
                 "take_shortcut",
-                state.current_passenger.as_ref(),
                 state.current_passenger_need_state.as_ref(),
                 &state.current_guidelines,
             );

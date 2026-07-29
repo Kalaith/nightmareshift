@@ -25,7 +25,6 @@ impl Game {
         let visible = GameEngine::check_rule_violation(
             &self.game_state.current_rules,
             &action_key,
-            self.game_state.current_passenger.as_ref(),
             self.game_state.current_passenger_need_state.as_ref(),
             &self.game_state.current_guidelines,
         );
@@ -38,7 +37,6 @@ impl Game {
         let hidden = GameEngine::check_rule_violation(
             &self.game_state.hidden_rules,
             &action_key,
-            self.game_state.current_passenger.as_ref(),
             self.game_state.current_passenger_need_state.as_ref(),
             &self.game_state.current_guidelines,
         );

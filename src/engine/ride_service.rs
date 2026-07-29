@@ -10,7 +10,7 @@ mod route_choice;
 use crate::data::*;
 use crate::engine::{
     GameEngine, ItemService, PassengerSelectionContext, PassengerService, PassengerStateMachine,
-    SkillModifiers,
+    RuleModificationService, SkillModifiers,
 };
 use crate::state::*;
 
@@ -126,8 +126,18 @@ impl RideService {
 
         state.game_phase = GamePhase::Driving;
         state.driving_phase = Some(DrivingPhase::Pickup);
+
+        // Three passengers rewrite the night as they get in.
+        let change = state
+            .current_passenger
+            .clone()
+            .and_then(|passenger| RuleModificationService::apply(state, &passenger));
+
         state.current_dialogue = Some(CurrentDialogue {
-            text: "Ride accepted. Choose a route to the pickup point.".to_string(),
+            text: match change {
+                Some(change) => change.message,
+                None => "Ride accepted. Choose a route to the pickup point.".to_string(),
+            },
             speaker: DialogueSpeaker::Driver,
             timestamp: current_time,
         });
@@ -177,6 +187,15 @@ impl RideService {
             // Add earnings
             state.earnings += fare;
             state.rides_completed += 1;
+
+            // A rule imposed for a few rides runs out.
+            for lifted in RuleModificationService::expire_temporary_rules(state) {
+                state.current_dialogue = Some(CurrentDialogue {
+                    text: format!("\"{}\" is lifted. The night moves on.", lifted),
+                    speaker: DialogueSpeaker::Narrator,
+                    timestamp: current_time,
+                });
+            }
 
             // Check backstory unlock
             let backstory_unlocked =

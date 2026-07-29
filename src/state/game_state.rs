@@ -199,6 +199,13 @@ pub struct RouteStreak {
     pub count: u32,
 }
 
+/// A rule imposed for a limited number of rides.
+#[derive(Debug, Clone)]
+pub struct TemporaryRuleState {
+    pub rule_id: u32,
+    pub rides_remaining: u32,
+}
+
 /// Guideline decision history
 #[derive(Debug, Clone)]
 
@@ -267,6 +274,8 @@ pub struct GameState {
     pub current_rules: Vec<Rule>,
     pub hidden_rules: Vec<Rule>,
     pub revealed_hidden_rules: Vec<Rule>,
+    /// Rules a passenger imposed for a few rides, and how many are left.
+    pub temporary_rules: Vec<TemporaryRuleState>,
     pub current_guidelines: Vec<Guideline>,
     pub inventory: Vec<InventoryItem>,
     pub current_passenger: Option<Passenger>,
@@ -333,6 +342,7 @@ impl GameState {
             current_rules: Vec::new(),
             hidden_rules: Vec::new(),
             revealed_hidden_rules: Vec::new(),
+            temporary_rules: Vec::new(),
             current_guidelines: Vec::new(),
             inventory: Vec::new(),
             current_passenger: None,
@@ -382,6 +392,7 @@ impl GameState {
         self.current_rules.clear();
         self.hidden_rules.clear();
         self.revealed_hidden_rules.clear();
+        self.temporary_rules.clear();
         self.current_guidelines.clear();
         self.current_passenger = None;
         self.current_passenger_dialogue = None;

@@ -211,6 +211,28 @@ pub struct RuleModification {
     #[serde(rename = "type")]
     pub modification_type: String,
     pub description: String,
+    /// The rule an `add_temporary` passenger imposes. The Midnight Mayor
+    /// authors a full one — the nightmare-difficulty "Mayor's Decree" — and
+    /// the field was absent from this struct, so serde dropped it on load.
+    #[serde(rename = "newRule", default)]
+    pub new_rule: Option<TemporaryRule>,
+}
+
+/// A rule a passenger imposes for part of the shift.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TemporaryRule {
+    pub id: u32,
+    pub title: String,
+    pub description: String,
+    #[serde(default)]
+    pub difficulty: super::rules::Difficulty,
+    /// Rides the rule stays in force for.
+    #[serde(default = "one_u32")]
+    pub duration: u32,
+}
+
+fn one_u32() -> u32 {
+    1
 }
 
 /// A supernatural passenger in the game

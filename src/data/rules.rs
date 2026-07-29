@@ -73,7 +73,7 @@ impl Default for Consequence {
 }
 
 /// A shift rule that must be followed or broken strategically
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct Rule {
     pub id: u32,
     pub title: String,
