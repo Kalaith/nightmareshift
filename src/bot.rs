@@ -48,6 +48,8 @@ pub struct PlaytestBot {
     stale_since: f64,
     almanac_level: u32,
     unlock_all_skills: bool,
+    /// Specific skill ids to unlock, for isolating one effect.
+    named_skills: Vec<String>,
     /// Leg index the bot last spent a soothing cab action on.
     soothed_at_leg: Option<usize>,
     /// Rotates the blind guess at which action settles an unstudied fare.
@@ -100,6 +102,21 @@ impl PlaytestBot {
                 || std::env::var("NIGHTMARE_SHIFT_BOT_ALL_SKILLS")
                     .map(|value| value == "1" || value.eq_ignore_ascii_case("true"))
                     .unwrap_or(false);
+            // Unlocking the whole tree measures the tree. Isolating one
+            // effect — is the fare multiplier really the 1.21 it multiplies
+            // out to? — needs a named subset, because everything the other
+            // nineteen nodes do lands in the same numbers.
+            let named_skills: Vec<String> = parse_string_arg(&args, "--bot-skills")
+                .or_else(|| std::env::var("NIGHTMARE_SHIFT_BOT_SKILLS").ok())
+                .map(|value| {
+                    value
+                        .split(',')
+                        .map(str::trim)
+                        .filter(|id| !id.is_empty())
+                        .map(str::to_string)
+                        .collect()
+                })
+                .unwrap_or_default();
 
             let bot = Self {
                 strategy,
@@ -116,17 +133,19 @@ impl PlaytestBot {
                 stale_since: 0.0,
                 almanac_level,
                 unlock_all_skills,
+                named_skills,
                 soothed_at_leg: None,
                 soothe_cursor: 0,
             };
 
             eprintln!(
-                "[BOT] Enabled: strategy={:?}, shifts={}, delay={}ms, almanac_level={}, all_skills={}",
+                "[BOT] Enabled: strategy={:?}, shifts={}, delay={}ms, almanac_level={}, all_skills={}, skills={:?}",
                 bot.strategy,
                 bot.max_shifts,
                 delay_ms,
                 bot.almanac_level,
-                bot.unlock_all_skills
+                bot.unlock_all_skills,
+                bot.named_skills
             );
             Some(bot)
         }
@@ -136,6 +155,20 @@ impl PlaytestBot {
         if self.unlock_all_skills {
             stats.unlocked_skills = data.skills.iter().map(|skill| skill.id.clone()).collect();
             eprintln!("[BOT] Unlocked all {} skills.", stats.unlocked_skills.len());
+        } else if !self.named_skills.is_empty() {
+            let known: Vec<String> = data.skills.iter().map(|skill| skill.id.clone()).collect();
+            for id in &self.named_skills {
+                if !known.contains(id) {
+                    eprintln!("[BOT] Unknown skill id {id:?} - ignored.");
+                }
+            }
+            stats.unlocked_skills = self
+                .named_skills
+                .iter()
+                .filter(|id| known.contains(id))
+                .cloned()
+                .collect();
+            eprintln!("[BOT] Unlocked {:?}.", stats.unlocked_skills);
         }
 
         if self.almanac_level == 0 {

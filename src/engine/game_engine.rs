@@ -479,6 +479,99 @@ mod tests {
         );
     }
 
+    /// Every `SkillModifiers` field must move the number it names, by the
+    /// amount the skill tree authors.
+    ///
+    /// This is a unit test rather than a bot measurement because aggregate
+    /// play cannot answer it. Unlocking only the two fare skills and
+    /// comparing average earnings per ride measured a 27.8% uplift against
+    /// the 21% the multipliers work out to — not because the multiplier is
+    /// wrong, but because a richer driver refuels more, survives longer, and
+    /// carries a different mix of passengers, whose base fares run from $12
+    /// to $100. The mix moves the average more than the multiplier does.
+    #[test]
+    fn the_fare_multiplier_is_exactly_what_the_tree_authors() {
+        use crate::data::loader::{load_constants, load_passengers, load_skill_tree};
+
+        let constants = load_constants();
+        let skills = load_skill_tree();
+        // The highest-paying fare on the roster, well clear of the $5 floor
+        // `calculate_fare` clamps to — the first paying passenger's $12 fare
+        // lands on it once the route and preference multipliers are applied,
+        // and a clamped number cannot show a 1.21x ratio.
+        let passenger = load_passengers()
+            .into_iter()
+            .max_by_key(|p| p.fare)
+            .expect("a paying passenger");
+
+        let fare_of = |unlocked: &[String]| {
+            let mods = SkillModifiers::from_unlocked(&skills, unlocked);
+            GameEngine::calculate_fare(
+                passenger.fare,
+                RouteType::Normal,
+                &passenger,
+                None,
+                None,
+                &constants,
+                mods.fare_mult,
+            )
+        };
+
+        // `calculate_fare` adds a +/-$5 variation, so a single pair of calls
+        // cannot be compared. Averaging over many washes it out.
+        let mean_fare = |unlocked: &[String]| {
+            let total: u32 = (0..400).map(|_| fare_of(unlocked)).sum();
+            total as f32 / 400.0
+        };
+
+        let plain = mean_fare(&[]);
+        let both: Vec<String> = skills
+            .iter()
+            .filter(|s| s.effect.target == "fare_multiplier")
+            .map(|s| s.id.clone())
+            .collect();
+        assert_eq!(both.len(), 2, "the tree no longer has two fare skills");
+
+        let expected_mult: f32 = skills
+            .iter()
+            .filter(|s| s.effect.target == "fare_multiplier")
+            .map(|s| s.effect.value as f32)
+            .product();
+        let boosted = mean_fare(&both);
+
+        let ratio = boosted / plain;
+        assert!(
+            (ratio - expected_mult).abs() < 0.05,
+            "mean fare went {plain:.1} -> {boosted:.1} ({ratio:.3}x)              against the authored {expected_mult:.3}x"
+        );
+    }
+
+    /// The remaining modifiers must each be non-neutral once their skills are
+    /// unlocked, or a node is bought and changes nothing.
+    #[test]
+    fn every_skill_modifier_moves_off_neutral() {
+        use crate::data::loader::load_skill_tree;
+
+        let skills = load_skill_tree();
+        let all: Vec<String> = skills.iter().map(|s| s.id.clone()).collect();
+        let none = SkillModifiers::from_unlocked(&skills, &[]);
+        let full = SkillModifiers::from_unlocked(&skills, &all);
+
+        assert!(full.fuel_cost_mult < none.fuel_cost_mult, "fuel cost");
+        assert!(full.max_fuel_bonus > none.max_fuel_bonus, "max fuel");
+        assert!(full.hazard_mult < none.hazard_mult, "hazard damage");
+        assert!(
+            full.reveal_hidden_chance > none.reveal_hidden_chance,
+            "hidden rule reveal"
+        );
+        assert!(full.fare_mult > none.fare_mult, "fare");
+        assert!(full.refuel_cost_mult < none.refuel_cost_mult, "refuel cost");
+        assert!(
+            full.bonus_protection > none.bonus_protection,
+            "supernatural protection"
+        );
+    }
+
     /// Breaking the rule a passenger's own exception belongs to must relieve
     /// them; breaking an unrelated one must not. The rule argument used to be
     /// ignored, so every forbidden action soothed every stressed passenger

@@ -20,6 +20,13 @@
 
     The existing save is backed up and restored.
 
+    --bot-skills=id,id unlocks a named subset instead of the whole tree, for
+    isolating one effect. Note that aggregate per-ride earnings cannot measure
+    a multiplier: a richer driver refuels more, survives longer and carries a
+    different mix of passengers, whose base fares run from $12 to $100, and
+    the mix moves the average more than the multiplier does. Use a unit test
+    for exact values and this script for whether a system helps at all.
+
     Runs are close to reproducible but not guaranteed. Nothing calls `srand`,
     so the RNG starts from the same state every process — three pooled repeats
     once returned byte-identical cells. But the bot acts on elapsed time, so
