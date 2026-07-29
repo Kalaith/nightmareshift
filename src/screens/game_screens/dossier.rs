@@ -173,6 +173,124 @@ mod tests {
         }
     }
 
+    /// The numbers the dossier prints must be the numbers the simulation
+    /// runs on.
+    ///
+    /// Lv.1 tells the player a passenger turns restless past one level and
+    /// critical at another. Those readings come from `stateProfile`, and
+    /// `PassengerNeedState::calculate_stage` decides the actual stage from
+    /// the same block — but nothing checked they agreed, and an almanac that
+    /// quotes a threshold the state machine does not use is worse than one
+    /// that says nothing.
+    #[test]
+    fn the_quoted_thresholds_are_the_ones_the_state_machine_uses() {
+        use crate::state::{NeedStage, PassengerNeedState};
+
+        for passenger in load_passengers() {
+            let Some(profile) = &passenger.state_profile else {
+                continue;
+            };
+            let thresholds = &profile.thresholds;
+
+            let line = build(&passenger, 1, None)
+                .into_iter()
+                .find(|l| l.label == "Need")
+                .unwrap_or_else(|| panic!("{} shows no need line at Lv.1", passenger.name));
+
+            // The two figures the line quotes.
+            assert!(
+                line.value.contains(&thresholds.warning.to_string()),
+                "{}: line {:?} does not quote the warning threshold {}",
+                passenger.name,
+                line.value,
+                thresholds.warning
+            );
+            assert!(
+                line.value.contains(&thresholds.critical.to_string()),
+                "{}: line {:?} does not quote the critical threshold {}",
+                passenger.name,
+                line.value,
+                thresholds.critical
+            );
+
+            // And the state machine must actually turn at them.
+            assert_eq!(
+                PassengerNeedState::calculate_stage(thresholds.warning, thresholds),
+                NeedStage::Warning,
+                "{} does not reach Warning at its quoted threshold",
+                passenger.name
+            );
+            assert_eq!(
+                PassengerNeedState::calculate_stage(thresholds.warning - 1, thresholds),
+                NeedStage::Calm,
+                "{} is already restless below its quoted threshold",
+                passenger.name
+            );
+            assert_eq!(
+                PassengerNeedState::calculate_stage(thresholds.critical, thresholds),
+                NeedStage::Critical,
+                "{} does not reach Critical at its quoted threshold",
+                passenger.name
+            );
+        }
+    }
+
+    /// The need type named at Lv.1 must be the one the passenger actually
+    /// carries, not a label that drifted from the profile.
+    #[test]
+    fn the_quoted_need_is_the_carried_need() {
+        for passenger in load_passengers() {
+            let Some(profile) = &passenger.state_profile else {
+                continue;
+            };
+            let line = build(&passenger, 1, None)
+                .into_iter()
+                .find(|l| l.label == "Need")
+                .expect("a need line");
+            assert!(
+                line.value.starts_with(need_label(profile.need_type)),
+                "{}: line {:?} does not name {:?}",
+                passenger.name,
+                line.value,
+                profile.need_type
+            );
+        }
+    }
+
+    /// Every tell the dossier lists at Lv.2 must be one the passenger can
+    /// actually show, and every tell they can show at warning or critical
+    /// must be listed. A dossier that names a tell the state machine never
+    /// surfaces teaches the player to watch for nothing.
+    #[test]
+    fn the_listed_tells_are_the_ones_that_can_surface() {
+        for passenger in load_passengers() {
+            let listed: Vec<String> = build(&passenger, 2, None)
+                .into_iter()
+                .filter(|l| l.label == "Tell")
+                .map(|l| l.value)
+                .collect();
+
+            for tell in passenger.tells.iter().take(3) {
+                assert!(
+                    listed.iter().any(|l| l.contains(&tell.description)),
+                    "{} can show {:?} and the dossier does not list it",
+                    passenger.name,
+                    tell.description
+                );
+            }
+            for entry in &listed {
+                assert!(
+                    passenger
+                        .tells
+                        .iter()
+                        .any(|tell| entry.contains(&tell.description)),
+                    "{} lists {entry:?}, which is not one of their tells",
+                    passenger.name
+                );
+            }
+        }
+    }
+
     /// Level 0 is the unstudied state and must stay silent.
     #[test]
     fn unstudied_passengers_reveal_nothing() {
