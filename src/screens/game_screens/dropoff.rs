@@ -118,13 +118,30 @@ pub fn draw_dropoff(game_state: &GameState, game_data: Option<&GameData>) -> UiA
                     rarity_color,
                 );
 
-                // Show what they want if available
+                // Name what this passenger actually wants. `wantedItems` is
+                // authored per passenger and already decides whether a trade is
+                // offered at all; without showing it the player is picking
+                // blind and the data only ever works behind their back.
+                let wanted: &[String] = game_state
+                    .current_passenger
+                    .as_ref()
+                    .map(|p| p.wanted_items.as_slice())
+                    .unwrap_or(&[]);
+                let wants_text = if wanted.is_empty() {
+                    data.localization.ui.game.trade.any_item.clone()
+                } else {
+                    format!("They are looking for: {}", wanted.join(", "))
+                };
                 draw_ui_text(
-                    &data.localization.ui.game.trade.any_item,
+                    &wants_text,
                     inner.x,
                     inner.y + 105.0,
                     fonts::SIZE_SM,
-                    colors::TEXT_MUTED,
+                    if wanted.is_empty() {
+                        colors::TEXT_MUTED
+                    } else {
+                        colors::ACCENT_GOLD
+                    },
                 );
 
                 // Buttons
@@ -133,8 +150,21 @@ pub fn draw_dropoff(game_state: &GameState, game_data: Option<&GameData>) -> UiA
                 let btn_h = 40.0;
                 let center_x = screen_width() / 2.0;
 
-                // Show inventory items for selection
-                if !game_state.inventory.is_empty() {
+                // Tradeable items, carrying their real inventory index. The
+                // filter must come before the cap: taking the first three
+                // items and then skipping untradeable ones hid every
+                // tradeable item past index two, and left the player staring
+                // at "select an item" with no buttons when the first three
+                // happened to be bound or cursed.
+                let tradeable: Vec<(usize, &crate::data::InventoryItem)> = game_state
+                    .inventory
+                    .iter()
+                    .enumerate()
+                    .filter(|(_, item)| item.can_trade)
+                    .take(3)
+                    .collect();
+
+                if !tradeable.is_empty() {
                     draw_ui_text(
                         &data.localization.ui.game.trade.select,
                         inner.x,
@@ -143,18 +173,25 @@ pub fn draw_dropoff(game_state: &GameState, game_data: Option<&GameData>) -> UiA
                         colors::TEXT_PRIMARY,
                     );
 
-                    for (i, item) in game_state.inventory.iter().take(3).enumerate() {
-                        if !item.can_trade {
-                            continue;
-                        }
-                        let item_btn_y = btn_y + (i as f32 * 45.0);
+                    for (slot, (index, item)) in tradeable.iter().enumerate() {
+                        let is_wanted = wanted.contains(&item.name);
+                        let label = if is_wanted {
+                            format!("{} (wanted)", item.name)
+                        } else {
+                            item.name.clone()
+                        };
+                        let item_btn_y = btn_y + (slot as f32 * 45.0);
                         if draw_glass_button(
                             UiRect::new(center_x - btn_w / 2.0, item_btn_y, btn_w, 35.0),
-                            &item.name,
-                            colors::ACCENT_SKY,
+                            &label,
+                            if is_wanted {
+                                colors::ACCENT_GOLD
+                            } else {
+                                colors::ACCENT_SKY
+                            },
                             true,
                         ) {
-                            return UiAction::AcceptTrade(i);
+                            return UiAction::AcceptTrade(*index);
                         }
                     }
 
@@ -168,7 +205,8 @@ pub fn draw_dropoff(game_state: &GameState, game_data: Option<&GameData>) -> UiA
                         return UiAction::DeclineTrade;
                     }
                 } else {
-                    // No items to trade
+                    // Nothing tradeable to offer — inventory may still hold
+                    // bound items like the Blessed Medallion.
                     draw_ui_text(
                         &data.localization.ui.game.trade.empty,
                         inner.x,

@@ -8,8 +8,14 @@
     (NIGHTMARE_SHIFT_CAPTURE_*) provided by macroquad_toolkit::capture in
     src/main.rs. Scenes are seeded via Game::begin_capture_scene:
     "mainmenu" (default boot state), "briefing" (post-start briefing screen),
-    "gameplay" (in a shift, waiting for a passenger), and "ride_request" (a
-    ride offer with the almanac fully studied, so the passenger dossier shows).
+    "gameplay" (in a shift, waiting for a passenger), "ride_request" (a ride
+    offer with the almanac fully studied, so the passenger dossier shows),
+    "skill_tree" (currency in hand, so purchase buttons and the lore exchange
+    are live), and "trade" (a trade offer with a mixed inventory).
+
+    Capture scenes seed bank balance, lore, almanac levels and inventory
+    directly into player stats. Game::capture_mode suppresses saving for the
+    whole process, so a capture can never write those values to a real save.
 
 .EXAMPLE
     ./scripts/capture_ui.ps1

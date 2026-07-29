@@ -130,16 +130,7 @@ impl Game {
                     self.perform_rule_action(action_key);
                 }
             }
-            UiAction::AcceptTrade(item_idx) => {
-                if let Some((_, offered_item)) = self.game_state.pending_trade.take() {
-                    if item_idx < self.game_state.inventory.len() {
-                        // Remove the given item
-                        self.game_state.inventory.remove(item_idx);
-                        // Add the received item
-                        self.game_state.inventory.push(offered_item);
-                    }
-                }
-            }
+            UiAction::AcceptTrade(item_idx) => self.complete_trade(item_idx),
             UiAction::DeclineTrade => {
                 // Clear pending trade
                 self.game_state.pending_trade = None;

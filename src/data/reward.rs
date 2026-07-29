@@ -74,6 +74,29 @@ impl LoreExchange {
     }
 }
 
+/// What giving a passenger an item they actually asked for is worth.
+///
+/// `wantedItems` already gates whether a trade is offered, but every trade
+/// resolved identically, so handing over the exact thing a passenger wanted
+/// paid no more than handing over junk. This is what makes the choice of
+/// which item to give matter.
+#[derive(Debug, Clone, Copy, Default, Serialize, Deserialize)]
+pub struct WantedTradeBonus {
+    /// Need level removed — settling a passenger who got what they wanted.
+    #[serde(rename = "needRelief", default)]
+    pub need_relief: i32,
+    /// Positive reputation entries credited with this passenger.
+    #[serde(rename = "reputationBonus", default)]
+    pub reputation_bonus: u32,
+}
+
+impl WantedTradeBonus {
+    /// True when the bonus does anything.
+    pub fn is_active(&self) -> bool {
+        self.need_relief > 0 || self.reputation_bonus > 0
+    }
+}
+
 /// All meta-progression payouts.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct RewardData {
@@ -84,6 +107,8 @@ pub struct RewardData {
     pub run_completion: RunCompletionReward,
     #[serde(rename = "loreExchange", default)]
     pub lore_exchange: LoreExchange,
+    #[serde(rename = "wantedTrade", default)]
+    pub wanted_trade: WantedTradeBonus,
 }
 
 impl RewardData {
@@ -154,6 +179,40 @@ mod tests {
             bank_if_all_sold < tree_cost,
             "selling {almanac_budget} lore yields {bank_if_all_sold},              which already covers the {tree_cost} tree"
         );
+    }
+
+    /// Giving a passenger what they asked for has to be worth more than
+    /// giving them anything else, or `wantedItems` only ever decides whether
+    /// an offer appears and never what the player should hand over.
+    #[test]
+    fn giving_a_wanted_item_is_rewarded() {
+        assert!(
+            load_rewards().wanted_trade.is_active(),
+            "a wanted trade pays nothing"
+        );
+    }
+
+    /// Every passenger must want at least one item that the player can
+    /// actually part with, otherwise their trade offer can never be
+    /// satisfied with the thing they asked for.
+    #[test]
+    fn every_passengers_wants_are_giveable() {
+        let catalog = crate::data::loader::load_item_catalog();
+        for passenger in crate::data::loader::load_passengers() {
+            if !passenger.wants_trade {
+                continue;
+            }
+            let giveable = passenger
+                .wanted_items
+                .iter()
+                .filter(|name| catalog.get(name).can_trade)
+                .count();
+            assert!(
+                giveable > 0,
+                "{} wants nothing the player can hand over",
+                passenger.name
+            );
+        }
     }
 
     /// Surviving a whole run is the game's headline result and must pay.

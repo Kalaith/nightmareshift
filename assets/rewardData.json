@@ -33,5 +33,9 @@
   "loreExchange": {
     "lore": 5,
     "bank": 120
+  },
+  "wantedTrade": {
+    "needRelief": 15,
+    "reputationBonus": 1
   }
 }

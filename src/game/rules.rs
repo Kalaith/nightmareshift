@@ -284,6 +284,79 @@ impl Game {
         }
     }
 
+    /// Hand over the item at `item_idx` and take the passenger's offer.
+    ///
+    /// Giving a passenger something on their `wantedItems` list settles them
+    /// and earns standing; giving them any other tradeable object still
+    /// completes the swap but is just a swap. Before this, every trade
+    /// resolved identically and the authored wants only ever decided whether
+    /// an offer appeared at all.
+    pub(super) fn complete_trade(&mut self, item_idx: usize) {
+        // Bail before consuming the offer: a stale index used to take the
+        // pending trade and drop the offered item on the floor.
+        if item_idx >= self.game_state.inventory.len() {
+            return;
+        }
+        let Some((_, offered_item)) = self.game_state.pending_trade.take() else {
+            return;
+        };
+
+        let given = self.game_state.inventory.remove(item_idx);
+        self.game_state.inventory.push(offered_item);
+
+        let current_time = get_time();
+        let Some(passenger) = self.game_state.current_passenger.clone() else {
+            return;
+        };
+        if !passenger.wanted_items.contains(&given.name) {
+            return;
+        }
+
+        let Some(bonus) = self
+            .game_data
+            .as_ref()
+            .map(|data| data.rewards.wanted_trade)
+            .filter(|bonus| bonus.is_active())
+        else {
+            return;
+        };
+
+        if bonus.reputation_bonus > 0 {
+            let reputation = self.game_state.get_passenger_reputation(passenger.id);
+            reputation.positive_choices += bonus.reputation_bonus;
+            reputation.interactions += bonus.reputation_bonus;
+            reputation.last_encounter = current_time;
+        }
+
+        if bonus.need_relief > 0 {
+            if let Some(mut need) = self.game_state.current_passenger_need_state.clone() {
+                let triggered = PassengerStateMachine::apply_stress_delta(
+                    &mut need,
+                    &passenger,
+                    -bonus.need_relief,
+                    current_time,
+                );
+                self.game_state.current_passenger_need_state = Some(need);
+                PassengerStateMachine::merge_detected_tells(
+                    &mut self.game_state.detected_tells,
+                    triggered,
+                    passenger.id,
+                    current_time,
+                    &self.game_state.current_guidelines,
+                );
+            }
+        }
+
+        self.game_state.current_dialogue = Some(CurrentDialogue {
+            text: format!(
+                "{} turns the {} over in their hands. It was what they came for.",
+                passenger.name, given.name
+            ),
+            speaker: DialogueSpeaker::Narrator,
+            timestamp: current_time,
+        });
+    }
+
     /// Reading a passenger correctly settles them.
     ///
     /// Every `stateProfile` authors an `exceptionRelief` and names the

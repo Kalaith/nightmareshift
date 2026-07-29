@@ -95,6 +95,37 @@ impl Game {
                 self.start_game();
                 self.start_shift();
             }
+            // A trade offer with a mixed inventory: an item this passenger
+            // wants, one they do not, and one that cannot be traded at all.
+            // Exercises the wanted-item highlight and the tradeable filter.
+            "trade" => {
+                self.start_game();
+                self.start_shift();
+                self.spawn_passenger();
+                if let Some(data) = &self.game_data {
+                    if let Some(passenger) = self.game_state.current_passenger.clone() {
+                        let now = get_time();
+                        let wanted = passenger
+                            .wanted_items
+                            .first()
+                            .cloned()
+                            .unwrap_or_else(|| "Old Key".to_string());
+                        for name in ["Blessed Medallion", "Crumpled Note", wanted.as_str()] {
+                            let item = data.items.create_item(name, &passenger.name, now);
+                            self.game_state.inventory.push(item);
+                        }
+                        let offered = data.items.create_item("Tarot Card", &passenger.name, now);
+                        self.game_state.last_ride_completion = Some(RideCompletion {
+                            passenger: passenger.clone(),
+                            fare_earned: passenger.fare,
+                            items_received: Vec::new(),
+                            backstory_unlocked: None,
+                        });
+                        self.game_state.pending_trade = Some((passenger.name.clone(), offered));
+                        self.game_state.game_phase = GamePhase::DropOff;
+                    }
+                }
+            }
             // A ride offer with the almanac fully studied, so the dossier the
             // request screen draws is visible in the capture.
             "ride_request" => {
