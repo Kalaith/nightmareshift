@@ -436,6 +436,32 @@ mod tests {
         assert!(load_passengers().iter().any(|p| p.wants_trade));
     }
 
+    /// And the other direction: every trait a passenger carries must have a
+    /// skill that buys its use.
+    ///
+    /// The almanac lists a passenger's traits from Lv.1, so a trait with no
+    /// skill behind it is advertised to the player and permanently
+    /// unreachable. The existing test only checked that no skill was wasted;
+    /// nothing checked that no trait was.
+    #[test]
+    fn every_passenger_trait_has_a_skill_that_uses_it() {
+        let purchasable: HashSet<String> = load_skill_tree()
+            .into_iter()
+            .filter(|skill| skill.effect.effect_type == "ability_unlock")
+            .map(|skill| skill.effect.target)
+            .collect();
+        for passenger in load_passengers() {
+            for trait_name in &passenger.traits {
+                let id = RideService::trait_skill_id(trait_name);
+                assert!(
+                    purchasable.contains(&id),
+                    "{} carries trait {trait_name:?}, which no skill unlocks",
+                    passenger.name
+                );
+            }
+        }
+    }
+
     /// Every `ability_unlock` skill must be earnable-into-use: some passenger
     /// carries the matching trait, or the skill is bank balance thrown away.
     #[test]

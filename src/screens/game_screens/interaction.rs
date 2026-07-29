@@ -2,7 +2,6 @@
 
 use macroquad::prelude::*;
 
-use crate::data::GameData;
 use crate::state::GameState;
 use crate::ui::{
     colors, draw_cockpit_background, draw_glass_button, draw_glass_panel, draw_passenger_portrait,
@@ -13,11 +12,11 @@ use macroquad_toolkit::ui::draw_ui_text;
 use super::scene::draw_bottom_taxi_scene;
 
 /// Draw the interaction screen (Mid-Ride Event)
-pub fn draw_interaction(
-    game_state: &GameState,
-    _game_data: Option<&GameData>,
-    player_stats: &crate::state::PlayerStats,
-) -> UiAction {
+/// Takes no player stats and no game data: everything this screen needs to
+/// know about what the player has unlocked was already decided by
+/// `generate_mid_ride_event`, and asking again is how the two came to
+/// disagree.
+pub fn draw_interaction(game_state: &GameState) -> UiAction {
     draw_cockpit_background();
 
     let scene_h = (screen_height() * 0.27).clamp(210.0, 300.0);
@@ -106,16 +105,19 @@ pub fn draw_interaction(
         for (i, choice) in event.choices.iter().enumerate() {
             let btn_h = 78.0;
             let btn_rect = UiRect::new(right_x, choice_y, right_w, btn_h);
-            let mut hint_text = None;
-            if let Some(req_trait) = &choice.required_trait {
-                if let Some(passenger) = &game_state.current_passenger {
-                    if passenger.traits.contains(req_trait)
-                        && player_stats.is_backstory_unlocked(passenger.id)
-                    {
-                        hint_text = Some(format!("{}'s {} helps!", passenger.name, req_trait));
-                    }
-                }
-            }
+            // The ability choice only exists because the generator already
+            // checked the passenger has this trait, the player has studied
+            // them, and the matching skill is bought. Re-deriving that here
+            // got it wrong: the screen asked for an unlocked *backstory*
+            // while the generator asks for almanac knowledge, so a choice
+            // could be offered with its explanation withheld.
+            let hint_text = choice.required_trait.as_ref().and_then(|req_trait| {
+                game_state
+                    .current_passenger
+                    .as_ref()
+                    .filter(|passenger| passenger.traits.contains(req_trait))
+                    .map(|passenger| format!("{}'s {} helps!", passenger.name, req_trait))
+            });
 
             if draw_glass_button(btn_rect, "", colors::ACCENT_WARNING, true) {
                 return UiAction::SelectEventChoice(i);
@@ -137,13 +139,34 @@ pub fn draw_interaction(
                 colors::TEXT_PRIMARY,
                 2,
             );
-            if let Some(hint) = hint_text {
+            // What kind of trouble this option courts.
+            //
+            // Every authored choice carries a `risk_type` — forty-eight of
+            // them across sixteen events — and `RiskTag::name` and `description` were written
+            // to say what they mean. Nothing ever called either, so a player picked
+            // between three lines of prose with no idea which was the
+            // spiritual gamble and which was merely a detour through
+            // roadworks. The ability choice is exempt: it is not a gamble,
+            // it is knowledge paying off, and it says so on this same row.
+            let footnote = match &hint_text {
+                Some(hint) => Some((hint.clone(), colors::FUEL_GOOD)),
+                None if choice.required_trait.is_none() => Some((
+                    format!(
+                        "{} - {}",
+                        choice.risk_type.name(),
+                        choice.risk_type.description()
+                    ),
+                    colors::TEXT_MUTED,
+                )),
+                None => None,
+            };
+            if let Some((text, color)) = footnote {
                 draw_ui_text(
-                    &hint,
+                    &text,
                     right_x + 58.0,
                     choice_y + btn_h - 12.0,
                     fonts::SIZE_XS,
-                    colors::FUEL_GOOD,
+                    color,
                 );
             }
 

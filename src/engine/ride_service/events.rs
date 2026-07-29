@@ -13,7 +13,9 @@ impl RideService {
     /// Picks a route-eligible template (weighted), then optionally appends a
     /// passenger-specific "use your ability" choice when the player has both the
     /// almanac knowledge and the matching skill unlocked, and shuffles.
-    pub(super) fn generate_mid_ride_event(
+    /// `pub(crate)` so the screenshot harness can seed a real event rather
+    /// than hand-building one that could drift from what the game produces.
+    pub(crate) fn generate_mid_ride_event(
         state: &GameState,
         data: &GameData,
         stats: &PlayerStats,

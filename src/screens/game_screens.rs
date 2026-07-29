@@ -35,7 +35,7 @@ pub fn draw_game(
         GamePhase::Waiting => draw_waiting(game_state, game_data),
         GamePhase::RideRequest => draw_ride_request(game_state, game_data, player_stats),
         GamePhase::Driving => draw_driving(game_state, game_data, player_stats),
-        GamePhase::Interaction => draw_interaction(game_state, game_data, player_stats),
+        GamePhase::Interaction => draw_interaction(game_state),
         GamePhase::DropOff => draw_dropoff(game_state, game_data),
         GamePhase::GuidelineDecision => {
             draw_guideline_decision(game_state, game_data, player_stats)

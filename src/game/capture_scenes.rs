@@ -7,6 +7,8 @@
 //! this project were found.
 
 use super::Game;
+use crate::data::RouteType;
+use crate::engine::RideService;
 use crate::screens::Screen;
 use crate::state::*;
 use macroquad::prelude::*;
@@ -27,6 +29,65 @@ impl Game {
             "gameplay" => {
                 self.start_game();
                 self.start_shift();
+            }
+            // A mid-ride event with the passenger's ability choice present:
+            // the almanac studied and every skill bought, so both kinds of
+            // footnote appear at once — the risk tags on the authored
+            // choices and the trait hint on the earned one.
+            "event" => {
+                self.start_game();
+                self.start_shift();
+                self.spawn_passenger();
+                if let Some(passenger) = self.game_state.current_passenger.clone() {
+                    self.player_stats.mark_passenger_encountered(passenger.id);
+                    self.player_stats.bank_balance += 5000;
+
+                    let upgrades: Vec<u32> = (0..3)
+                        .map(|step| {
+                            self.game_data
+                                .as_ref()
+                                .map(|data| data.almanac.get_upgrade_cost(step + 1))
+                                .unwrap_or(0)
+                        })
+                        .collect();
+                    for cost in upgrades {
+                        self.player_stats.lore_fragments += 99;
+                        self.player_stats
+                            .upgrade_almanac_knowledge(passenger.id, cost);
+                    }
+
+                    let purchases: Vec<(String, u32)> = self
+                        .game_data
+                        .as_ref()
+                        .map(|data| {
+                            passenger
+                                .traits
+                                .iter()
+                                .filter_map(|trait_name| {
+                                    let id = RideService::trait_skill_id(trait_name);
+                                    data.skills
+                                        .iter()
+                                        .find(|skill| skill.id == id)
+                                        .map(|skill| (skill.id.clone(), skill.cost))
+                                })
+                                .collect()
+                        })
+                        .unwrap_or_default();
+                    for (id, cost) in purchases {
+                        self.player_stats.purchase_skill(&id, cost);
+                    }
+
+                    let event = self.game_data.as_ref().map(|data| {
+                        RideService::generate_mid_ride_event(
+                            &self.game_state,
+                            data,
+                            &self.player_stats,
+                            RouteType::Normal,
+                        )
+                    });
+                    self.game_state.current_event = event;
+                    self.game_state.game_phase = GamePhase::Interaction;
+                }
             }
             // Where a run ends. Three states of the same screen: a lost
             // shift, an interim night survived, and a completed run.
