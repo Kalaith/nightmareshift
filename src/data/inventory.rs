@@ -2,6 +2,7 @@
 
 use super::passenger::Rarity;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 /// Named item-name pools keyed by supernatural category, loaded from
 /// `itemPoolData.json`. Used to generate an item drop when a passenger has no
@@ -40,6 +41,25 @@ impl ItemPools {
         }
         pool[macroquad_toolkit::rng::gen_range(0, pool.len())].clone()
     }
+
+    /// Every name any pool can produce, in declaration order. Used by the
+    /// catalog-coverage test so a name can never be droppable without also
+    /// being defined in `itemData.json`.
+    #[cfg(test)]
+    pub fn all_names(&self) -> Vec<&str> {
+        [
+            &self.ghost,
+            &self.vampire,
+            &self.demon,
+            &self.occult,
+            &self.holy,
+            &self.common,
+        ]
+        .into_iter()
+        .flatten()
+        .map(String::as_str)
+        .collect()
+    }
 }
 
 /// Type of inventory item
@@ -75,7 +95,9 @@ pub struct ItemEffect {
     #[serde(rename = "type")]
     pub effect_type: ItemEffectType,
     pub value: i32,
+    #[serde(default)]
     pub duration: Option<u32>,
+    #[serde(default)]
     pub condition: Option<String>,
 }
 
@@ -190,119 +212,36 @@ impl InventoryItem {
     }
 }
 
-/// Database of known item templates
-pub struct ItemDatabase;
+/// The item catalog, loaded from `itemData.json`: every droppable item name
+/// mapped to the template used to mint an `InventoryItem`.
+///
+/// Keys are matched case-insensitively (they are stored lowercase), so pool
+/// entries and passenger `dropItems` can use display casing.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(transparent)]
+pub struct ItemCatalog {
+    templates: HashMap<String, ItemTemplate>,
+}
 
-impl ItemDatabase {
-    /// Get item data by name
-    pub fn get_item_data(name: &str) -> ItemTemplate {
-        match name.to_lowercase().as_str() {
-            "old locket" => ItemTemplate {
-                item_type: ItemType::Cursed,
-                rarity: Rarity::Uncommon,
-                description: "A tarnished locket that whispers forgotten names".to_string(),
-                can_use: false,
-                can_trade: true,
-                max_durability: Some(100),
-                cursed_properties: Some(CursedProperties {
-                    penalty_type: CursePenalty::AttractingDanger,
-                    penalty_value: 1,
-                    triggers_after: 20,
-                    can_be_removed: true,
-                    removal_condition: Some("Trade with Sister Agnes".to_string()),
-                }),
-                protective_properties: None,
-                effects: Vec::new(),
-            },
-            "crystal pendant" => ItemTemplate {
-                item_type: ItemType::Protective,
-                rarity: Rarity::Rare,
-                description: "A shimmering crystal that wards off supernatural influence"
-                    .to_string(),
-                can_use: true,
-                can_trade: true,
-                max_durability: None,
-                cursed_properties: None,
-                protective_properties: Some(ProtectiveProperties {
-                    protection_type: ProtectionType::SupernaturalImmunity,
-                    protection_strength: 2,
-                    uses_remaining: Some(3),
-                    protects_against: None,
-                }),
-                effects: vec![ItemEffect {
-                    effect_type: ItemEffectType::RuleImmunity,
-                    value: 1,
-                    duration: Some(30),
-                    condition: Some("supernatural_encounter".to_string()),
-                }],
-            },
-            "blessed medallion" => ItemTemplate {
-                item_type: ItemType::Protective,
-                rarity: Rarity::Rare,
-                description: "A holy medallion that repels dark influences".to_string(),
-                can_use: true,
-                can_trade: false,
-                max_durability: None,
-                cursed_properties: None,
-                protective_properties: Some(ProtectiveProperties {
-                    protection_type: ProtectionType::SupernaturalImmunity,
-                    protection_strength: 3,
-                    uses_remaining: Some(5),
-                    protects_against: None,
-                }),
-                effects: vec![ItemEffect {
-                    effect_type: ItemEffectType::SupernaturalProtection,
-                    value: 3,
-                    duration: None,
-                    condition: None,
-                }],
-            },
-            "soul protection ward" => ItemTemplate {
-                item_type: ItemType::Protective,
-                rarity: Rarity::Legendary,
-                description: "A ward crafted by The Collector, protecting your very essence"
-                    .to_string(),
-                can_use: true,
-                can_trade: false,
-                max_durability: None,
-                cursed_properties: None,
-                protective_properties: Some(ProtectiveProperties {
-                    protection_type: ProtectionType::SupernaturalImmunity,
-                    protection_strength: 5,
-                    uses_remaining: Some(1),
-                    protects_against: Some(vec!["16".to_string()]), // Death's Taxi Driver
-                }),
-                effects: Vec::new(),
-            },
-            "withered flowers" => ItemTemplate {
-                item_type: ItemType::Story,
-                rarity: Rarity::Common,
-                description: "Flowers that never truly die, holding memories of the past"
-                    .to_string(),
-                can_use: false,
-                can_trade: false,
-                max_durability: Some(50),
-                cursed_properties: None,
-                protective_properties: None,
-                effects: Vec::new(),
-            },
-            _ => ItemTemplate {
-                item_type: ItemType::Story,
-                rarity: Rarity::Common,
-                description: "A mysterious object left behind by a passenger".to_string(),
-                can_use: false,
-                can_trade: false,
-                max_durability: Some(100),
-                cursed_properties: None,
-                protective_properties: None,
-                effects: Vec::new(),
-            },
-        }
+impl ItemCatalog {
+    /// Look up a template by item name. Unknown names fall back to an inert
+    /// story keepsake rather than failing the drop outright.
+    pub fn get(&self, name: &str) -> ItemTemplate {
+        self.templates
+            .get(&name.to_lowercase())
+            .cloned()
+            .unwrap_or_else(ItemTemplate::keepsake)
     }
 
-    /// Create an inventory item from a template
-    pub fn create_item(name: &str, source: &str, current_time: f64) -> InventoryItem {
-        let template = Self::get_item_data(name);
+    /// True when the catalog defines this name.
+    #[cfg(test)]
+    pub fn contains(&self, name: &str) -> bool {
+        self.templates.contains_key(&name.to_lowercase())
+    }
+
+    /// Create an inventory item from the catalog.
+    pub fn create_item(&self, name: &str, source: &str, current_time: f64) -> InventoryItem {
+        let template = self.get(name);
         InventoryItem {
             id: format!("{}_{}", name.replace(' ', "_"), current_time as u64),
             name: name.to_string(),
@@ -323,15 +262,112 @@ impl ItemDatabase {
     }
 }
 
-/// Template for creating inventory items
+/// Template for creating inventory items, as authored in `itemData.json`.
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ItemTemplate {
+    #[serde(rename = "type", default)]
     pub item_type: ItemType,
+    #[serde(default)]
     pub rarity: Rarity,
     pub description: String,
+    #[serde(rename = "canUse", default)]
     pub can_use: bool,
+    #[serde(rename = "canTrade", default)]
     pub can_trade: bool,
+    #[serde(rename = "maxDurability", default)]
     pub max_durability: Option<u32>,
+    #[serde(rename = "cursedProperties", default)]
     pub cursed_properties: Option<CursedProperties>,
+    #[serde(rename = "protectiveProperties", default)]
     pub protective_properties: Option<ProtectiveProperties>,
+    #[serde(default)]
     pub effects: Vec<ItemEffect>,
+}
+
+impl ItemTemplate {
+    /// The inert fallback used when an item name is not in the catalog.
+    fn keepsake() -> Self {
+        Self {
+            item_type: ItemType::Story,
+            rarity: Rarity::Common,
+            description: "A mysterious object left behind by a passenger".to_string(),
+            can_use: false,
+            can_trade: false,
+            max_durability: Some(100),
+            cursed_properties: None,
+            protective_properties: None,
+            effects: Vec::new(),
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::data::loader::{load_item_catalog, load_item_pools, load_passengers};
+
+    /// Every name a pool can produce must exist in the catalog. Without this,
+    /// adding a name to `itemPoolData.json` silently mints an inert keepsake.
+    #[test]
+    fn every_pooled_item_is_in_the_catalog() {
+        let pools = load_item_pools();
+        let catalog = load_item_catalog();
+        let missing: Vec<&str> = pools
+            .all_names()
+            .into_iter()
+            .filter(|name| !catalog.contains(name))
+            .collect();
+        assert!(
+            missing.is_empty(),
+            "items missing from catalog: {missing:?}"
+        );
+    }
+
+    /// Passenger-specific `dropItems` go through the same catalog.
+    #[test]
+    fn every_passenger_drop_item_is_in_the_catalog() {
+        let catalog = load_item_catalog();
+        let missing: Vec<String> = load_passengers()
+            .iter()
+            .flat_map(|p| p.drop_items.iter())
+            .filter(|name| !catalog.contains(name))
+            .cloned()
+            .collect();
+        assert!(
+            missing.is_empty(),
+            "items missing from catalog: {missing:?}"
+        );
+    }
+
+    /// The point of the catalog: an item a passenger hands you must do
+    /// something. Every catalog entry either carries effects, wards you, or
+    /// curses you — a droppable item is never pure inventory clutter.
+    #[test]
+    fn every_catalog_item_does_something() {
+        let catalog = load_item_catalog();
+        let inert: Vec<&String> = catalog
+            .templates
+            .iter()
+            .filter(|(_, t)| {
+                t.effects.is_empty()
+                    && t.protective_properties.is_none()
+                    && t.cursed_properties.is_none()
+            })
+            .map(|(name, _)| name)
+            .collect();
+        assert!(inert.is_empty(), "items with no effect at all: {inert:?}");
+    }
+
+    /// A usable item must actually have effects to apply, or "Use" is a no-op
+    /// button on an inventory row.
+    #[test]
+    fn usable_items_have_effects() {
+        let catalog = load_item_catalog();
+        let empty: Vec<&String> = catalog
+            .templates
+            .iter()
+            .filter(|(_, t)| t.can_use && t.effects.is_empty())
+            .map(|(name, _)| name)
+            .collect();
+        assert!(empty.is_empty(), "usable items with no effects: {empty:?}");
+    }
 }

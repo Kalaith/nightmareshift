@@ -63,6 +63,7 @@ impl ItemService {
         current_time: f64,
         constants: &ConstantsData,
         item_pools: &ItemPools,
+        catalog: &ItemCatalog,
     ) -> Option<ItemDrop> {
         let drop_chance =
             Self::calculate_drop_chance(passenger, route_type, backstory_unlocked, constants);
@@ -72,7 +73,7 @@ impl ItemService {
         }
 
         // Determine item based on passenger
-        let item = Self::select_item_for_passenger(passenger, current_time, item_pools);
+        let item = Self::select_item_for_passenger(passenger, current_time, item_pools, catalog);
 
         Some(ItemDrop { item })
     }
@@ -94,17 +95,18 @@ impl ItemService {
         passenger: &Passenger,
         current_time: f64,
         item_pools: &ItemPools,
+        catalog: &ItemCatalog,
     ) -> InventoryItem {
         // Check if passenger has specific drop items
         if !passenger.drop_items.is_empty() {
             let idx = macroquad_toolkit::rng::gen_range(0, passenger.drop_items.len());
             let item_name = &passenger.drop_items[idx];
-            return ItemDatabase::create_item(item_name, &passenger.name, current_time);
+            return catalog.create_item(item_name, &passenger.name, current_time);
         }
 
         // Otherwise generate based on supernatural type
         let item_name = item_pools.pick(Self::item_category(&passenger.supernatural));
-        ItemDatabase::create_item(&item_name, &passenger.name, current_time)
+        catalog.create_item(&item_name, &passenger.name, current_time)
     }
 
     /// Check if a passenger wants to trade
@@ -114,6 +116,7 @@ impl ItemService {
         constants: &ConstantsData,
         current_time: f64,
         item_pools: &ItemPools,
+        catalog: &ItemCatalog,
     ) -> Option<TradeOffer> {
         // Only some passengers trade
         if !passenger.wants_trade {
@@ -129,7 +132,8 @@ impl ItemService {
             || macroquad_toolkit::rng::chance(constants.probabilities.trade_offer_chance)
         {
             // Generate a trade offer
-            let offered_item = Self::select_item_for_passenger(passenger, current_time, item_pools);
+            let offered_item =
+                Self::select_item_for_passenger(passenger, current_time, item_pools, catalog);
 
             return Some(TradeOffer {
                 passenger_name: passenger.name.clone(),

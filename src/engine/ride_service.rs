@@ -167,6 +167,7 @@ impl RideService {
                 current_time,
                 &data.constants,
                 &data.item_pools,
+                &data.items,
             ) {
                 items_received.push(drop.item.clone());
                 state.inventory.push(drop.item);
@@ -179,6 +180,7 @@ impl RideService {
                 &data.constants,
                 current_time,
                 &data.item_pools,
+                &data.items,
             ) {
                 state.pending_trade =
                     Some((trade.passenger_name.clone(), trade.offered_item.clone()));

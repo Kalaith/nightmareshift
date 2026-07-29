@@ -207,19 +207,16 @@ impl Game {
                     }
                 }
                 ConsequenceType::Item => {
-                    if let Some(source) = self
+                    let source = self
                         .game_state
                         .current_passenger
                         .as_ref()
-                        .map(|passenger| passenger.name.clone())
-                    {
-                        self.game_state
-                            .inventory
-                            .push(crate::data::ItemDatabase::create_item(
-                                "Crumpled Note",
-                                &source,
-                                current_time,
-                            ));
+                        .map(|passenger| passenger.name.clone());
+                    if let (Some(source), Some(data)) = (source, self.game_data.as_ref()) {
+                        let item = data
+                            .items
+                            .create_item("Crumpled Note", &source, current_time);
+                        self.game_state.inventory.push(item);
                     }
                 }
                 ConsequenceType::StoryUnlock => {

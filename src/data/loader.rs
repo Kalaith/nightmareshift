@@ -14,6 +14,7 @@ pub struct GameData {
     pub localization: Localization,
     pub events: Vec<EventTemplate>,
     pub item_pools: ItemPools,
+    pub items: ItemCatalog,
 }
 
 impl GameData {
@@ -30,6 +31,7 @@ impl GameData {
             localization: load_localization(),
             events: load_events(),
             item_pools: load_item_pools(),
+            items: load_item_catalog(),
         }
     }
 
@@ -122,6 +124,17 @@ pub fn load_item_pools() -> ItemPools {
     serde_json::from_str(json).unwrap_or_else(|e| {
         eprintln!("Failed to parse item pools: {}", e);
         ItemPools::default()
+    })
+}
+
+/// Load the item catalog from embedded JSON. Every name any pool or passenger
+/// can drop is defined here, so a dropped item always carries real effects
+/// rather than being an inert keepsake.
+pub fn load_item_catalog() -> ItemCatalog {
+    let json = include_str!("../../assets/itemData.json");
+    serde_json::from_str(json).unwrap_or_else(|e| {
+        eprintln!("Failed to parse item catalog: {}", e);
+        ItemCatalog::default()
     })
 }
 
