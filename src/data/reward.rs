@@ -163,21 +163,30 @@ mod tests {
         assert!(rate.is_available(), "lore exchange is not configured");
     }
 
-    /// Selling the entire almanac budget must not by itself buy the whole
-    /// skill tree, or the two systems stop competing and lore just becomes
-    /// bank with extra steps.
+    /// A lore fragment must be worth little enough that trading supplements
+    /// driving rather than replacing it.
+    ///
+    /// This replaces a weaker check that bounded the exchange against what
+    /// the almanac *costs* — 144 fragments to master the roster — and passed
+    /// comfortably while the mechanic printed money. A player does not earn
+    /// 144 fragments; a sixty-shift session measured 1091, and at the old
+    /// twenty-four dollars a fragment that surplus was worth $26,184 against
+    /// a $19,800 tree. The bound has to be against the fragment's own value,
+    /// because income is what the almanac budget failed to predict.
     #[test]
-    fn exchanging_lore_does_not_trivialise_the_tree() {
+    fn a_lore_fragment_cannot_be_worth_much() {
         let rate = load_rewards().lore_exchange;
-        let almanac_budget: u32 = crate::data::loader::load_passengers().len() as u32 * (1 + 3 + 5);
-        let bank_if_all_sold = almanac_budget / rate.lore * rate.bank;
-        let tree_cost: u32 = crate::data::loader::load_skill_tree()
+        let cheapest_skill = crate::data::loader::load_skill_tree()
             .iter()
-            .map(|s| s.cost)
-            .sum();
+            .map(|skill| skill.cost)
+            .min()
+            .expect("the tree has nodes");
+
+        let per_fragment = rate.bank as f32 / rate.lore.max(1) as f32;
+        let fragments_for_cheapest = cheapest_skill as f32 / per_fragment;
         assert!(
-            bank_if_all_sold < tree_cost,
-            "selling {almanac_budget} lore yields {bank_if_all_sold},              which already covers the {tree_cost} tree"
+            fragments_for_cheapest >= 50.0,
+            "{fragments_for_cheapest:.0} fragments buys the cheapest ${cheapest_skill} skill;              lore is standing in for driving"
         );
     }
 

@@ -31,8 +31,8 @@
     "bankPerNight": 120
   },
   "loreExchange": {
-    "lore": 5,
-    "bank": 120
+    "lore": 10,
+    "bank": 40
   },
   "wantedTrade": {
     "needRelief": 15,
