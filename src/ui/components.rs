@@ -6,14 +6,6 @@ use crate::state::*;
 use macroquad::prelude::*;
 use macroquad_toolkit::ui::draw_ui_text;
 
-fn ascii_trimmed(text: String) -> String {
-    text.chars()
-        .filter(|ch| ch.is_ascii())
-        .collect::<String>()
-        .trim()
-        .to_string()
-}
-
 /// Status bar component at top of screen
 pub struct StatusBar;
 
@@ -47,29 +39,27 @@ impl StatusBar {
             let divider_x = |idx: usize| padding + stat_slot_w * idx as f32 - 10.0;
 
             let fuel_color = get_fuel_color(state.fuel, &data.constants.fuel);
-            let fuel_value = ascii_trimmed(
-                data.localization
-                    .ui
-                    .game
-                    .status_bar
-                    .fuel
-                    .replace("{}", &(state.fuel as u32).to_string()),
-            );
+            let fuel_value = data
+                .localization
+                .ui
+                .game
+                .status_bar
+                .fuel
+                .replace("{}", &(state.fuel as u32).to_string());
             draw_stat_block("F", &fuel_value, "Fuel", stat_x(0), y, fuel_color);
             draw_divider(divider_x(1), 18.0, 38.0);
 
-            let earnings_value = ascii_trimmed(
-                data.localization
-                    .ui
-                    .game
-                    .status_bar
-                    .earnings
-                    .replace(
-                        "${}",
-                        &format!("{}{}", data.localization.ui.common.currency, state.earnings),
-                    )
-                    .replace("{}", &state.earnings.to_string()),
-            );
+            let earnings_value = data
+                .localization
+                .ui
+                .game
+                .status_bar
+                .earnings
+                .replace(
+                    "${}",
+                    &format!("{}{}", data.localization.ui.common.currency, state.earnings),
+                )
+                .replace("{}", &state.earnings.to_string());
             draw_stat_block(
                 "$",
                 &earnings_value,
@@ -94,22 +84,28 @@ impl StatusBar {
                 .time_format
                 .replacen("{}", &hours.to_string(), 1)
                 .replacen("{:02}", &format!("{:02}", mins), 1);
-            let time_value = ascii_trimmed(
-                data.localization
-                    .ui
-                    .game
-                    .status_bar
-                    .time
-                    .replacen("{}", &hours.to_string(), 1)
-                    .replacen("{:02}", &format!("{:02}", mins), 1)
-                    .replace(&format!("{}:{:02}", hours, mins), &formatted_time),
-            );
+            let time_value = data
+                .localization
+                .ui
+                .game
+                .status_bar
+                .time
+                .replacen("{}", &hours.to_string(), 1)
+                .replacen("{:02}", &format!("{:02}", mins), 1)
+                .replace(&format!("{}:{:02}", hours, mins), &formatted_time);
             draw_stat_block("T", &time_value, "Time", stat_x(2), y, time_color);
             draw_divider(divider_x(3), 18.0, 38.0);
 
             let rides_value = state.rides_completed.to_string();
-            let rides_label =
-                ascii_trimmed(data.localization.ui.game.status_bar.rides.replace("{}", ""));
+            let rides_label = data
+                .localization
+                .ui
+                .game
+                .status_bar
+                .rides
+                .replace("{}", "")
+                .trim()
+                .to_string();
             let rides_label = if rides_label.is_empty() {
                 "Rides"
             } else {
