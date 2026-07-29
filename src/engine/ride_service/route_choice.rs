@@ -380,11 +380,20 @@ impl RideService {
             state.current_passenger_need_state.clone(),
             state.current_passenger.clone(),
         ) {
+            // What this leg costs the passenger for their own rule staying
+            // obeyed, when tonight's rules include it.
+            let obey_pressure = GameEngine::passengers_rule_in_force(
+                &state.current_rules,
+                Some(&need_state),
+                &state.current_guidelines,
+            )
+            .and_then(|rule| rule.follow_need_adjustment);
+
             let mut triggered_tells = PassengerStateMachine::apply_route_choice(
                 &mut need_state,
                 &passenger,
                 route,
-                None, // No rule evaluation result passed here contextually
+                obey_pressure,
                 route_preference_stress_scale,
                 current_time,
             );
@@ -646,6 +655,58 @@ mod tests {
         state.fuel = fuel;
         state.time_remaining = time;
         (state, data, PlayerStats::new())
+    }
+
+    /// Driving a leg has to actually spend the follow cost of the passenger's
+    /// own rule.
+    ///
+    /// Both halves of that were covered — the lookup finds the rule, and the
+    /// state machine spends what it is handed — and nothing covered the wire
+    /// between them. Replacing the argument at this call site with `None`, the
+    /// bug that existed before, left every test passing. So this drives a real
+    /// leg through `choose_route` twice: once with Mrs. Chen's own rule in
+    /// force and once with a rule that has nothing to do with her.
+    ///
+    /// The RNG is pinned to the same seed for both legs. `choose_route` rolls
+    /// for risk encounters and route pressure, so without that the two legs
+    /// would differ for reasons that have nothing to do with the rule.
+    #[test]
+    fn the_passengers_own_rule_costs_more_than_an_unrelated_one() {
+        use crate::data::loader::{load_guidelines, load_rules};
+        use crate::engine::PassengerStateMachine;
+
+        let level_after = |rule_id: u32| {
+            let (mut state, data, mut stats) = driving_state(100.0, 480);
+            let chen = load_passengers()
+                .into_iter()
+                .find(|p| p.id == 1)
+                .expect("Mrs. Chen");
+            state.current_passenger_need_state = PassengerStateMachine::initialize(&chen, 0.0);
+            state.current_passenger = Some(chen);
+            state.current_guidelines = load_guidelines();
+            state.current_rules = load_rules()
+                .into_iter()
+                .filter(|rule| rule.id == rule_id)
+                .collect();
+            assert_eq!(state.current_rules.len(), 1, "rule {rule_id} not found");
+
+            macroquad_toolkit::rng::srand(20260730);
+            RideService::choose_route(&mut state, &data, &mut stats, RouteType::Normal, 0.0);
+            state
+                .current_passenger_need_state
+                .as_ref()
+                .expect("a need state")
+                .level
+        };
+
+        // Rule 1 "No Eye Contact" is the one guideline 1001 owns, which is
+        // where Chen's exception lives. Rule 4 "Windows Sealed" is not hers.
+        let own = level_after(1);
+        let unrelated = level_after(4);
+        assert_ne!(
+            own, unrelated,
+            "her own rule being in force cost the same as an unrelated one ({own})"
+        );
     }
 
     /// A driver with the tank and the clock full is never stranded.

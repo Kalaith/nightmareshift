@@ -307,6 +307,35 @@ impl GameEngine {
             .any(|exception| state.stage >= Self::required_stage(exception))
     }
 
+    /// The rule in force tonight that this passenger's exception belongs to.
+    ///
+    /// This is the rule they need broken. Whether it is among tonight's rules
+    /// is the single most useful thing a player can know about a passenger in
+    /// advance — it is what the almanac's "Relief" line names — and until now
+    /// it changed only whether an exception could be claimed, never how hard
+    /// the ride was to hold together.
+    pub fn passengers_rule_in_force<'a>(
+        rules: &'a [Rule],
+        need_state: Option<&PassengerNeedState>,
+        guidelines: &[Guideline],
+    ) -> Option<&'a Rule> {
+        let exception_id = need_state?.profile.exception_id.as_deref()?;
+        let owning: Vec<u32> = guidelines
+            .iter()
+            .filter(|guideline| {
+                guideline
+                    .exceptions
+                    .iter()
+                    .any(|exception| exception.id == exception_id)
+            })
+            .map(|guideline| guideline.id)
+            .collect();
+        rules.iter().find(|rule| {
+            rule.related_guideline_id
+                .is_some_and(|id| owning.contains(&id))
+        })
+    }
+
     /// The need stage an exception becomes available at.
     ///
     /// Every exception in `guidelineData.json` authors `requiredStage`, all
@@ -626,6 +655,43 @@ mod tests {
         assert!(
             !GameEngine::passenger_has_exception(other_rule, Some(&need), &guidelines),
             "an unrelated rule still relieves her"
+        );
+    }
+
+    /// The passenger's own rule is found when it is in force and not when it
+    /// is absent, because that difference is now what decides how fast they
+    /// wear down.
+    #[test]
+    fn a_passengers_own_rule_is_recognised_only_when_it_is_in_force() {
+        use crate::data::loader::{load_guidelines, load_passengers};
+        use crate::engine::PassengerStateMachine;
+
+        let rules = load_rules();
+        let guidelines = load_guidelines();
+        // Mrs. Chen's exception is owned by guideline 1001, which rule 1
+        // "No Eye Contact" belongs to.
+        let chen = load_passengers()
+            .into_iter()
+            .find(|p| p.id == 1)
+            .expect("Mrs. Chen");
+        let need = PassengerStateMachine::initialize(&chen, 0.0).expect("Chen has a profile");
+
+        let own: Vec<Rule> = rules.iter().filter(|r| r.id == 1).cloned().collect();
+        let found = GameEngine::passengers_rule_in_force(&own, Some(&need), &guidelines);
+        assert_eq!(
+            found.map(|rule| rule.id),
+            Some(1),
+            "her own rule was in force and went unrecognised"
+        );
+        assert!(
+            found.and_then(|rule| rule.follow_need_adjustment).is_some(),
+            "rule 1 authors no followNeedAdjustment, so this wires nothing"
+        );
+
+        let others: Vec<Rule> = rules.iter().filter(|r| r.id != 1).cloned().collect();
+        assert!(
+            GameEngine::passengers_rule_in_force(&others, Some(&need), &guidelines).is_none(),
+            "a shift without her rule still claimed to hold it"
         );
     }
 

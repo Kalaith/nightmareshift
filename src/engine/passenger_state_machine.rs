@@ -21,12 +21,26 @@ impl PassengerStateMachine {
         PassengerNeedState::from_passenger(passenger, current_time)
     }
 
-    /// Apply route choice effects to need state
+    /// Apply route choice effects to need state.
+    ///
+    /// `obey_pressure` is how much this leg costs the passenger for the rule
+    /// they need broken staying unbroken. When tonight's rules include the one
+    /// their exception belongs to, it is that rule's authored
+    /// `followNeedAdjustment`; otherwise the passenger's own flat `obey`
+    /// stands in. Before this, tonight's rule set had no bearing at all on how
+    /// fast a passenger degraded — thirteen rules author a follow cost between
+    /// 3 and 12 and none of them was read, so a shift built from gentle rules
+    /// and one built from punishing ones wore a passenger down identically.
+    ///
+    /// The `rule_outcome` parameter this used to take was passed `None` by its
+    /// only caller, with a comment saying so. `collect_tells` already falls
+    /// back to the profile's own exception in that case, so the argument only
+    /// ever selected the fallback.
     pub fn apply_route_choice(
         state: &mut PassengerNeedState,
         passenger: &Passenger,
         route: RouteType,
-        rule_outcome: Option<&RuleEvaluationResult>,
+        obey_pressure: Option<i32>,
         route_preference_stress_scale: f32,
         current_time: f64,
     ) -> Vec<TriggeredTell> {
@@ -40,16 +54,11 @@ impl PassengerStateMachine {
         if route == RouteType::Shortcut {
             level += profile.need_change.break_rule;
         } else {
-            level += profile.need_change.obey;
+            level += obey_pressure.unwrap_or(profile.need_change.obey);
         }
 
         if let Some(preference) = passenger.get_route_preference(route) {
             level += (preference.stress_modifier * route_preference_stress_scale).round() as i32;
-        }
-
-        // Rule outcome adjustment
-        if let Some(outcome) = rule_outcome {
-            level += outcome.need_adjustment;
         }
 
         Self::set_level_and_collect_tells(
@@ -57,7 +66,7 @@ impl PassengerStateMachine {
             passenger,
             level,
             previous_stage,
-            rule_outcome,
+            None,
             current_time,
         )
     }
@@ -306,6 +315,72 @@ impl PassengerStateMachine {
 mod tests {
     use super::*;
     use crate::data::loader::load_passengers;
+
+    /// The obey pressure has to reach the level, or wiring a rule's authored
+    /// follow cost through to here bought nothing.
+    ///
+    /// Shortcut is excluded deliberately: that branch spends `break_rule`, so
+    /// a test that drove the passenger down a shortcut would pass whatever the
+    /// override did.
+    #[test]
+    fn a_harsher_rule_wears_the_passenger_down_faster() {
+        let passenger = load_passengers()
+            .into_iter()
+            .find(|p| p.state_profile.is_some())
+            .expect("a passenger with a profile");
+
+        let level_after = |pressure: Option<i32>| {
+            let mut need = PassengerStateMachine::initialize(&passenger, 0.0).expect("a profile");
+            PassengerStateMachine::apply_route_choice(
+                &mut need,
+                &passenger,
+                RouteType::Normal,
+                pressure,
+                0.0,
+                0.0,
+            );
+            need.level
+        };
+
+        let gentle = level_after(Some(3));
+        let harsh = level_after(Some(12));
+        assert!(
+            harsh > gentle,
+            "a follow cost of 12 left the passenger no worse off than one of 3 ({harsh} vs {gentle})"
+        );
+    }
+
+    /// With no rule of theirs in force the passenger's own flat `obey` still
+    /// applies, so a shift that happens to draw none of their rules behaves
+    /// exactly as it did before this was wired.
+    #[test]
+    fn no_rule_in_force_falls_back_to_the_passengers_own_obey() {
+        let passenger = load_passengers()
+            .into_iter()
+            .find(|p| p.state_profile.is_some())
+            .expect("a passenger with a profile");
+        let obey = passenger
+            .state_profile
+            .as_ref()
+            .expect("a profile")
+            .need_change
+            .obey;
+
+        let level_after = |pressure: Option<i32>| {
+            let mut need = PassengerStateMachine::initialize(&passenger, 0.0).expect("a profile");
+            PassengerStateMachine::apply_route_choice(
+                &mut need,
+                &passenger,
+                RouteType::Normal,
+                pressure,
+                0.0,
+                0.0,
+            );
+            need.level
+        };
+
+        assert_eq!(level_after(None), level_after(Some(obey)));
+    }
 
     /// Every stage a profile authors intensities for must parse to at least
     /// one real intensity, or the passenger silently falls back to the
