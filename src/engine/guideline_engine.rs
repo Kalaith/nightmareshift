@@ -228,7 +228,7 @@ impl GuidelineEngine {
                 // Breaking was correct
                 GuidelineEvaluationResult {
                     is_safe: true,
-                    consequences: Self::calculate_positive_consequences(guideline, &exc),
+                    consequences: guideline.exception_rewards.clone(),
                     message: format!(
                         "Breaking \"{}\" was the right choice - {}",
                         guideline.title, exc.description
@@ -305,30 +305,6 @@ impl GuidelineEngine {
         None
     }
 
-    /// Calculate positive consequences for correct exception reading
-    fn calculate_positive_consequences(
-        guideline: &Guideline,
-        exception: &GuidelineException,
-    ) -> Vec<Consequence> {
-        vec![
-            Consequence {
-                consequence_type: ConsequenceType::Survival,
-                value: 1,
-                description: format!(
-                    "Breaking \"{}\" was the right choice - {}",
-                    guideline.title, exception.description
-                ),
-                probability: exception.probability,
-            },
-            Consequence {
-                consequence_type: ConsequenceType::Reputation,
-                value: 10,
-                description: "Gained passenger trust through correct reading".to_string(),
-                probability: 0.8,
-            },
-        ]
-    }
-
     /// Calculate negative consequences for wrong choice
     fn calculate_negative_consequences(guideline: &Guideline) -> Vec<Consequence> {
         vec![
@@ -379,7 +355,49 @@ impl GuidelineEngine {
 #[cfg(test)]
 mod tests {
     use crate::data::loader::{load_guidelines, load_passengers};
+    use crate::data::ConsequenceType;
     use std::collections::HashSet;
+
+    /// Reading a passenger correctly pays what the guideline authors.
+    ///
+    /// This used to be a hardcoded pair built in `calculate_positive_
+    /// consequences`, so all eighteen guidelines authored `exceptionRewards`
+    /// -- reputation and a chance at the passenger's story -- and none of it
+    /// ever paid. An empty list here would silently restore that.
+    #[test]
+    fn every_guideline_pays_something_for_a_correct_read() {
+        for guideline in load_guidelines() {
+            assert!(
+                !guideline.exception_rewards.is_empty(),
+                "guideline {} pays nothing for reading the passenger right",
+                guideline.id
+            );
+            for reward in &guideline.exception_rewards {
+                assert!(
+                    reward.probability > 0.0,
+                    "guideline {} authors a reward at zero probability",
+                    guideline.id
+                );
+            }
+        }
+    }
+
+    /// And at least one of them has to be the story unlock, since that is the
+    /// only route from reading a passenger well to the almanac knowing more
+    /// about them.
+    #[test]
+    fn a_correct_read_can_reveal_a_passengers_story() {
+        let reveals = load_guidelines().iter().any(|guideline| {
+            guideline
+                .exception_rewards
+                .iter()
+                .any(|reward| reward.consequence_type == ConsequenceType::StoryUnlock)
+        });
+        assert!(
+            reveals,
+            "no guideline can reveal a story, so tell-reading feeds the almanac nothing"
+        );
+    }
 
     /// A passenger's `stateProfile.exceptionId` is what lets satisfying a
     /// guideline exception relieve their need. If it names an exception that

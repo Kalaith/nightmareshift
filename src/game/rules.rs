@@ -240,17 +240,28 @@ impl Game {
                         self.game_state.inventory.push(item);
                     }
                 }
-                ConsequenceType::StoryUnlock => {
-                    if let Some(passenger_id) = self
-                        .game_state
-                        .current_passenger
-                        .as_ref()
-                        .map(|passenger| passenger.id)
-                    {
-                        self.player_stats.mark_passenger_encountered(passenger_id);
-                    }
-                }
+                ConsequenceType::StoryUnlock => self.unlock_passenger_story(),
             }
+        }
+    }
+
+    /// Reveal a sliver of the current passenger's story.
+    ///
+    /// `StoryUnlock` only marked the passenger *encountered*, which every ride
+    /// does anyway, so the consequence authored as "a sliver of the
+    /// passenger's story reveals itself" revealed nothing. Unlocking the
+    /// backstory is what that sentence describes, and it pays twice over: the
+    /// almanac has something new to show, and `calculate_drop_chance` gives a
+    /// passenger whose story is known a half again the chance of leaving an
+    /// item behind.
+    fn unlock_passenger_story(&mut self) {
+        if let Some(passenger_id) = self
+            .game_state
+            .current_passenger
+            .as_ref()
+            .map(|passenger| passenger.id)
+        {
+            self.player_stats.reveal_story(passenger_id);
         }
     }
 
@@ -498,6 +509,7 @@ impl Game {
                                 .adjust(consequence.value, current_time, &constants);
                         }
                     }
+                    ConsequenceType::StoryUnlock => self.unlock_passenger_story(),
                     ConsequenceType::Item => {}
                     _ => {}
                 }

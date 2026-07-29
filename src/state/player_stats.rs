@@ -144,6 +144,17 @@ impl PlayerStats {
         *self.passenger_encounters.entry(passenger_id).or_insert(0) += 1;
     }
 
+    /// Everything a revealed story means for a passenger.
+    ///
+    /// Kept here rather than in the two consequence handlers that call it so
+    /// that what a `StoryUnlock` actually does is one decision in one place,
+    /// and testable without a window. It marks the encounter as well as the
+    /// backstory: an almanac entry has to exist before it can show anything.
+    pub fn reveal_story(&mut self, passenger_id: u32) {
+        self.record_passenger_encounter(passenger_id);
+        self.unlock_backstory(passenger_id);
+    }
+
     /// Unlock a backstory
     pub fn unlock_backstory(&mut self, passenger_id: u32) {
         self.unlocked_backstories.insert(passenger_id, true);
@@ -392,6 +403,36 @@ mod tests {
         state.rides_completed = rides;
         state.rules_violated = violations;
         state
+    }
+
+    /// A revealed story has to leave the almanac able to show it. Marking the
+    /// backstory alone is not enough — the entry the almanac reads is keyed on
+    /// the encounter, so a story unlocked for a passenger never met would have
+    /// nothing to attach to.
+    #[test]
+    fn a_revealed_story_leaves_the_almanac_something_to_show() {
+        let mut stats = PlayerStats::new();
+        assert!(!stats.is_backstory_unlocked(1));
+        assert!(stats.is_first_encounter(1));
+
+        stats.reveal_story(1);
+
+        assert!(stats.is_backstory_unlocked(1), "the story stayed hidden");
+        assert!(
+            !stats.is_first_encounter(1),
+            "the story was revealed for a passenger the almanac has no entry for"
+        );
+    }
+
+    /// Revealing the same story twice is not an error and does not lose the
+    /// unlock — a guideline can pay its reward on more than one ride.
+    #[test]
+    fn revealing_a_story_twice_keeps_it_revealed() {
+        let mut stats = PlayerStats::new();
+        stats.reveal_story(7);
+        stats.reveal_story(7);
+        assert!(stats.is_backstory_unlocked(7));
+        assert_eq!(stats.get_encounter_count(7), 2);
     }
 
     /// A shift's violations have to reach the lifetime counter. This one
