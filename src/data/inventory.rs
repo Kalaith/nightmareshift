@@ -95,8 +95,13 @@ pub struct ItemEffect {
     #[serde(rename = "type")]
     pub effect_type: ItemEffectType,
     pub value: i32,
-    #[serde(default)]
-    pub duration: Option<u32>,
+    // `duration` is authored on one effect -- the Crystal Pendant's 30 -- and
+    // read by nothing. Honouring it means giving every charge its own expiry
+    // clock, which is a subsystem no other item in the catalogue would use, so
+    // it is not deserialized. The number survives in the JSON for whoever
+    // decides that clock is worth building.
+    /// An authored precondition for this effect firing. See
+    /// `ItemService::condition_met`.
     #[serde(default)]
     pub condition: Option<String>,
 }

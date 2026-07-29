@@ -219,6 +219,35 @@ impl ItemService {
         }
     }
 
+    /// Whether an effect's authored `condition` holds right now.
+    ///
+    /// One item uses this -- the Crystal Pendant's rule immunity is authored
+    /// `"supernatural_encounter"` -- and nothing read it, so the pendant
+    /// granted a plain unconditional charge and the catalogue described
+    /// something the game did not do.
+    ///
+    /// The reading is an interpretation and worth naming as one. A
+    /// supernatural encounter is a momentary roll during a leg, not a state
+    /// anything could be asked about, so "am I in one" is unanswerable at the
+    /// moment an item is used. What is answerable, and what the pendant is
+    /// for, is whether the thing in the cab is supernatural at all.
+    ///
+    /// An unrecognised condition holds. Failing open means a typo leaves an
+    /// item working rather than silently inert, which is the direction this
+    /// project has been burned in before.
+    fn condition_met(effect: &ItemEffect, state: &GameState) -> bool {
+        let Some(condition) = effect.condition.as_deref() else {
+            return true;
+        };
+        match condition {
+            "supernatural_encounter" => state
+                .current_passenger
+                .as_ref()
+                .is_some_and(|passenger| passenger.is_supernatural),
+            _ => true,
+        }
+    }
+
     /// Use an item from inventory
     /// Returns true if the item was successfully used
     pub fn use_item(
@@ -238,8 +267,25 @@ impl ItemService {
             return false;
         }
 
-        // Apply item effects
-        for effect in &item.effects {
+        // An effect whose condition is not met does not fire, and if that
+        // leaves nothing to do the item is not spent at all. Consuming a
+        // charge for no result would be a trap, and the player is told why
+        // rather than left to wonder.
+        let applicable: Vec<&ItemEffect> = item
+            .effects
+            .iter()
+            .filter(|effect| Self::condition_met(effect, state))
+            .collect();
+        if applicable.is_empty() && !item.effects.is_empty() {
+            state.current_dialogue = Some(CurrentDialogue {
+                text: format!("The {} stays cold. Nothing here answers to it.", item.name),
+                speaker: DialogueSpeaker::Narrator,
+                timestamp: current_time,
+            });
+            return false;
+        }
+
+        for effect in applicable {
             Self::apply_item_effect(effect, state, reputation_constants, current_time);
         }
 
@@ -359,6 +405,97 @@ mod tests {
         for pool in ["ghost", "vampire", "demon", "occult", "holy", "common"] {
             assert!(reached.contains(pool), "no passenger draws from {pool:?}");
         }
+    }
+
+    /// The Crystal Pendant's charge is conditional, and the condition has to
+    /// bite. It grants rule immunity authored `"supernatural_encounter"`, so
+    /// offering it to an ordinary fare should do nothing -- and should not
+    /// spend the item doing nothing either.
+    #[test]
+    fn a_conditional_charge_waits_for_its_condition() {
+        let constants = load_constants();
+        let catalog = load_item_catalog();
+        let passengers = load_passengers();
+        let mundane = passengers
+            .iter()
+            .find(|p| !p.is_supernatural)
+            .expect("an ordinary fare");
+        let uncanny = passengers
+            .iter()
+            .find(|p| p.is_supernatural)
+            .expect("a supernatural fare");
+
+        let use_on = |passenger: &crate::data::Passenger| {
+            let mut state = GameState::new(0.0, &constants.game_constants);
+            state.current_passenger = Some(passenger.clone());
+            state
+                .inventory
+                .push(catalog.create_item("Crystal Pendant", "test", 0.0));
+            let used = ItemService::use_item(&mut state, 0, &constants.reputation, 0.0);
+            (used, state.rule_immunity_charges, state.inventory.len())
+        };
+
+        let (used, charges, kept) = use_on(mundane);
+        assert!(!used, "the pendant was spent on an ordinary passenger");
+        assert_eq!(charges, 0, "immunity was granted with no condition met");
+        assert_eq!(kept, 1, "the item was consumed for nothing");
+
+        let (used, charges, _) = use_on(uncanny);
+        assert!(used, "the pendant did nothing for a supernatural passenger");
+        assert!(
+            charges > 0,
+            "no immunity was granted when it should have been"
+        );
+    }
+
+    /// An item with no condition on its effects is unaffected by any of this.
+    #[test]
+    fn an_unconditional_item_still_works_on_anyone() {
+        let constants = load_constants();
+        let catalog = load_item_catalog();
+        let mundane = load_passengers()
+            .into_iter()
+            .find(|p| !p.is_supernatural)
+            .expect("an ordinary fare");
+
+        let mut state = GameState::new(0.0, &constants.game_constants);
+        state.current_passenger = Some(mundane);
+        state.fuel = 10.0;
+        state
+            .inventory
+            .push(catalog.create_item("Burning Coal", "test", 0.0));
+
+        assert!(ItemService::use_item(
+            &mut state,
+            0,
+            &constants.reputation,
+            0.0
+        ));
+        assert!(state.fuel > 10.0, "the fuel bonus did not apply");
+    }
+
+    /// Every authored condition has to be one `condition_met` recognises.
+    /// An unknown one holds, so a typo would leave the item working and the
+    /// authored gate silently absent -- visible only here.
+    #[test]
+    fn every_authored_condition_is_recognised() {
+        const KNOWN: [&str; 1] = ["supernatural_encounter"];
+        let catalog = load_item_catalog();
+        let mut names: Vec<String> = catalog.names();
+        names.sort();
+        let mut checked = 0;
+        for name in names {
+            for effect in &catalog.get(&name).effects {
+                if let Some(condition) = effect.condition.as_deref() {
+                    assert!(
+                        KNOWN.contains(&condition),
+                        "{name} authors unknown effect condition {condition:?}"
+                    );
+                    checked += 1;
+                }
+            }
+        }
+        assert!(checked > 0, "no item authors an effect condition any more");
     }
 
     /// A reputation item has to work the first time you offer one.
