@@ -80,3 +80,60 @@ impl AlmanacData {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::data::loader::load_skill_tree;
+    use std::collections::HashSet;
+
+    /// A prerequisite naming a skill that does not exist locks its node out
+    /// of the tree permanently, and `can_unlock` would never return true.
+    #[test]
+    fn no_prerequisite_dangles() {
+        let skills = load_skill_tree();
+        let ids: HashSet<&str> = skills.iter().map(|s| s.id.as_str()).collect();
+        for skill in &skills {
+            for prerequisite in &skill.prerequisites {
+                assert!(
+                    ids.contains(prerequisite.as_str()),
+                    "{} requires unknown skill {prerequisite:?}",
+                    skill.id
+                );
+            }
+        }
+    }
+
+    /// Every node must be reachable from an empty unlock list by satisfying
+    /// prerequisites in some order. A cycle, or a node gated behind one,
+    /// would be bank balance the player can never spend.
+    #[test]
+    fn every_skill_is_reachable_from_nothing() {
+        let skills = load_skill_tree();
+        let mut unlocked: HashSet<String> = HashSet::new();
+        loop {
+            let newly: Vec<String> = skills
+                .iter()
+                .filter(|s| !unlocked.contains(&s.id))
+                .filter(|s| s.can_unlock(&unlocked.iter().cloned().collect::<Vec<_>>()))
+                .map(|s| s.id.clone())
+                .collect();
+            if newly.is_empty() {
+                break;
+            }
+            unlocked.extend(newly);
+        }
+        let stranded: Vec<&str> = skills
+            .iter()
+            .map(|s| s.id.as_str())
+            .filter(|id| !unlocked.contains(*id))
+            .collect();
+        assert!(stranded.is_empty(), "unreachable skills: {stranded:?}");
+    }
+
+    /// At least one node must have no prerequisites, or the tree has no entry
+    /// point regardless of how much bank the player saves.
+    #[test]
+    fn the_tree_has_an_entry_point() {
+        assert!(load_skill_tree().iter().any(|s| s.prerequisites.is_empty()));
+    }
+}

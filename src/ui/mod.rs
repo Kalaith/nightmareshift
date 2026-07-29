@@ -35,6 +35,8 @@ pub enum UiAction {
     DeleteSave,
     PurchaseSkill(String),
     UpgradeAlmanacKnowledge(u32),
+    /// Sell surplus lore fragments back for bank balance.
+    ExchangeLoreForBank,
     // Trading
     AcceptTrade(usize),
     DeclineTrade,

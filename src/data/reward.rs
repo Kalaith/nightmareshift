@@ -49,6 +49,31 @@ impl RunCompletionReward {
     }
 }
 
+/// The rate at which lore fragments are sold back to the depot for bank.
+///
+/// The two meta-currencies had disjoint sinks: lore bought almanac levels
+/// and nothing else, so it went dead once every passenger was mastered,
+/// while bank paced the skill tree an order of magnitude slower. Trading one
+/// for the other makes the almanac and the skill tree compete for the same
+/// resource, so studying the roster deeply and buying broadly into the tree
+/// become a choice rather than two unrelated tracks.
+#[derive(Debug, Clone, Copy, Default, Serialize, Deserialize)]
+pub struct LoreExchange {
+    /// Fragments spent per trade.
+    #[serde(default)]
+    pub lore: u32,
+    /// Bank received per trade.
+    #[serde(default)]
+    pub bank: u32,
+}
+
+impl LoreExchange {
+    /// True when the exchange is configured to actually trade something.
+    pub fn is_available(&self) -> bool {
+        self.lore > 0 && self.bank > 0
+    }
+}
+
 /// All meta-progression payouts.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct RewardData {
@@ -57,6 +82,8 @@ pub struct RewardData {
     pub achievements: HashMap<String, Payout>,
     #[serde(rename = "runCompletion", default)]
     pub run_completion: RunCompletionReward,
+    #[serde(rename = "loreExchange", default)]
+    pub lore_exchange: LoreExchange,
 }
 
 impl RewardData {
@@ -101,6 +128,32 @@ mod tests {
         for id in load_rewards().achievements.keys() {
             assert!(ids.contains(id), "reward {id:?} names no achievement");
         }
+    }
+
+    /// The exchange is what stops lore going dead once every passenger is
+    /// mastered, so it has to be configured and has to be a real trade.
+    #[test]
+    fn lore_exchanges_for_bank() {
+        let rate = load_rewards().lore_exchange;
+        assert!(rate.is_available(), "lore exchange is not configured");
+    }
+
+    /// Selling the entire almanac budget must not by itself buy the whole
+    /// skill tree, or the two systems stop competing and lore just becomes
+    /// bank with extra steps.
+    #[test]
+    fn exchanging_lore_does_not_trivialise_the_tree() {
+        let rate = load_rewards().lore_exchange;
+        let almanac_budget: u32 = crate::data::loader::load_passengers().len() as u32 * (1 + 3 + 5);
+        let bank_if_all_sold = almanac_budget / rate.lore * rate.bank;
+        let tree_cost: u32 = crate::data::loader::load_skill_tree()
+            .iter()
+            .map(|s| s.cost)
+            .sum();
+        assert!(
+            bank_if_all_sold < tree_cost,
+            "selling {almanac_budget} lore yields {bank_if_all_sold},              which already covers the {tree_cost} tree"
+        );
     }
 
     /// Surviving a whole run is the game's headline result and must pay.

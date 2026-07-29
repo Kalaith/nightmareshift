@@ -230,10 +230,37 @@ pub fn draw_skill_tree(
         draw_small_caps(
             "Scroll to inspect upgrades. Purchase buttons appear when requirements are met.",
             header_inner.x + header_inner.w * 0.52,
-            header_inner.y + 52.0,
+            header_inner.y + 22.0,
             fonts::SIZE_XS,
             colors::TEXT_MUTED,
         );
+
+        // Sell surplus lore back for bank. Without this the two currencies
+        // never meet: lore goes dead once the almanac is mastered while the
+        // skill tree stays starved.
+        let rate = data.rewards.lore_exchange;
+        if rate.is_available() {
+            let exchange_rect = UiRect::new(
+                header_inner.x + header_inner.w * 0.52,
+                header_inner.y + 34.0,
+                236.0,
+                30.0,
+            );
+            let label = format!("Trade {} lore -> ${}", rate.lore, rate.bank);
+            let affordable = player_stats.lore_fragments >= rate.lore;
+            if draw_glass_button(exchange_rect, &label, colors::ACCENT_GOLD, affordable)
+                && affordable
+            {
+                return UiAction::ExchangeLoreForBank;
+            }
+            draw_small_caps(
+                &format!("{} lore fragments held", player_stats.lore_fragments),
+                exchange_rect.x + exchange_rect.w + 14.0,
+                exchange_rect.y + 20.0,
+                fonts::SIZE_XS,
+                colors::TEXT_MUTED,
+            );
+        }
 
         let categories = ["survival", "occult", "efficiency"];
         let wide_layout = screen_w >= 1080.0;

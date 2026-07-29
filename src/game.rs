@@ -31,6 +31,11 @@ pub struct Game {
     skill_tree_scroll: ScrollArea,
     almanac_scroll: ScrollArea,
     almanac_selected: Option<u32>,
+    /// Set while the screenshot harness is driving the game. Capture scenes
+    /// seed bank balance, lore, and almanac levels directly into
+    /// `player_stats`; persisting any of that would hand the player a save
+    /// they did not earn, so saving is suppressed for the whole run.
+    capture_mode: bool,
 }
 
 impl Game {
@@ -70,13 +75,22 @@ impl Game {
             skill_tree_scroll: ScrollArea::new(),
             almanac_scroll: ScrollArea::new(),
             almanac_selected: None,
+            capture_mode: false,
         }
     }
 
     /// Seed a specific scene for the screenshot harness.
     pub fn begin_capture_scene(&mut self, scene: &str) {
+        self.capture_mode = true;
         match scene {
             "briefing" => self.start_game(),
+            // The skill tree with currency in hand, so the purchase buttons
+            // and the lore exchange are both live in the capture.
+            "skill_tree" => {
+                self.player_stats.bank_balance += 2500;
+                self.player_stats.lore_fragments += 40;
+                self.screen = Screen::SkillTree;
+            }
             "gameplay" => {
                 self.start_game();
                 self.start_shift();
@@ -113,6 +127,9 @@ impl Game {
 
     /// Save player stats
     fn save_stats(&self) {
+        if self.capture_mode {
+            return;
+        }
         if let Some(data) = &self.game_data {
             eprintln!("{}", data.localization.system.saving);
         }

@@ -184,6 +184,18 @@ impl Game {
                     }
                 }
             }
+            UiAction::ExchangeLoreForBank => {
+                if let Some(ref data) = self.game_data {
+                    let rate = data.rewards.lore_exchange;
+                    if rate.is_available()
+                        && self
+                            .player_stats
+                            .exchange_lore_for_bank(rate.lore, rate.bank)
+                    {
+                        self.save_stats();
+                    }
+                }
+            }
             UiAction::UpgradeAlmanacKnowledge(passenger_id) => {
                 if let Some(ref data) = self.game_data {
                     let current_level = self

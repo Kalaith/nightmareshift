@@ -272,6 +272,17 @@ impl PlayerStats {
         }
     }
 
+    /// Sell `lore` fragments back for `bank`. Returns false when the player
+    /// cannot cover the trade, leaving both balances untouched.
+    pub fn exchange_lore_for_bank(&mut self, lore: u32, bank: u32) -> bool {
+        if lore == 0 || self.lore_fragments < lore {
+            return false;
+        }
+        self.lore_fragments -= lore;
+        self.bank_balance += bank;
+        true
+    }
+
     /// The game's fixed achievement definitions (id, name, description).
     pub(crate) fn achievement_definitions() -> Vec<Achievement> {
         vec![
