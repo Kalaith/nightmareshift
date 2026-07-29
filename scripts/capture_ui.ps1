@@ -16,7 +16,8 @@
     "inventory" (a cursed item alongside plain ones), and "leaderboard"
     (seeded runs and the achievement list), "game_over", "night_complete" and
     "run_complete" (the three states of the outcome screen), and
-    "delete_armed" (the menu with the delete confirmation primed).
+    "delete_armed" (the menu with the delete confirmation primed), and
+    "paused" (the pause menu with money on the meter).
 
     Capture scenes seed bank balance, lore, almanac levels and inventory
     directly into player stats. Game::capture_mode suppresses saving for the

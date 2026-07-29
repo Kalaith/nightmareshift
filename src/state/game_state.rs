@@ -554,6 +554,29 @@ mod score_tests {
         state
     }
 
+    /// A held decision keeps whatever is left on its clock.
+    ///
+    /// The countdown is `30 - (now - start)`, so a pause that does not move
+    /// the start is not a pause at all — the timer ran behind the menu and
+    /// forced the choice. Pushing the start by the same amount as the wall
+    /// clock leaves the remaining time unchanged.
+    #[test]
+    fn holding_the_start_time_holds_the_countdown() {
+        let remaining = |start: f64, now: f64| (30.0 - (now - start) as f32).max(0.0);
+
+        let start = 100.0;
+        let opened_at = 110.0;
+        assert_eq!(remaining(start, opened_at), 20.0);
+
+        // Six seconds spent reading the pause menu, the start pushed with it.
+        let paused_for = 6.0;
+        let held_start = start + paused_for;
+        assert_eq!(remaining(held_start, opened_at + paused_for), 20.0);
+
+        // Without the push those six seconds would have come off the clock.
+        assert_eq!(remaining(start, opened_at + paused_for), 14.0);
+    }
+
     /// The run bonus is what distinguishes finishing a campaign from
     /// surviving another night, so the outcome screen keys its extra line on
     /// this. A night's own banking must not trip it.

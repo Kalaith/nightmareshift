@@ -160,9 +160,9 @@ impl Game {
 
         let panel = UiRect::centered_x(
             screen_width(),
-            (screen_height() - 360.0) / 2.0,
+            (screen_height() - 400.0) / 2.0,
             screen_width().min(520.0),
-            360.0,
+            400.0,
         );
         draw_glass_panel(panel, colors::BORDER);
         let inner = panel.inset(spacing::PADDING_LG);
@@ -239,14 +239,35 @@ impl Game {
             return Some(UiAction::TogglePauseMenu);
         }
 
+        // Walking out mid-shift calls `return_to_menu` and nothing else: no
+        // `end_shift`, so the night pays no bank, no lore, no leaderboard
+        // entry and no stats. That is a defensible way for abandoning a run
+        // to work, but the button said only "Return to Menu" and the player
+        // had no way to know what it cost.
         if draw_glass_button(
             UiRect::new(inner.x, action_y + 62.0, inner.w, 48.0),
-            "Return to Menu",
+            "Abandon Night",
             colors::ACCENT_DANGER,
             true,
         ) {
             return Some(UiAction::ReturnToMenu);
         }
+
+        let forfeit = if self.game_state.earnings > 0 {
+            format!(
+                "Forfeits ${} and everything this night would have banked.",
+                self.game_state.earnings
+            )
+        } else {
+            "Nothing earned yet. The night is forfeit either way.".to_string()
+        };
+        draw_small_caps(
+            &forfeit,
+            inner.x,
+            action_y + 132.0,
+            fonts::SIZE_XS,
+            colors::TEXT_MUTED,
+        );
 
         draw_rectangle(
             panel.x,

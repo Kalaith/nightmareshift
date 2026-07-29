@@ -155,6 +155,18 @@ impl Game {
             }
             // The leaderboard with a spread of recorded runs, so the ranking
             // and the achievement list are both populated in the capture.
+            // Paused mid-shift with money on the meter, so the pause menu's
+            // forfeit warning is visible in the capture.
+            "paused" => {
+                self.start_game();
+                self.start_shift();
+                self.spawn_passenger();
+                self.game_state.earnings = 186;
+                self.game_state.rides_completed = 4;
+                self.game_state.time_remaining = 233;
+                self.game_state.fuel = 61.0;
+                self.show_pause_menu = true;
+            }
             // The menu with the delete button already armed, so the warning
             // state is visible without a click.
             "delete_armed" => {
@@ -864,10 +876,21 @@ impl Game {
                 }
             }
 
-            // Update guideline decision timer
+            // Update guideline decision timer.
+            //
+            // The countdown is measured against an absolute start time, so it
+            // kept running behind the pause menu — open the thirty-second
+            // decision, press ESC to think it over, and the game would make
+            // the choice for you while the menu was up. Pausing pushes the
+            // start forward instead, holding whatever is left on the clock.
             let mut guideline_timed_out = false;
             if self.game_state.game_phase == GamePhase::GuidelineDecision {
-                if let Some(start_time) = self.game_state.guideline_decision_start_time {
+                if self.show_pause_menu {
+                    if let Some(start_time) = self.game_state.guideline_decision_start_time {
+                        self.game_state.guideline_decision_start_time =
+                            Some(start_time + dt as f64);
+                    }
+                } else if let Some(start_time) = self.game_state.guideline_decision_start_time {
                     let elapsed = (current_time - start_time) as f32;
                     self.game_state.guideline_time_remaining = (30.0 - elapsed).max(0.0);
                     guideline_timed_out = self.game_state.guideline_time_remaining <= 0.0;
