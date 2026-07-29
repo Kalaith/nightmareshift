@@ -231,6 +231,91 @@ mod tests {
         walk(&value, "");
     }
 
+    /// The content files get no stripping pass, so what is authored there is
+    /// what is drawn.
+    ///
+    /// `en.json` is cleaned at load, which made it easy to assume the problem
+    /// was solved everywhere. It was not: three of the vampire's and the
+    /// hunted man's escalation lines carried an em dash, so the sentence that
+    /// tells the player their passenger is about to lose control broke into a
+    /// replacement box at exactly the dramatic beat. The sulfur crystal's
+    /// description carried another, which nothing revealed until item
+    /// descriptions were displayed at all.
+    ///
+    /// Stripping these the way localization is stripped would be worse than
+    /// fixing them: an em dash joins two clauses, and deleting it runs the
+    /// words together. Plain ASCII is authored here on purpose.
+    #[test]
+    fn displayed_content_carries_no_undrawable_glyphs() {
+        // `emoji` on a passenger and `icon` on a skill are parsed into their
+        // structs and read by nothing — the menus draw vector shapes keyed by
+        // name instead. They are exempt because they never reach a font, not
+        // because they are safe to display.
+        const UNREAD_KEYS: [&str; 2] = ["emoji", "icon"];
+
+        fn walk(value: &serde_json::Value, path: &str, file: &str) {
+            match value {
+                serde_json::Value::String(text) => {
+                    let bad: Vec<char> = text.chars().filter(|ch| !ch.is_ascii()).collect();
+                    assert!(
+                        bad.is_empty(),
+                        "{file}{path} carries {bad:?}, which the bundled font draws as boxes"
+                    );
+                }
+                serde_json::Value::Array(items) => {
+                    for (i, item) in items.iter().enumerate() {
+                        walk(item, &format!("{path}[{i}]"), file);
+                    }
+                }
+                serde_json::Value::Object(map) => {
+                    for (key, item) in map {
+                        if UNREAD_KEYS.contains(&key.as_str()) {
+                            continue;
+                        }
+                        walk(item, &format!("{path}.{key}"), file);
+                    }
+                }
+                _ => {}
+            }
+        }
+
+        for (file, json) in [
+            (
+                "passengerData.json",
+                include_str!("../../assets/passengerData.json"),
+            ),
+            ("itemData.json", include_str!("../../assets/itemData.json")),
+            (
+                "locationData.json",
+                include_str!("../../assets/locationData.json"),
+            ),
+            (
+                "skillTreeData.json",
+                include_str!("../../assets/skillTreeData.json"),
+            ),
+            (
+                "almanacData.json",
+                include_str!("../../assets/almanacData.json"),
+            ),
+            (
+                "guidelineData.json",
+                include_str!("../../assets/guidelineData.json"),
+            ),
+            (
+                "eventData.json",
+                include_str!("../../assets/eventData.json"),
+            ),
+            (
+                "shiftRulesData.json",
+                include_str!("../../assets/shiftRulesData.json"),
+            ),
+        ] {
+            let value: serde_json::Value =
+                serde_json::from_str(json).unwrap_or_else(|e| panic!("{file} is not valid: {e}"));
+            walk(&value, "", file);
+        }
+    }
+
     /// Every non-ASCII character authored in `en.json` must be a pictograph
     /// the font cannot draw. If prose ever arrives with an accent or a curly
     /// quote in it, stripping would quietly mangle the word, so that should

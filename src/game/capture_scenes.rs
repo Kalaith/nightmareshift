@@ -169,6 +169,27 @@ impl Game {
                     }
                 }
             }
+            // The same drop-off one click later, with the swap already made.
+            // The result of a trade is the part the player is told about, and
+            // it was written into a field only the driving screen renders, so
+            // there was nothing to look at until now.
+            "trade_done" => {
+                self.begin_capture_scene("trade");
+                let wanted = self
+                    .game_state
+                    .current_passenger
+                    .as_ref()
+                    .and_then(|passenger| passenger.wanted_items.first().cloned());
+                let idx = wanted
+                    .and_then(|name| {
+                        self.game_state
+                            .inventory
+                            .iter()
+                            .position(|item| item.name == name)
+                    })
+                    .unwrap_or(0);
+                self.complete_trade(idx);
+            }
             // A ride offer with the almanac fully studied, so the dossier the
             // request screen draws is visible in the capture.
             "ride_request" => {

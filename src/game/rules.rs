@@ -326,8 +326,27 @@ impl Game {
             return;
         };
         if !passenger.wanted_items.contains(&given.name) {
+            // Say so. The swap still happened and the offered item is still
+            // the payment, but nothing marked the difference between this and
+            // handing over what they asked for, so the wanted list taught the
+            // player nothing after the first click.
+            self.game_state.trade_outcome = Some(TradeOutcome {
+                text: format!(
+                    "{} takes the {} and sets it aside. It was not what they came for.",
+                    passenger.name, given.name
+                ),
+                was_wanted: false,
+            });
             return;
         }
+
+        self.game_state.trade_outcome = Some(TradeOutcome {
+            text: format!(
+                "{} turns the {} over in their hands. It was what they came for.",
+                passenger.name, given.name
+            ),
+            was_wanted: true,
+        });
 
         let Some(bonus) = self
             .game_data
@@ -363,15 +382,6 @@ impl Game {
                 );
             }
         }
-
-        self.game_state.current_dialogue = Some(CurrentDialogue {
-            text: format!(
-                "{} turns the {} over in their hands. It was what they came for.",
-                passenger.name, given.name
-            ),
-            speaker: DialogueSpeaker::Narrator,
-            timestamp: current_time,
-        });
     }
 
     /// Reading a passenger correctly settles them.

@@ -260,6 +260,15 @@ pub struct CurrentDialogue {
     pub timestamp: f64,
 }
 
+/// The result of handing a passenger something.
+#[derive(Debug, Clone)]
+pub struct TradeOutcome {
+    pub text: String,
+    /// Whether the item was on the passenger's `wantedItems` list — the only
+    /// case that pays standing and settles their need.
+    pub was_wanted: bool,
+}
+
 /// Who is speaking
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 
@@ -334,6 +343,14 @@ pub struct GameState {
     pub supernatural_protection: u32,
     pub curse_danger_bonus: u32,
     pub pending_trade: Option<(String, InventoryItem)>, // (passenger_name, offered_item)
+    /// What the last swap did, for the drop-off screen to say out loud.
+    ///
+    /// Completing a trade wrote its result into `current_dialogue`, which only
+    /// the driving screen renders — and accepting the next ride overwrites it.
+    /// So the reputation and the relief a wanted item earns were paid in
+    /// silence, and handing over the wrong thing said nothing at all. This is
+    /// read on the screen the trade actually happens on.
+    pub trade_outcome: Option<TradeOutcome>,
 
     // UI state
     pub current_dialogue: Option<CurrentDialogue>,
@@ -392,6 +409,7 @@ impl GameState {
             supernatural_protection: 0,
             curse_danger_bonus: 0,
             pending_trade: None,
+            trade_outcome: None,
             current_dialogue: None,
             pending_route_dialogue: None,
             last_ride_completion: None,
@@ -436,6 +454,7 @@ impl GameState {
         self.supernatural_protection = 0;
         self.curse_danger_bonus = 0;
         self.pending_trade = None;
+        self.trade_outcome = None;
         self.current_dialogue = None;
         self.pending_route_dialogue = None;
         self.last_ride_completion = None;

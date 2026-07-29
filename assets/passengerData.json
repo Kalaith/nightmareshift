@@ -242,7 +242,7 @@
         ],
         "critical": [
           "If we don't hurry I might lose control.",
-          "The thirst is unbearable. Take the alleys—now."
+          "The thirst is unbearable. Take the alleys - now."
         ],
         "meltdown": [
           "Too late. I can't promise your safety any longer!"
@@ -394,7 +394,7 @@
       },
       "dialogueByStage": {
         "warning": [
-          "Please, avoid the main roads—they know those paths.",
+          "Please, avoid the main roads - they know those paths.",
           "They watch the highways. Take the back roads, I beg you."
         ],
         "critical": [
@@ -402,7 +402,7 @@
           "I can hear them in the wires. We have to change course!"
         ],
         "meltdown": [
-          "Too late—they found us through the lights!"
+          "Too late - they found us through the lights!"
         ]
       }
     },

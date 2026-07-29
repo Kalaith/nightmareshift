@@ -124,7 +124,7 @@
   "sulfur crystal": {
     "type": "consumable",
     "rarity": "uncommon",
-    "description": "It burns hot and burns fast — fuel bought with the hours you had left",
+    "description": "It burns hot and burns fast - fuel bought with the hours you had left",
     "canUse": true,
     "canTrade": true,
     "effects": [

@@ -5,12 +5,20 @@ use macroquad::prelude::*;
 use crate::data::{GameData, Rarity};
 use crate::state::GameState;
 use crate::ui::{
-    colors, draw_cockpit_background, draw_glass_button, draw_glass_panel, fonts, layout, spacing,
-    CompletionSummary, UiAction, UiRect,
+    colors, draw_cockpit_background, draw_glass_button, draw_glass_panel, draw_wrapped_text, fonts,
+    layout, spacing, CompletionSummary, UiAction, UiRect,
 };
 use macroquad_toolkit::ui::draw_ui_text;
 
 use super::scene::draw_bottom_taxi_scene;
+
+/// Vertical layout of the trade panel, measured from the panel's inner top.
+/// The item buttons start below two wrapped lines of "they are looking for"
+/// and the "select an item" label that sits 20px above them.
+const BUTTONS_TOP: f32 = 190.0;
+const ITEM_ROW_H: f32 = 45.0;
+const DECLINE_GAP: f32 = 22.0;
+const BUTTON_H: f32 = 40.0;
 
 /// Draw the dropoff screen
 pub fn draw_dropoff(game_state: &GameState, game_data: Option<&GameData>) -> UiAction {
@@ -49,9 +57,32 @@ pub fn draw_dropoff(game_state: &GameState, game_data: Option<&GameData>) -> UiA
             draw_ui_text(
                 &route_text,
                 rect.x + 16.0,
-                rect.bottom() - 70.0,
+                rect.bottom() - 96.0,
                 12.0,
                 colors::TEXT_MUTED,
+            );
+        }
+
+        // What the last swap did, on the screen the swap happened on. This
+        // used to be written into `current_dialogue`, which only the driving
+        // screen renders and which accepting the next ride overwrites — so
+        // the standing and the relief a wanted item earns were paid without
+        // the player ever being told, and handing over the wrong thing said
+        // nothing at all.
+        if let Some(ref outcome) = game_state.trade_outcome {
+            draw_wrapped_text(
+                &outcome.text,
+                rect.x + 16.0,
+                rect.bottom() - 76.0,
+                rect.w - 32.0,
+                fonts::SIZE_SM,
+                16.0,
+                if outcome.was_wanted {
+                    colors::ACCENT_GOLD
+                } else {
+                    colors::TEXT_MUTED
+                },
+                1,
             );
         }
 
@@ -65,8 +96,28 @@ pub fn draw_dropoff(game_state: &GameState, game_data: Option<&GameData>) -> UiA
                     screen_height(),
                     Color::new(0.0, 0.0, 0.0, 0.50),
                 );
+                // Tradeable items, carrying their real inventory index. The
+                // filter must come before the cap: taking the first three
+                // items and then skipping untradeable ones hid every
+                // tradeable item past index two, and left the player staring
+                // at "select an item" with no buttons when the first three
+                // happened to be bound or cursed.
+                let tradeable: Vec<(usize, &crate::data::InventoryItem)> = game_state
+                    .inventory
+                    .iter()
+                    .enumerate()
+                    .filter(|(_, item)| item.can_be_given_away())
+                    .take(3)
+                    .collect();
+
+                // Size the panel to what is in it. It was a fixed height with
+                // the decline button pinned at a fixed offset, so a player
+                // carrying one tradeable item got a button, then a hand's
+                // width of nothing, then Decline.
+                let rows = tradeable.len().max(1) as f32;
+                let panel_h = BUTTONS_TOP + rows * ITEM_ROW_H + DECLINE_GAP + BUTTON_H + 32.0;
                 let trade_rect =
-                    UiRect::centered_x(screen_width(), 146.0, screen_width().min(460.0), 330.0);
+                    UiRect::centered_x(screen_width(), 146.0, screen_width().min(460.0), panel_h);
                 draw_glass_panel(trade_rect, colors::ACCENT_SKY);
 
                 let inner = trade_rect.inset(spacing::PADDING_MD);
@@ -113,10 +164,28 @@ pub fn draw_dropoff(game_state: &GameState, game_data: Option<&GameData>) -> UiA
                 draw_ui_text(
                     &offer_text,
                     inner.x,
-                    inner.y + 80.0,
+                    inner.y + 76.0,
                     fonts::SIZE_MD,
                     rarity_color,
                 );
+
+                // What is being handed over. The offer named the item and
+                // coloured it by rarity, which says how scarce it is and
+                // nothing about what it does — so a cursed gift and a
+                // protective one looked alike. The authored description is
+                // the diegetic warning: it hints rather than labels.
+                if !offered_item.description.is_empty() {
+                    draw_wrapped_text(
+                        &offered_item.description,
+                        inner.x,
+                        inner.y + 94.0,
+                        inner.w,
+                        fonts::SIZE_XS,
+                        15.0,
+                        colors::TEXT_SECONDARY,
+                        2,
+                    );
+                }
 
                 // Name what this passenger actually wants. `wantedItems` is
                 // authored per passenger and already decides whether a trade is
@@ -132,37 +201,25 @@ pub fn draw_dropoff(game_state: &GameState, game_data: Option<&GameData>) -> UiA
                 } else {
                     format!("They are looking for: {}", wanted.join(", "))
                 };
-                draw_ui_text(
+                draw_wrapped_text(
                     &wants_text,
                     inner.x,
-                    inner.y + 105.0,
+                    inner.y + 132.0,
+                    inner.w,
                     fonts::SIZE_SM,
+                    16.0,
                     if wanted.is_empty() {
                         colors::TEXT_MUTED
                     } else {
                         colors::ACCENT_GOLD
                     },
+                    2,
                 );
 
                 // Buttons
-                let btn_y = inner.y + 140.0;
+                let btn_y = inner.y + BUTTONS_TOP;
                 let btn_w = 200.0;
-                let btn_h = 40.0;
                 let center_x = screen_width() / 2.0;
-
-                // Tradeable items, carrying their real inventory index. The
-                // filter must come before the cap: taking the first three
-                // items and then skipping untradeable ones hid every
-                // tradeable item past index two, and left the player staring
-                // at "select an item" with no buttons when the first three
-                // happened to be bound or cursed.
-                let tradeable: Vec<(usize, &crate::data::InventoryItem)> = game_state
-                    .inventory
-                    .iter()
-                    .enumerate()
-                    .filter(|(_, item)| item.can_be_given_away())
-                    .take(3)
-                    .collect();
 
                 if !tradeable.is_empty() {
                     draw_ui_text(
@@ -180,7 +237,7 @@ pub fn draw_dropoff(game_state: &GameState, game_data: Option<&GameData>) -> UiA
                         } else {
                             item.name.clone()
                         };
-                        let item_btn_y = btn_y + (slot as f32 * 45.0);
+                        let item_btn_y = btn_y + (slot as f32 * ITEM_ROW_H);
                         if draw_glass_button(
                             UiRect::new(center_x - btn_w / 2.0, item_btn_y, btn_w, 35.0),
                             &label,
@@ -195,9 +252,9 @@ pub fn draw_dropoff(game_state: &GameState, game_data: Option<&GameData>) -> UiA
                         }
                     }
 
-                    let decline_y = btn_y + (150.0);
+                    let decline_y = btn_y + tradeable.len() as f32 * ITEM_ROW_H + DECLINE_GAP;
                     if draw_glass_button(
-                        UiRect::new(center_x - btn_w / 2.0, decline_y, btn_w, btn_h),
+                        UiRect::new(center_x - btn_w / 2.0, decline_y, btn_w, BUTTON_H),
                         &data.localization.ui.game.trade.decline,
                         colors::ACCENT_DANGER,
                         true,
@@ -215,7 +272,7 @@ pub fn draw_dropoff(game_state: &GameState, game_data: Option<&GameData>) -> UiA
                         colors::ACCENT_WARNING,
                     );
                     if draw_glass_button(
-                        UiRect::new(center_x - btn_w / 2.0, btn_y + 30.0, btn_w, btn_h),
+                        UiRect::new(center_x - btn_w / 2.0, btn_y + 30.0, btn_w, BUTTON_H),
                         &data.localization.ui.common.continue_text,
                         colors::ACCENT_SKY,
                         true,

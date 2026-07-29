@@ -5,7 +5,8 @@ use macroquad::prelude::*;
 use crate::data::{self, GameData, Rarity};
 use crate::state::GameState;
 use crate::ui::{
-    colors, draw_glass_button, draw_glass_panel, draw_small_caps, fonts, spacing, UiAction, UiRect,
+    colors, draw_glass_button, draw_glass_panel, draw_small_caps, draw_wrapped_text, fonts,
+    spacing, UiAction, UiRect,
 };
 use macroquad_toolkit::ui::draw_ui_text;
 
@@ -163,6 +164,25 @@ pub fn draw_inventory_modal(game_state: &GameState, game_data: Option<&GameData>
                         } else {
                             colors::FUEL_CRITICAL
                         },
+                    );
+                }
+
+                // What the thing actually is. Every item in the catalogue is
+                // authored with a description and until now nothing displayed
+                // one, so twenty-five written lines sat in the data doing
+                // nothing. It is also the only warning a cursed gift gets
+                // before it is accepted: the Old Locket "whispers forgotten
+                // names" long before the inventory admits it draws danger.
+                if !item.description.is_empty() {
+                    draw_wrapped_text(
+                        &item.description,
+                        inner.x + 10.0,
+                        y + 75.0,
+                        inner.w - 20.0,
+                        fonts::SIZE_XS,
+                        14.0,
+                        colors::TEXT_SECONDARY,
+                        1,
                     );
                 }
 
