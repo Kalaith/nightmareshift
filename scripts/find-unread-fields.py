@@ -37,6 +37,38 @@ STRUCT = re.compile(r'pub struct (\w+)\s*\{(.*?)\n\}', re.S)
 SEARCHED = ('src/data', 'src/state')
 
 
+def snake(struct: str) -> str:
+    return re.sub(r'(?<!^)(?=[A-Z])', '_', struct).lower()
+
+
+def claimed_by(struct: str, field: str, source: str) -> bool:
+    """Whether some read of `.field` plausibly goes through `struct`.
+
+    A heuristic, and the honest reason it is one: telling `Rule.visible` from
+    `Guideline.visible` needs types, and this script does not have them. What
+    it has is that Rust code names things after their types -- `rule.visible`,
+    `for guideline in`, `current_rules` -- so it looks for a read qualified by
+    some fragment of the struct's own name.
+
+    Being wrong in the permissive direction is the safer failure: a field
+    wrongly called claimed stays in the last section, which says it still
+    wants a look. A field wrongly called unclaimed would send someone hunting
+    for a bug that is not there.
+    """
+    words = [word for word in snake(struct).split('_') if len(word) > 2]
+    if not words:
+        return True
+    # `rule.visible`, `own_rule.visible`, `self.rule.visible`, `r.visible`
+    for word in words:
+        if re.search(r'\b\w*' + word + r'\w*\s*(?:\.\s*)?\.' + field + r'\b', source):
+            return True
+        # `for rule in ...` / `|rule|` followed anywhere by `.field` is weaker,
+        # so require the binding and the access to share a line.
+        if re.search(r'\b' + word + r's?\b[^\n]*\.' + field + r'\b', source):
+            return True
+    return False
+
+
 def main() -> int:
     root = pathlib.Path(__file__).resolve().parent.parent
     files = {
@@ -62,24 +94,31 @@ def main() -> int:
     for _, struct, field in declared:
         owners[field].add(struct)
 
-    unread, shared = [], []
+    unread, unclaimed, shared = [], [], []
     for relative, struct, field in declared:
         hits = len(re.findall(r'\.' + field + r'\b', everything))
         if hits == 0:
             unread.append((relative, struct, field))
         elif len(owners[field]) > 1:
-            shared.append((field, hits, owners[field]))
+            if claimed_by(struct, field, everything):
+                shared.append((field, hits, owners[field]))
+            else:
+                unclaimed.append((relative, struct, field, hits))
 
     print(f'=== no reader at all ({len(unread)}) ===')
     for relative, struct, field in unread:
         print(f'   {relative:<30} {struct:<26} {field}')
+
+    print(f'\n=== shared name, read through some other struct ({len(unclaimed)}) ===')
+    for relative, struct, field, hits in unclaimed:
+        print(f'   {relative:<30} {struct:<26} {field:<22} ({hits} hit(s) elsewhere)')
 
     seen = set()
     unique_shared = [
         entry for entry in sorted(shared, key=lambda e: e[0])
         if not (entry[0] in seen or seen.add(entry[0]))
     ]
-    print(f'\n=== shared name, check by hand ({len(unique_shared)}) ===')
+    print(f'\n=== shared name, at least one read looks right ({len(unique_shared)}) ===')
     for field, hits, structs in unique_shared:
         print(f'   {field:<26} {hits} hit(s) on: {", ".join(sorted(structs))}')
 

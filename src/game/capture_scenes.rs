@@ -30,6 +30,35 @@ impl Game {
                 self.start_game();
                 self.start_shift();
             }
+            // The almanac with the roster at a spread of knowledge levels and
+            // lore in hand, so the upgrade prices and what each next level
+            // reveals are both visible in the capture.
+            "almanac" => {
+                self.player_stats.lore_fragments += 400;
+                let roster: Vec<u32> = self
+                    .game_data
+                    .as_ref()
+                    .map(|data| data.passengers.iter().map(|p| p.id).collect())
+                    .unwrap_or_default();
+                for (index, passenger_id) in roster.into_iter().enumerate() {
+                    self.player_stats.mark_passenger_encountered(passenger_id);
+                    // 0, 1, 2 and back round, so every tier of card is shown.
+                    for _ in 0..(index % 3) {
+                        let level = self
+                            .player_stats
+                            .get_almanac_entry(passenger_id)
+                            .knowledge_level;
+                        let cost = self
+                            .game_data
+                            .as_ref()
+                            .map(|data| data.almanac.get_upgrade_cost(level + 1))
+                            .unwrap_or(0);
+                        self.player_stats
+                            .upgrade_almanac_knowledge(passenger_id, cost);
+                    }
+                }
+                self.change_screen(Screen::Almanac);
+            }
             // The briefing with hazards on the board. Clear weather generates
             // none, so the plain `briefing` scene shows the empty case and
             // this one shows the list a night is actually planned from.

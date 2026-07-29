@@ -415,6 +415,34 @@ pub fn draw_almanac(
                     );
                 }
 
+                // What the lore actually buys.
+                //
+                // Every almanac level authors the list -- level 2 is "Route
+                // Preferences, Common Tells, Likes/Dislikes" -- and nothing
+                // displayed it, so the one screen where lore is spent showed
+                // a price and the name of a tier and never what the tier
+                // reveals. Deciding whether to invest was guesswork.
+                if entry.encountered && entry.knowledge_level < 3 {
+                    let next_line = data
+                        .almanac
+                        .get_level(entry.knowledge_level + 1)
+                        .and_then(|next| next.reveals_line());
+                    if let Some(next_line) = next_line {
+                        {
+                            draw_wrapped_text(
+                                &next_line,
+                                text_x,
+                                btn_y + 20.0,
+                                (card_x + card_width - 230.0 - text_x).max(80.0),
+                                fonts::SIZE_XS,
+                                14.0,
+                                colors::TEXT_MUTED,
+                                1,
+                            );
+                        }
+                    }
+                }
+
                 // Upgrade button if can upgrade
                 if entry.encountered && entry.knowledge_level < 3 {
                     let cost = data.almanac.get_upgrade_cost(entry.knowledge_level + 1);
