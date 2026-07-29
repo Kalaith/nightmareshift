@@ -6,7 +6,7 @@
 //! the ride-request screen and the almanac screen agree on what a level buys
 //! and neither can drift from the authored rewards.
 
-use crate::data::{NeedType, Passenger, TellIntensity};
+use crate::data::{GameData, NeedType, Passenger, TellIntensity};
 
 /// One revealed fact about a passenger.
 pub struct DossierLine {
@@ -52,7 +52,11 @@ fn intensity_label(intensity: TellIntensity) -> &'static str {
 ///
 /// Returns an empty list at level 0 — an unstudied passenger reveals nothing
 /// beyond what the ride request already shows.
-pub fn build(passenger: &Passenger, knowledge_level: u32) -> Vec<DossierLine> {
+pub fn build(
+    passenger: &Passenger,
+    knowledge_level: u32,
+    data: Option<&GameData>,
+) -> Vec<DossierLine> {
     let mut lines = Vec::new();
 
     // Lv.1 "Observed" — name, description, and basic needs. The player can
@@ -89,6 +93,20 @@ pub fn build(passenger: &Passenger, knowledge_level: u32) -> Vec<DossierLine> {
         if !passenger.items.is_empty() {
             lines.push(DossierLine::new("Carries", passenger.items.join(", "), 2));
         }
+        // Who they are connected to. The same `relationships` list makes an
+        // associate more likely to turn up later in the shift, so knowing it
+        // is knowing who the night is about to bring round.
+        if let Some(data) = data {
+            let names: Vec<&str> = passenger
+                .relationships
+                .iter()
+                .filter_map(|id| data.passengers.iter().find(|p| p.id == *id))
+                .map(|p| p.name.as_str())
+                .collect();
+            if !names.is_empty() {
+                lines.push(DossierLine::new("Associates", names.join(", "), 2));
+            }
+        }
     }
 
     // Lv.3 "Mastered" — the passenger's own rule, and what they truly are.
@@ -121,10 +139,11 @@ mod tests {
     /// fragments to reach it buys nothing.
     #[test]
     fn every_level_reveals_more_for_every_passenger() {
+        let data = GameData::load();
         for passenger in load_passengers() {
-            let mut previous = build(&passenger, 0).len();
+            let mut previous = build(&passenger, 0, Some(&data)).len();
             for level in 1..=3 {
-                let count = build(&passenger, level).len();
+                let count = build(&passenger, level, Some(&data)).len();
                 assert!(
                     count > previous,
                     "{} reveals nothing new at knowledge level {level}",
@@ -139,7 +158,7 @@ mod tests {
     #[test]
     fn unstudied_passengers_reveal_nothing() {
         for passenger in load_passengers() {
-            assert!(build(&passenger, 0).is_empty(), "{}", passenger.name);
+            assert!(build(&passenger, 0, None).is_empty(), "{}", passenger.name);
         }
     }
 

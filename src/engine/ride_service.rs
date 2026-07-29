@@ -36,24 +36,73 @@ impl RideService {
             constants: &data.constants,
         };
 
-        let passenger = PassengerService::select_weather_aware_passenger(
+        // A night should read as connected rather than a shuffle: having
+        // carried someone makes their associates more likely to turn up.
+        // `RELATED_PASSENGER_SPAWN` is used as the probability it is authored
+        // as — roll it, and on a hit draw only from the kin pool.
+        let kin = PassengerService::kin_of(&state.used_passengers, &data.passengers);
+        if !kin.is_empty()
+            && macroquad_toolkit::rng::chance(data.constants.probabilities.related_passenger_spawn)
+        {
+            let kin_pool: Vec<Passenger> = data
+                .passengers
+                .iter()
+                .filter(|p| kin.contains(&p.id))
+                .cloned()
+                .collect();
+            if let Some(passenger) =
+                PassengerService::select_weather_aware_passenger(&kin_pool, &[], &context)
+            {
+                // Name the connection, or the mechanic is invisible machinery.
+                let link = Self::name_the_link(&passenger, &state.used_passengers, data);
+                let presented = Self::present_passenger(state, passenger, current_time);
+                if let Some(link) = link {
+                    state.current_dialogue = Some(CurrentDialogue {
+                        text: link,
+                        speaker: DialogueSpeaker::Narrator,
+                        timestamp: current_time,
+                    });
+                }
+                return presented;
+            }
+        }
+
+        match PassengerService::select_weather_aware_passenger(
             &data.passengers,
             &state.used_passengers,
             &context,
-        );
-
-        if let Some(p) = passenger {
-            state.used_passengers.push(p.id);
-            state.current_passenger_need_state =
-                PassengerStateMachine::initialize(&p, current_time);
-            // Select dialogue once and store it
-            state.current_passenger_dialogue = p.random_dialogue().map(|s| s.to_string());
-            state.current_passenger = Some(p);
-            state.game_phase = GamePhase::RideRequest;
-            true
-        } else {
-            false
+        ) {
+            Some(passenger) => Self::present_passenger(state, passenger, current_time),
+            None => false,
         }
+    }
+
+    /// Say who this fare is connected to, using whichever of the two named
+    /// the other — the links are authored one-way in places.
+    fn name_the_link(passenger: &Passenger, met: &[u32], data: &GameData) -> Option<String> {
+        let other = met.iter().rev().find_map(|id| {
+            let met_passenger = data.passengers.iter().find(|p| p.id == *id)?;
+            let linked = passenger.relationships.contains(id)
+                || met_passenger.relationships.contains(&passenger.id);
+            linked.then_some(met_passenger)
+        })?;
+        Some(format!(
+            "Dispatch has another fare. They came up in {}'s night too.",
+            other.name
+        ))
+    }
+
+    /// Put a chosen passenger in front of the player: seed their need state,
+    /// pick their opening line, and move to the ride request.
+    fn present_passenger(state: &mut GameState, passenger: Passenger, current_time: f64) -> bool {
+        state.used_passengers.push(passenger.id);
+        state.current_passenger_need_state =
+            PassengerStateMachine::initialize(&passenger, current_time);
+        // Select dialogue once and store it
+        state.current_passenger_dialogue = passenger.random_dialogue().map(|s| s.to_string());
+        state.current_passenger = Some(passenger);
+        state.game_phase = GamePhase::RideRequest;
+        true
     }
 
     /// Accept the current ride request.
