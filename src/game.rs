@@ -615,8 +615,13 @@ impl Game {
                 use chrono::Local;
                 Local::now().format("%Y-%m-%d %H:%M").to_string()
             };
+            // The web build has no wall clock, and every row reading "Session"
+            // told the player nothing — the leaderboard's whole job is
+            // telling ten runs apart. The shift counter is already
+            // incremented by `record_shift_completion` above and does the
+            // same work: it orders the entries and distinguishes them.
             #[cfg(target_arch = "wasm32")]
-            let date_str = "Session".to_string(); // Simple fallback for WASM
+            let date_str = format!("Shift {}", self.player_stats.total_shifts_completed);
 
             let score = self.game_state.calculate_score(&data.constants);
             let entry = LeaderboardEntry {
