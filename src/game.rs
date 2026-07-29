@@ -448,15 +448,49 @@ impl Game {
             self.player_stats.add_leaderboard_entry(entry);
         }
 
-        // Check and unlock achievements
-        self.player_stats.check_achievements(
+        // Check and unlock achievements, paying whatever each one is worth.
+        let unlocked = self.player_stats.check_achievements(
             self.game_state.earnings,
             actually_successful,
             self.game_state.rules_violated,
         );
+        self.pay_achievement_rewards(&unlocked);
+
+        // Surviving every night of a run is the game's headline result and
+        // used to pay nothing beyond the per-night survival bonus.
+        if actually_successful && self.game_state.run_complete {
+            if let Some(data) = &self.game_data {
+                let nights = data.constants.game_constants.nights_per_run.max(1);
+                let payout = data.rewards.run_completion.payout(nights);
+                self.player_stats.bank_balance += payout.bank;
+                self.player_stats.lore_fragments += payout.lore;
+            }
+        }
 
         // Auto-save after shift
         self.save_stats();
+    }
+
+    /// Pay the bank and lore a freshly unlocked achievement is worth.
+    ///
+    /// The six achievements were pure scoreboard entries; paying them makes
+    /// the behaviours they name — surviving, mastering the almanac, buying
+    /// into the skill tree — feed the currencies that buy the next upgrade.
+    fn pay_achievement_rewards(&mut self, unlocked: &[String]) {
+        let Some(data) = &self.game_data else {
+            return;
+        };
+        let mut total = crate::data::Payout::default();
+        for id in unlocked {
+            let payout = data.rewards.for_achievement(id);
+            total.bank += payout.bank;
+            total.lore += payout.lore;
+        }
+        if total.is_empty() {
+            return;
+        }
+        self.player_stats.bank_balance += total.bank;
+        self.player_stats.lore_fragments += total.lore;
     }
 
     /// Return to main menu

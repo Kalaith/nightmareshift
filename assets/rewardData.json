@@ -1,0 +1,15 @@
+{
+  "achievements": {
+    "first_shift": { "bank": 250, "lore": 3 },
+    "perfect_shift": { "bank": 600, "lore": 5 },
+    "skill_collector": { "bank": 800, "lore": 6 },
+    "almanac_scholar": { "bank": 1000, "lore": 12 },
+    "survivor": { "bank": 1200, "lore": 10 },
+    "big_earner": { "bank": 1500, "lore": 8 }
+  },
+  "runCompletion": {
+    "bank": 900,
+    "lore": 15,
+    "bankPerNight": 120
+  }
+}

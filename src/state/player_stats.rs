@@ -273,7 +273,7 @@ impl PlayerStats {
     }
 
     /// The game's fixed achievement definitions (id, name, description).
-    fn achievement_definitions() -> Vec<Achievement> {
+    pub(crate) fn achievement_definitions() -> Vec<Achievement> {
         vec![
             Achievement::new("first_shift", "First Night", "Complete your first shift"),
             Achievement::new("survivor", "Survivor", "Survive 10 shifts"),
@@ -311,12 +311,16 @@ impl PlayerStats {
     }
 
     /// Check and unlock achievements based on current stats
+    /// Evaluate every achievement condition, returning the ids that unlocked
+    /// for the first time on this call so the caller can pay their reward.
+    /// Already-unlocked achievements are never reported twice.
     pub fn check_achievements(
         &mut self,
         shift_earnings: u32,
         shift_survived: bool,
         shift_violations: u32,
-    ) {
+    ) -> Vec<String> {
+        let mut newly_unlocked = Vec::new();
         #[cfg(not(target_arch = "wasm32"))]
         let now = {
             use chrono::Local;
@@ -325,40 +329,28 @@ impl PlayerStats {
         #[cfg(target_arch = "wasm32")]
         let now = "Today".to_string();
 
-        // First shift
-        if self.total_shifts_completed >= 1 {
-            self.unlock_achievement("first_shift", now.clone());
-        }
-
-        // Survivor (10 shifts)
-        if self.survival_bonuses >= 10 {
-            self.unlock_achievement("survivor", now.clone());
-        }
-
-        // Perfect shift (no violations)
-        if shift_survived && shift_violations == 0 {
-            self.unlock_achievement("perfect_shift", now.clone());
-        }
-
-        // Big earner ($500 in single shift)
-        if shift_earnings >= 500 {
-            self.unlock_achievement("big_earner", now.clone());
-        }
-
-        // Almanac scholar (5 passengers mastered)
         let mastered = self
             .almanac_progress
             .values()
             .filter(|e| e.knowledge_level >= 3)
             .count();
-        if mastered >= 5 {
-            self.unlock_achievement("almanac_scholar", now.clone());
+
+        let conditions = [
+            ("first_shift", self.total_shifts_completed >= 1),
+            ("survivor", self.survival_bonuses >= 10),
+            ("perfect_shift", shift_survived && shift_violations == 0),
+            ("big_earner", shift_earnings >= 500),
+            ("almanac_scholar", mastered >= 5),
+            ("skill_collector", self.unlocked_skills.len() >= 3),
+        ];
+
+        for (id, met) in conditions {
+            if met && self.unlock_achievement(id, now.clone()) {
+                newly_unlocked.push(id.to_string());
+            }
         }
 
-        // Skill collector (3 skills)
-        if self.unlocked_skills.len() >= 3 {
-            self.unlock_achievement("skill_collector", now.clone());
-        }
+        newly_unlocked
     }
 }
 

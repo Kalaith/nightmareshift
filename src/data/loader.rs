@@ -15,6 +15,7 @@ pub struct GameData {
     pub events: Vec<EventTemplate>,
     pub item_pools: ItemPools,
     pub items: ItemCatalog,
+    pub rewards: RewardData,
 }
 
 impl GameData {
@@ -32,6 +33,7 @@ impl GameData {
             events: load_events(),
             item_pools: load_item_pools(),
             items: load_item_catalog(),
+            rewards: load_rewards(),
         }
     }
 
@@ -135,6 +137,15 @@ pub fn load_item_catalog() -> ItemCatalog {
     serde_json::from_str(json).unwrap_or_else(|e| {
         eprintln!("Failed to parse item catalog: {}", e);
         ItemCatalog::default()
+    })
+}
+
+/// Load meta-progression payouts from embedded JSON.
+pub fn load_rewards() -> RewardData {
+    let json = include_str!("../../assets/rewardData.json");
+    serde_json::from_str(json).unwrap_or_else(|e| {
+        eprintln!("Failed to parse rewards: {}", e);
+        RewardData::default()
     })
 }
 
