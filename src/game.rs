@@ -95,6 +95,14 @@ impl Game {
                 self.start_game();
                 self.start_shift();
             }
+            // The rules panel mid-ride, so each rule's authored reason for
+            // existing is visible in the capture.
+            "rules_panel" => {
+                self.start_game();
+                self.start_shift();
+                self.spawn_passenger();
+                self.show_rules = true;
+            }
             // A trade offer with a mixed inventory: an item this passenger
             // wants, one they do not, and one that cannot be traded at all.
             // Exercises the wanted-item highlight and the tradeable filter.

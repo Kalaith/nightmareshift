@@ -125,16 +125,6 @@ impl Rule {
         }
     }
 
-    /// Check if this rule is a basic type
-    pub fn is_basic(&self) -> bool {
-        self.rule_type == RuleType::Basic
-    }
-
-    /// Check if this rule is conditional
-    pub fn is_conditional(&self) -> bool {
-        self.rule_type == RuleType::Conditional
-    }
-
     /// Get the violation message or a default one
     pub fn get_violation_message(&self) -> &str {
         self.violation_message

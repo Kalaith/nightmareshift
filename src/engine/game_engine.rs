@@ -95,35 +95,37 @@ impl GameEngine {
         let difficulty_level = (experience / constants.scoring.experience_per_level)
             .min(constants.scoring.max_difficulty);
 
-        // Separate rules by type
-        let basic_rules: Vec<&Rule> = all_rules.iter().filter(|r| r.is_basic()).collect();
-        let conditional_rules: Vec<&Rule> =
-            all_rules.iter().filter(|r| r.is_conditional()).collect();
+        // Separate rules by type. `Weather` rules are deliberately absent:
+        // they are injected by the weather sync in `Game`, not drawn here.
+        let pool_of = |kind: RuleType| -> Vec<&Rule> {
+            all_rules.iter().filter(|r| r.rule_type == kind).collect()
+        };
 
-        let mut selected_rules = Vec::new();
+        let mut selected_rules: Vec<Rule> = Vec::new();
 
         // Select 2-3 basic rules
         let num_basic = 2 + macroquad_toolkit::rng::gen_range(0, 2);
-        let mut basic_rules_clone = basic_rules.clone();
-        macroquad_toolkit::rng::shuffle(&mut basic_rules_clone);
-        let shuffled_basic = basic_rules_clone
-            .into_iter()
-            .take(num_basic.min(basic_rules.len()));
-        for rule in shuffled_basic {
-            selected_rules.push(rule.clone());
-        }
+        Self::draw_compatible_rules(&pool_of(RuleType::Basic), num_basic, &mut selected_rules);
 
         // Add conditional rules based on difficulty
         if difficulty_level >= 1 {
             let num_conditional = 1 + macroquad_toolkit::rng::gen_range(0, 2);
-            let mut conditional_rules_clone = conditional_rules.clone();
-            macroquad_toolkit::rng::shuffle(&mut conditional_rules_clone);
-            let shuffled_conditional = conditional_rules_clone
-                .into_iter()
-                .take(num_conditional.min(conditional_rules.len()));
-            for rule in shuffled_conditional {
-                selected_rules.push(rule.clone());
-            }
+            Self::draw_compatible_rules(
+                &pool_of(RuleType::Conditional),
+                num_conditional,
+                &mut selected_rules,
+            );
+        }
+
+        // `Conflicting` and `Hidden` rules were referenced by no selection
+        // path at all, so twelve of the twenty-eight authored rules could
+        // never appear — including all three `Hidden` ones, which are the
+        // whole point of `reveal_hidden_rule`, the Glimpse skill's
+        // `reveal_hidden_chance`, and the "Hidden Rule Violated!" ending.
+        // Both are expert-tier content, so they join from difficulty 2.
+        if difficulty_level >= 2 {
+            Self::draw_compatible_rules(&pool_of(RuleType::Conflicting), 1, &mut selected_rules);
+            Self::draw_compatible_rules(&pool_of(RuleType::Hidden), 1, &mut selected_rules);
         }
 
         // Separate visible and hidden rules
@@ -143,6 +145,42 @@ impl GameEngine {
             hidden_rules,
             difficulty_level,
         }
+    }
+
+    /// Draw up to `count` rules from `pool` that do not contradict anything
+    /// already selected.
+    ///
+    /// `conflictsWith` is authored on three rules and was read by nothing, so
+    /// a shift could hand the player both "Make eye contact with passengers
+    /// to ensure they're alert" and "Do not look directly at passengers
+    /// tonight" — a night that cannot be driven cleanly no matter what the
+    /// player does. Fewer rules is the right failure here: a shift short one
+    /// rule is playable, a self-contradictory one is not.
+    fn draw_compatible_rules(pool: &[&Rule], count: u32, selected: &mut Vec<Rule>) {
+        let mut shuffled: Vec<&Rule> = pool.to_vec();
+        macroquad_toolkit::rng::shuffle(&mut shuffled);
+
+        let mut taken = 0;
+        for rule in shuffled {
+            if taken >= count {
+                break;
+            }
+            if selected
+                .iter()
+                .any(|chosen| Self::rules_conflict(chosen, rule))
+            {
+                continue;
+            }
+            selected.push(rule.clone());
+            taken += 1;
+        }
+    }
+
+    /// Whether two rules contradict each other. Links are authored one-way —
+    /// "Safety First" names "No Eye Contact" but not the reverse — so both
+    /// directions are checked.
+    fn rules_conflict(a: &Rule, b: &Rule) -> bool {
+        a.id == b.id || a.conflicts_with.contains(&b.id) || b.conflicts_with.contains(&a.id)
     }
 
     /// Check if an action violates any active rule
@@ -306,5 +344,138 @@ impl GameEngine {
         let variation = macroquad_toolkit::rng::gen_range(-5.0, 5.0);
 
         (fare + variation).max(5.0) as u32
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::data::loader::{load_constants, load_rules};
+
+    /// A generated shift must never contain two rules that contradict each
+    /// other. Run many times because selection is random — a single draw
+    /// passing proves nothing.
+    #[test]
+    fn generated_shifts_never_contradict_themselves() {
+        let rules = load_rules();
+        let constants = load_constants();
+        for _ in 0..500 {
+            for experience in [0, 10, 20, 30, 40] {
+                let shift = GameEngine::generate_shift_rules(experience, &rules, &constants);
+                let all: Vec<&Rule> = shift
+                    .visible_rules
+                    .iter()
+                    .chain(shift.hidden_rules.iter())
+                    .collect();
+                for (i, a) in all.iter().enumerate() {
+                    for b in all.iter().skip(i + 1) {
+                        assert!(
+                            !GameEngine::rules_conflict(a, b),
+                            "shift paired {:?} with {:?}",
+                            a.title,
+                            b.title
+                        );
+                    }
+                }
+            }
+        }
+    }
+
+    /// Conflicts are read in both directions, since they are authored one-way.
+    #[test]
+    fn conflicts_are_symmetric() {
+        let rules = load_rules();
+        let find = |id: u32| rules.iter().find(|r| r.id == id).expect("rule exists");
+        // "Safety First" (11) names "No Eye Contact" (1); the reverse is not
+        // authored, and the pair must still be recognised.
+        let safety_first = find(11);
+        let no_eye_contact = find(1);
+        assert!(safety_first.conflicts_with.contains(&no_eye_contact.id));
+        assert!(!no_eye_contact.conflicts_with.contains(&safety_first.id));
+        assert!(GameEngine::rules_conflict(safety_first, no_eye_contact));
+        assert!(GameEngine::rules_conflict(no_eye_contact, safety_first));
+    }
+
+    /// Every id named as a conflict must be a real rule, and no rule may
+    /// conflict with itself.
+    #[test]
+    fn conflict_ids_are_real() {
+        let rules = load_rules();
+        let ids: Vec<u32> = rules.iter().map(|r| r.id).collect();
+        for rule in &rules {
+            assert!(
+                !rule.conflicts_with.contains(&rule.id),
+                "{:?} conflicts with itself",
+                rule.title
+            );
+            for id in &rule.conflicts_with {
+                assert!(ids.contains(id), "{:?} names unknown rule {id}", rule.title);
+            }
+        }
+    }
+
+    /// Every authored rule type that the generator owns must actually be
+    /// reachable. `Conflicting` and `Hidden` were referenced by no selection
+    /// path, so twelve of twenty-eight rules could never appear.
+    #[test]
+    fn every_generated_rule_type_is_reachable() {
+        let rules = load_rules();
+        let constants = load_constants();
+        let mut seen: Vec<RuleType> = Vec::new();
+        for _ in 0..500 {
+            let shift = GameEngine::generate_shift_rules(40, &rules, &constants);
+            for rule in shift.visible_rules.iter().chain(shift.hidden_rules.iter()) {
+                if !seen.contains(&rule.rule_type) {
+                    seen.push(rule.rule_type);
+                }
+            }
+        }
+        for kind in [
+            RuleType::Basic,
+            RuleType::Conditional,
+            RuleType::Conflicting,
+            RuleType::Hidden,
+        ] {
+            assert!(
+                seen.contains(&kind),
+                "{kind:?} rules never appear in a shift"
+            );
+        }
+    }
+
+    /// The hidden-rule mechanic needs hidden rules. `reveal_hidden_rule`, the
+    /// Glimpse skill and the "Hidden Rule Violated!" ending all key off this
+    /// list being non-empty at least sometimes.
+    #[test]
+    fn hidden_rules_actually_appear() {
+        let rules = load_rules();
+        let constants = load_constants();
+        let with_hidden = (0..500)
+            .filter(|_| {
+                !GameEngine::generate_shift_rules(40, &rules, &constants)
+                    .hidden_rules
+                    .is_empty()
+            })
+            .count();
+        assert!(
+            with_hidden > 0,
+            "no shift out of 500 at max difficulty carried a hidden rule"
+        );
+    }
+
+    /// A shift must still produce rules. Filtering conflicts too eagerly —
+    /// or a data change that made everything conflict — would leave the
+    /// player with nothing to obey.
+    #[test]
+    fn shifts_still_produce_rules() {
+        let rules = load_rules();
+        let constants = load_constants();
+        for _ in 0..200 {
+            let shift = GameEngine::generate_shift_rules(30, &rules, &constants);
+            assert!(
+                !shift.visible_rules.is_empty() || !shift.hidden_rules.is_empty(),
+                "generated a shift with no rules at all"
+            );
+        }
     }
 }

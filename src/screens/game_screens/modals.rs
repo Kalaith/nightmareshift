@@ -267,7 +267,7 @@ pub fn draw_rules_panel(game_state: &GameState, game_data: Option<&GameData>) ->
         y += 2.0 * (btn_h + gap) + 20.0;
     }
 
-    let rule_card_h = 92.0;
+    let rule_card_h = 100.0;
     // Draw rules
     for (rule_idx, rule) in game_state.current_rules.iter().enumerate() {
         let card = UiRect::new(inner.x, y, inner.w, rule_card_h);
@@ -307,10 +307,29 @@ pub fn draw_rules_panel(game_state: &GameState, game_data: Option<&GameData>) ->
         draw_ui_text(
             &desc,
             card.x + 58.0,
-            card.y + 62.0,
+            card.y + 60.0,
             fonts::SIZE_SM,
             colors::TEXT_SECONDARY,
         );
+
+        // Why obeying keeps you alive. Thirteen rules author a
+        // `defaultOutcome` explaining themselves and it was shown nowhere, so
+        // the rules read as arbitrary instructions rather than as things the
+        // night has reasons for.
+        if let Some(outcome) = &rule.default_outcome {
+            let reason = if outcome.len() > 82 {
+                format!("{}...", &outcome[..82])
+            } else {
+                outcome.clone()
+            };
+            draw_small_caps(
+                &reason,
+                card.x + 58.0,
+                card.y + 80.0,
+                fonts::SIZE_XS,
+                colors::ACCENT_SKY,
+            );
+        }
         y = card.bottom() + 14.0;
 
         // Check if we're running out of space

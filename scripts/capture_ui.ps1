@@ -11,7 +11,8 @@
     "gameplay" (in a shift, waiting for a passenger), "ride_request" (a ride
     offer with the almanac fully studied, so the passenger dossier shows),
     "skill_tree" (currency in hand, so purchase buttons and the lore exchange
-    are live), and "trade" (a trade offer with a mixed inventory).
+    are live), "trade" (a trade offer with a mixed inventory), and
+    "rules_panel" (the mid-ride rules list, showing each rule's reason).
 
     Capture scenes seed bank balance, lore, almanac levels and inventory
     directly into player stats. Game::capture_mode suppresses saving for the
