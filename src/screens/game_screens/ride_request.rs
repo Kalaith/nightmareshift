@@ -98,7 +98,43 @@ pub fn draw_ride_request(
             21.0,
             colors::TEXT_PRIMARY,
             2,
-        ) + 18.0;
+        ) + 4.0;
+
+        // What kind of places these are. Every location authors an
+        // `atmosphere` and a `riskLevel`; the risk has been feeding route
+        // costs all along through the pickup, while the atmosphere naming the
+        // reason for it was read by nothing. A driver deciding whether to take
+        // a fare should know they are being called out to a cemetery.
+        if let Some(data) = game_data {
+            let describe = |name: &String| {
+                data.get_location(name)
+                    .map(|location| (location.atmosphere.as_str(), location.risk_level))
+            };
+            if let (Some((from, from_risk)), Some((to, to_risk))) = (
+                describe(&passenger.pickup),
+                describe(&passenger.destination),
+            ) {
+                let worst = from_risk.max(to_risk);
+                let colour = if worst >= data.constants.risk.high_risk {
+                    colors::FUEL_CRITICAL
+                } else if worst > data.constants.risk.low_risk {
+                    colors::ACCENT_WARNING
+                } else {
+                    colors::TEXT_MUTED
+                };
+                y = draw_wrapped_text(
+                    &format!("{} to {}", from, to),
+                    info_x,
+                    y,
+                    info_w,
+                    fonts::SIZE_XS,
+                    15.0,
+                    colour,
+                    2,
+                );
+            }
+        }
+        y += 14.0;
 
         draw_ui_text(
             &format!("${}", passenger.fare),
