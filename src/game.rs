@@ -81,6 +81,28 @@ impl Game {
                 self.start_game();
                 self.start_shift();
             }
+            // A ride offer with the almanac fully studied, so the dossier the
+            // request screen draws is visible in the capture.
+            "ride_request" => {
+                self.start_game();
+                self.start_shift();
+                if let Some(data) = &self.game_data {
+                    for passenger in &data.passengers {
+                        self.player_stats.mark_passenger_encountered(passenger.id);
+                        for _ in 0..3 {
+                            self.player_stats.lore_fragments += 99;
+                            let level = self
+                                .player_stats
+                                .get_almanac_entry(passenger.id)
+                                .knowledge_level;
+                            let cost = data.almanac.get_upgrade_cost(level + 1);
+                            self.player_stats
+                                .upgrade_almanac_knowledge(passenger.id, cost);
+                        }
+                    }
+                }
+                self.spawn_passenger();
+            }
             _ => {
                 // Default: main menu. The boot flow lands here automatically
                 // after a couple of loading frames (see `update`), so no

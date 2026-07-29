@@ -333,3 +333,59 @@ impl GuidelineEngine {
         false
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::data::loader::{load_guidelines, load_passengers};
+    use std::collections::HashSet;
+
+    /// A passenger's `stateProfile.exceptionId` is what lets satisfying a
+    /// guideline exception relieve their need. If it names an exception that
+    /// does not exist, or one that does not target them, the relief path is
+    /// unreachable and `exceptionRelief` is dead balance.
+    #[test]
+    fn every_profile_exception_targets_its_own_passenger() {
+        let guidelines = load_guidelines();
+        for passenger in load_passengers() {
+            let Some(profile) = &passenger.state_profile else {
+                continue;
+            };
+            let Some(exception_id) = &profile.exception_id else {
+                continue;
+            };
+            let matched = guidelines
+                .iter()
+                .flat_map(|g| g.exceptions.iter())
+                .find(|e| &e.id == exception_id)
+                .unwrap_or_else(|| {
+                    panic!(
+                        "{} names unknown exception {exception_id:?}",
+                        passenger.name
+                    )
+                });
+            assert!(
+                matched.passenger_ids.contains(&passenger.id)
+                    || matched.passenger_types.contains(&passenger.supernatural),
+                "exception {exception_id:?} does not target {}",
+                passenger.name
+            );
+        }
+    }
+
+    /// Conversely, an exception that names passenger ids must name real ones.
+    #[test]
+    fn every_exception_targets_real_passengers() {
+        let ids: HashSet<u32> = load_passengers().iter().map(|p| p.id).collect();
+        for guideline in load_guidelines() {
+            for exception in &guideline.exceptions {
+                for id in &exception.passenger_ids {
+                    assert!(
+                        ids.contains(id),
+                        "exception {:?} targets unknown passenger {id}",
+                        exception.id
+                    );
+                }
+            }
+        }
+    }
+}

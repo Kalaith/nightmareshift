@@ -8,7 +8,8 @@
     (NIGHTMARE_SHIFT_CAPTURE_*) provided by macroquad_toolkit::capture in
     src/main.rs. Scenes are seeded via Game::begin_capture_scene:
     "mainmenu" (default boot state), "briefing" (post-start briefing screen),
-    and "gameplay" (in a shift, waiting for a passenger).
+    "gameplay" (in a shift, waiting for a passenger), and "ride_request" (a
+    ride offer with the almanac fully studied, so the passenger dossier shows).
 
 .EXAMPLE
     ./scripts/capture_ui.ps1

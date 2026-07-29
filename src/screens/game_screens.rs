@@ -3,6 +3,7 @@
 //! These screens are shown during active gameplay. Each phase lives in its own
 //! module; this file only routes the current phase to its renderer.
 
+pub mod dossier;
 pub mod driving;
 pub mod dropoff;
 pub mod guidelines;
@@ -32,7 +33,7 @@ pub fn draw_game(
 ) -> UiAction {
     match game_state.game_phase {
         GamePhase::Waiting => draw_waiting(game_state, game_data),
-        GamePhase::RideRequest => draw_ride_request(game_state, game_data),
+        GamePhase::RideRequest => draw_ride_request(game_state, game_data, player_stats),
         GamePhase::Driving => draw_driving(game_state, game_data, player_stats),
         GamePhase::Interaction => draw_interaction(game_state, game_data, player_stats),
         GamePhase::DropOff => draw_dropoff(game_state, game_data),

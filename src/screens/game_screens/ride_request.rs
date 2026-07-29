@@ -3,17 +3,22 @@
 use macroquad::prelude::*;
 
 use crate::data::{GameData, Rarity};
-use crate::state::GameState;
+use crate::state::{GameState, PlayerStats};
 use crate::ui::{
     colors, draw_cockpit_background, draw_glass_button, draw_glass_panel, draw_passenger_portrait,
     draw_small_caps, draw_wrapped_text, fonts, layout, spacing, UiAction, UiRect,
 };
 use macroquad_toolkit::ui::draw_ui_text;
 
+use super::dossier;
 use super::scene::draw_bottom_taxi_scene;
 
 /// Draw the ride request screen
-pub fn draw_ride_request(game_state: &GameState, game_data: Option<&GameData>) -> UiAction {
+pub fn draw_ride_request(
+    game_state: &GameState,
+    game_data: Option<&GameData>,
+    player_stats: &PlayerStats,
+) -> UiAction {
     draw_cockpit_background();
 
     let scene_h = (screen_height() * 0.30).clamp(220.0, 320.0);
@@ -104,22 +109,62 @@ pub fn draw_ride_request(game_state: &GameState, game_data: Option<&GameData>) -
         );
         y += 42.0;
 
-        if let Some(dialogue_text) = game_state.current_passenger_dialogue.as_ref() {
-            let preview = if dialogue_text.len() > 100 {
-                format!("\"{}...\"", &dialogue_text[..100])
-            } else {
-                format!("\"{}\"", dialogue_text)
-            };
-            draw_wrapped_text(
-                &preview,
+        // What the almanac has bought you about this fare. Studying a
+        // passenger pays off here, before the accept/decline decision.
+        let btn_h = 48.0;
+        let dossier_limit = panel.bottom() - spacing::PADDING_MD - btn_h - 16.0;
+        let knowledge = player_stats.get_almanac_entry(passenger.id).knowledge_level;
+        let lines = dossier::build(passenger, knowledge);
+        if !lines.is_empty() {
+            draw_small_caps(
+                &format!("Almanac Lv.{}", knowledge),
                 info_x,
                 y,
-                info_w,
-                fonts::SIZE_SM,
-                18.0,
-                colors::TEXT_MUTED,
-                3,
+                fonts::SIZE_XS,
+                colors::ACCENT_GOLD,
             );
+            y += 18.0;
+        }
+        for line in &lines {
+            if y + 16.0 > dossier_limit {
+                break;
+            }
+            let color = match line.level {
+                1 => colors::ACCENT_SKY,
+                2 => colors::ACCENT_GOLD,
+                _ => colors::FUEL_GOOD,
+            };
+            draw_small_caps(&line.label, info_x, y, fonts::SIZE_XS, color);
+            y = draw_wrapped_text(
+                &line.value,
+                info_x + 82.0,
+                y,
+                info_w - 82.0,
+                fonts::SIZE_XS,
+                15.0,
+                colors::TEXT_SECONDARY,
+                2,
+            ) + 4.0;
+        }
+
+        if let Some(dialogue_text) = game_state.current_passenger_dialogue.as_ref() {
+            if y + 18.0 <= dossier_limit {
+                let preview = if dialogue_text.len() > 100 {
+                    format!("\"{}...\"", &dialogue_text[..100])
+                } else {
+                    format!("\"{}\"", dialogue_text)
+                };
+                draw_wrapped_text(
+                    &preview,
+                    info_x,
+                    y + 8.0,
+                    info_w,
+                    fonts::SIZE_SM,
+                    18.0,
+                    colors::TEXT_MUTED,
+                    2,
+                );
+            }
         }
 
         let (accept_text, decline_text) = if let Some(data) = game_data {
@@ -131,7 +176,6 @@ pub fn draw_ride_request(game_state: &GameState, game_data: Option<&GameData>) -
             ("Accept (SPACE)", "Decline (ESC)")
         };
 
-        let btn_h = 48.0;
         let gap = 14.0;
         let btn_w = (info_w - gap) / 2.0;
         let btn_y = panel.bottom() - spacing::PADDING_MD - btn_h;

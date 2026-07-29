@@ -44,7 +44,9 @@
       }
     ],
     "guidelineExceptions": [
-      "eye_contact_lonely"
+      "chen_dim_request",
+      "eye_contact_lonely",
+      "mirror_truth"
     ],
     "deceptionLevel": 0.1,
     "stressLevel": 0.7,
@@ -207,6 +209,7 @@
       }
     ],
     "guidelineExceptions": [
+      "hunger_shared_meal",
       "shortcut_time_critical"
     ],
     "stateProfile": {
@@ -358,7 +361,8 @@
       }
     ],
     "guidelineExceptions": [
-      "gps_passenger_warning"
+      "gps_passenger_warning",
+      "roadside_lure"
     ],
     "deceptionLevel": 0.2,
     "stressLevel": 0.8,
@@ -504,6 +508,7 @@
       }
     ],
     "guidelineExceptions": [
+      "hunger_shared_meal",
       "stop_emergency_need"
     ],
     "deceptionLevel": 0.3,
@@ -577,7 +582,52 @@
     "wantedItems": [
       "Blood Vial",
       "Sulfur Crystal"
-    ]
+    ],
+    "stateProfile": {
+      "needType": "decay",
+      "initialLevel": 50,
+      "thresholds": {
+        "warning": 62,
+        "critical": 80,
+        "meltdown": 93
+      },
+      "needChange": {
+        "passive": 5,
+        "obey": 9,
+        "break": 3,
+        "exceptionRelief": 30
+      },
+      "exceptionId": "stop_emergency_need",
+      "tellIntensities": {
+        "warning": [
+          "moderate"
+        ],
+        "critical": [
+          "obvious"
+        ]
+      },
+      "dialogueByStage": {
+        "warning": [
+          "Something in the bag needs attending to. Soon.",
+          "You would not want it to spoil in your back seat."
+        ],
+        "critical": [
+          "Pull over. I am not asking twice.",
+          "Do you smell that? That is a schedule being missed."
+        ],
+        "meltdown": [
+          "Then we do this here, in traffic, with the meter running."
+        ]
+      },
+      "confidenceImpact": {
+        "warning": -0.05,
+        "critical": -0.1
+      },
+      "trustImpact": {
+        "warning": 0.05,
+        "critical": 0.1
+      }
+    }
   },
   {
     "id": 5,
@@ -677,6 +727,69 @@
       "Contract Fragment",
       "Blood Vial",
       "Dusty Mirror"
+    ],
+    "guidelineExceptions": [
+      "collector_temptation"
+    ],
+    "stateProfile": {
+      "needType": "hunger",
+      "initialLevel": 40,
+      "thresholds": {
+        "warning": 58,
+        "critical": 78,
+        "meltdown": 92
+      },
+      "needChange": {
+        "passive": 4,
+        "obey": 8,
+        "break": 2,
+        "exceptionRelief": 32
+      },
+      "exceptionId": "collector_temptation",
+      "tellIntensities": {
+        "warning": [
+          "moderate"
+        ],
+        "critical": [
+          "obvious"
+        ]
+      },
+      "dialogueByStage": {
+        "warning": [
+          "You carry something interesting. I can hear it.",
+          "Everything on that seat has a price. Name one."
+        ],
+        "critical": [
+          "Give it to me. I will make it worth the night.",
+          "You are wasting what you do not understand."
+        ],
+        "meltdown": [
+          "Then I take it the old way, and you keep the change."
+        ]
+      },
+      "confidenceImpact": {
+        "warning": -0.05,
+        "critical": -0.1
+      },
+      "trustImpact": {
+        "warning": 0.05,
+        "critical": 0.1
+      }
+    },
+    "tells": [
+      {
+        "type": "verbal",
+        "intensity": "moderate",
+        "description": "Prices the contents of your cab aloud",
+        "triggerPhrase": "Name one",
+        "reliability": 0.8
+      },
+      {
+        "type": "visual",
+        "intensity": "subtle",
+        "description": "Eyes settle on whatever you are carrying",
+        "reliability": 0.65
+      }
     ]
   },
   {
@@ -786,7 +899,52 @@
     "wantedItems": [
       "Lost Phone",
       "Forgotten Wallet"
-    ]
+    ],
+    "stateProfile": {
+      "needType": "loneliness",
+      "initialLevel": 48,
+      "thresholds": {
+        "warning": 60,
+        "critical": 79,
+        "meltdown": 91
+      },
+      "needChange": {
+        "passive": 4,
+        "obey": 8,
+        "break": 2,
+        "exceptionRelief": 28
+      },
+      "exceptionId": "eye_contact_lonely",
+      "tellIntensities": {
+        "warning": [
+          "moderate"
+        ],
+        "critical": [
+          "obvious"
+        ]
+      },
+      "dialogueByStage": {
+        "warning": [
+          "Is my mum still at the house on Ferris Street?",
+          "Nobody has talked to me in a really long time."
+        ],
+        "critical": [
+          "Why will nobody answer me? I have been so good.",
+          "Please do not stop talking. It gets dark when you stop."
+        ],
+        "meltdown": [
+          "I do not want to be lost again! Look at me!"
+        ]
+      },
+      "confidenceImpact": {
+        "warning": -0.05,
+        "critical": -0.1
+      },
+      "trustImpact": {
+        "warning": 0.05,
+        "critical": 0.1
+      }
+    }
   },
   {
     "id": 7,
@@ -907,7 +1065,52 @@
     "wantsTrade": true,
     "wantedItems": [
       "Faded Photograph"
-    ]
+    ],
+    "stateProfile": {
+      "needType": "fear",
+      "initialLevel": 52,
+      "thresholds": {
+        "warning": 63,
+        "critical": 81,
+        "meltdown": 94
+      },
+      "needChange": {
+        "passive": 5,
+        "obey": 10,
+        "break": 3,
+        "exceptionRelief": 30
+      },
+      "exceptionId": "windows_suffocation",
+      "tellIntensities": {
+        "warning": [
+          "moderate"
+        ],
+        "critical": [
+          "obvious"
+        ]
+      },
+      "dialogueByStage": {
+        "warning": [
+          "Could you crack a window? The air in here is thick.",
+          "It smells like smoke to you too, does it not?"
+        ],
+        "critical": [
+          "I cannot breathe. Please, the window, please.",
+          "It is getting hot. Tell me it is not getting hot."
+        ],
+        "meltdown": [
+          "Let me out! It is burning again, it is burning again!"
+        ]
+      },
+      "confidenceImpact": {
+        "warning": -0.05,
+        "critical": -0.1
+      },
+      "trustImpact": {
+        "warning": 0.05,
+        "critical": 0.1
+      }
+    }
   },
   {
     "id": 8,
@@ -961,8 +1164,9 @@
       }
     ],
     "guidelineExceptions": [
-      "speak_nervous_passenger",
-      "shortcut_time_critical"
+      "roadside_lure",
+      "shortcut_time_critical",
+      "speak_nervous_passenger"
     ],
     "deceptionLevel": 0.1,
     "stressLevel": 0.9,
@@ -1024,7 +1228,52 @@
     "wantedItems": [
       "Holy Water Vial",
       "Rune Stone"
-    ]
+    ],
+    "stateProfile": {
+      "needType": "fear",
+      "initialLevel": 50,
+      "thresholds": {
+        "warning": 62,
+        "critical": 80,
+        "meltdown": 93
+      },
+      "needChange": {
+        "passive": 5,
+        "obey": 9,
+        "break": 3,
+        "exceptionRelief": 28
+      },
+      "exceptionId": "speak_nervous_passenger",
+      "tellIntensities": {
+        "warning": [
+          "moderate"
+        ],
+        "critical": [
+          "obvious"
+        ]
+      },
+      "dialogueByStage": {
+        "warning": [
+          "Do not slow down through here. Please just do not slow down.",
+          "Did you see something on the treeline? Tell me you did not."
+        ],
+        "critical": [
+          "Keep talking. If you stop talking I will hear it instead.",
+          "It followed me out of the woods. It follows."
+        ],
+        "meltdown": [
+          "Drive! Do not look at the mirror, just drive!"
+        ]
+      },
+      "confidenceImpact": {
+        "warning": -0.05,
+        "critical": -0.1
+      },
+      "trustImpact": {
+        "warning": 0.05,
+        "critical": 0.1
+      }
+    }
   },
   {
     "id": 9,
@@ -1135,7 +1384,52 @@
     "wantsTrade": true,
     "wantedItems": [
       "Prayer Beads"
-    ]
+    ],
+    "stateProfile": {
+      "needType": "decay",
+      "initialLevel": 46,
+      "thresholds": {
+        "warning": 60,
+        "critical": 79,
+        "meltdown": 92
+      },
+      "needChange": {
+        "passive": 4,
+        "obey": 9,
+        "break": 2,
+        "exceptionRelief": 30
+      },
+      "exceptionId": "stop_emergency_need",
+      "tellIntensities": {
+        "warning": [
+          "moderate"
+        ],
+        "critical": [
+          "obvious"
+        ]
+      },
+      "dialogueByStage": {
+        "warning": [
+          "I only need a moment. I have somewhere I should have been.",
+          "Room 4. It is always room 4 when I close my eyes."
+        ],
+        "critical": [
+          "Stop the car. Someone is waiting and I am late again.",
+          "I could have fixed it. I had the chart in my hand."
+        ],
+        "meltdown": [
+          "Let me go back! I can still fix the chart!"
+        ]
+      },
+      "confidenceImpact": {
+        "warning": -0.05,
+        "critical": -0.1
+      },
+      "trustImpact": {
+        "warning": 0.05,
+        "critical": 0.1
+      }
+    }
   },
   {
     "id": 10,
@@ -1224,6 +1518,69 @@
     "wantsTrade": true,
     "wantedItems": [
       "Ancient Coin"
+    ],
+    "guidelineExceptions": [
+      "windows_drowned_air"
+    ],
+    "stateProfile": {
+      "needType": "decay",
+      "initialLevel": 48,
+      "thresholds": {
+        "warning": 61,
+        "critical": 80,
+        "meltdown": 93
+      },
+      "needChange": {
+        "passive": 4,
+        "obey": 9,
+        "break": 2,
+        "exceptionRelief": 29
+      },
+      "exceptionId": "windows_drowned_air",
+      "tellIntensities": {
+        "warning": [
+          "moderate"
+        ],
+        "critical": [
+          "obvious"
+        ]
+      },
+      "dialogueByStage": {
+        "warning": [
+          "Bit close in here. Mind the window, skipper?",
+          "Tide is wrong tonight. You can taste it."
+        ],
+        "critical": [
+          "I need the air. I have needed the air a long while.",
+          "The boat is still moored. She is still moored, is she not?"
+        ],
+        "meltdown": [
+          "I am not going under again! Open it! Open it!"
+        ]
+      },
+      "confidenceImpact": {
+        "warning": -0.05,
+        "critical": -0.1
+      },
+      "trustImpact": {
+        "warning": 0.05,
+        "critical": 0.1
+      }
+    },
+    "tells": [
+      {
+        "type": "verbal",
+        "intensity": "moderate",
+        "description": "Calls you skipper and asks after the tide",
+        "triggerPhrase": "Tide is wrong",
+        "reliability": 0.75
+      },
+      {
+        "type": "environmental",
+        "intensity": "obvious",
+        "description": "The footwell is wet and stays wet",
+        "reliability": 0.8
+      }
     ]
   },
   {
@@ -1324,6 +1681,70 @@
     "wantedItems": [
       "Rune Stone",
       "Tarot Card"
+    ],
+    "guidelineExceptions": [
+      "heed_prophecy",
+      "mirror_truth"
+    ],
+    "stateProfile": {
+      "needType": "fear",
+      "initialLevel": 44,
+      "thresholds": {
+        "warning": 59,
+        "critical": 78,
+        "meltdown": 91
+      },
+      "needChange": {
+        "passive": 4,
+        "obey": 8,
+        "break": 2,
+        "exceptionRelief": 31
+      },
+      "exceptionId": "heed_prophecy",
+      "tellIntensities": {
+        "warning": [
+          "moderate"
+        ],
+        "critical": [
+          "obvious"
+        ]
+      },
+      "dialogueByStage": {
+        "warning": [
+          "Take the next left. Do not ask me why yet.",
+          "I have already seen how this ride ends. Twice."
+        ],
+        "critical": [
+          "You did not listen. Now there are fewer endings left.",
+          "Please. I can only see the road you do not take."
+        ],
+        "meltdown": [
+          "It has already happened! It has already happened!"
+        ]
+      },
+      "confidenceImpact": {
+        "warning": -0.05,
+        "critical": -0.1
+      },
+      "trustImpact": {
+        "warning": 0.05,
+        "critical": 0.1
+      }
+    },
+    "tells": [
+      {
+        "type": "verbal",
+        "intensity": "moderate",
+        "description": "Gives you a direction before you reach the junction",
+        "triggerPhrase": "the next left",
+        "reliability": 0.8
+      },
+      {
+        "type": "behavioral",
+        "intensity": "subtle",
+        "description": "Flinches at turns you have not made yet",
+        "reliability": 0.7
+      }
     ]
   },
   {
@@ -1413,6 +1834,69 @@
     "wantsTrade": true,
     "wantedItems": [
       "Contract Fragment"
+    ],
+    "guidelineExceptions": [
+      "frank_melody_bait"
+    ],
+    "stateProfile": {
+      "needType": "wrath",
+      "initialLevel": 50,
+      "thresholds": {
+        "warning": 62,
+        "critical": 80,
+        "meltdown": 94
+      },
+      "needChange": {
+        "passive": 5,
+        "obey": 10,
+        "break": 3,
+        "exceptionRelief": 30
+      },
+      "exceptionId": "frank_melody_bait",
+      "tellIntensities": {
+        "warning": [
+          "moderate"
+        ],
+        "critical": [
+          "obvious"
+        ]
+      },
+      "dialogueByStage": {
+        "warning": [
+          "Hum it with me. Just the one bar, driver.",
+          "I wrote it. Whatever he says, I wrote it."
+        ],
+        "critical": [
+          "Sing it. You owe me that much for the fare.",
+          "He is owed since forty-nine and he does not forget."
+        ],
+        "meltdown": [
+          "Then he collects from you instead! Sing it!"
+        ]
+      },
+      "confidenceImpact": {
+        "warning": -0.05,
+        "critical": -0.1
+      },
+      "trustImpact": {
+        "warning": 0.05,
+        "critical": 0.1
+      }
+    },
+    "tells": [
+      {
+        "type": "verbal",
+        "intensity": "moderate",
+        "description": "Presses you to hum a melody you do not know",
+        "triggerPhrase": "Hum it with me",
+        "reliability": 0.85
+      },
+      {
+        "type": "behavioral",
+        "intensity": "obvious",
+        "description": "Fingers a keyboard that is not there, leaving marks",
+        "reliability": 0.7
+      }
     ]
   },
   {
@@ -1505,6 +1989,69 @@
       "Blood Vial",
       "Cursed Dice",
       "Contract Fragment"
+    ],
+    "guidelineExceptions": [
+      "agnes_true_blessing"
+    ],
+    "stateProfile": {
+      "needType": "fear",
+      "initialLevel": 42,
+      "thresholds": {
+        "warning": 60,
+        "critical": 80,
+        "meltdown": 92
+      },
+      "needChange": {
+        "passive": 4,
+        "obey": 8,
+        "break": 2,
+        "exceptionRelief": 32
+      },
+      "exceptionId": "agnes_true_blessing",
+      "tellIntensities": {
+        "warning": [
+          "moderate"
+        ],
+        "critical": [
+          "obvious"
+        ]
+      },
+      "dialogueByStage": {
+        "warning": [
+          "Would you accept a blessing? It costs you nothing.",
+          "I have been in three cabs tonight. Yours is the quiet one."
+        ],
+        "critical": [
+          "Take it. I am not certain I can carry it much further.",
+          "Something followed me out of the last house."
+        ],
+        "meltdown": [
+          "Take the blessing! I cannot hold it alone!"
+        ]
+      },
+      "confidenceImpact": {
+        "warning": -0.05,
+        "critical": -0.1
+      },
+      "trustImpact": {
+        "warning": 0.05,
+        "critical": 0.1
+      }
+    },
+    "tells": [
+      {
+        "type": "verbal",
+        "intensity": "moderate",
+        "description": "Offers a blessing more insistently each mile",
+        "triggerPhrase": "Accept a blessing",
+        "reliability": 0.8
+      },
+      {
+        "type": "behavioral",
+        "intensity": "subtle",
+        "description": "Works the rosary faster than she is speaking",
+        "reliability": 0.65
+      }
     ]
   },
   {
@@ -1586,6 +2133,69 @@
     "wantedItems": [
       "Faded Photograph",
       "Crumpled Note"
+    ],
+    "guidelineExceptions": [
+      "detective_probe"
+    ],
+    "stateProfile": {
+      "needType": "wrath",
+      "initialLevel": 46,
+      "thresholds": {
+        "warning": 61,
+        "critical": 80,
+        "meltdown": 93
+      },
+      "needChange": {
+        "passive": 5,
+        "obey": 9,
+        "break": 3,
+        "exceptionRelief": 29
+      },
+      "exceptionId": "detective_probe",
+      "tellIntensities": {
+        "warning": [
+          "moderate"
+        ],
+        "critical": [
+          "obvious"
+        ]
+      },
+      "dialogueByStage": {
+        "warning": [
+          "You work these streets nightly. You have seen things.",
+          "Humour me. What did you pick up on Ferris last month?"
+        ],
+        "critical": [
+          "Do not get careful on me now. Answer the question.",
+          "Twelve drivers. Twelve. And you are the one still talking."
+        ],
+        "meltdown": [
+          "Pull over. You are going to tell me everything."
+        ]
+      },
+      "confidenceImpact": {
+        "warning": -0.05,
+        "critical": -0.1
+      },
+      "trustImpact": {
+        "warning": 0.05,
+        "critical": 0.1
+      }
+    },
+    "tells": [
+      {
+        "type": "verbal",
+        "intensity": "moderate",
+        "description": "Asks the same question in three different shapes",
+        "triggerPhrase": "Humour me",
+        "reliability": 0.8
+      },
+      {
+        "type": "behavioral",
+        "intensity": "subtle",
+        "description": "Writes down your answers without looking at the pad",
+        "reliability": 0.7
+      }
     ]
   },
   {
@@ -1699,6 +2309,70 @@
       "Ancient Coin",
       "Ornate Ring",
       "Old Key"
+    ],
+    "guidelineExceptions": [
+      "control_surrender",
+      "mayor_defiance"
+    ],
+    "stateProfile": {
+      "needType": "wrath",
+      "initialLevel": 38,
+      "thresholds": {
+        "warning": 56,
+        "critical": 76,
+        "meltdown": 90
+      },
+      "needChange": {
+        "passive": 6,
+        "obey": 11,
+        "break": 4,
+        "exceptionRelief": 34
+      },
+      "exceptionId": "mayor_defiance",
+      "tellIntensities": {
+        "warning": [
+          "moderate"
+        ],
+        "critical": [
+          "obvious"
+        ]
+      },
+      "dialogueByStage": {
+        "warning": [
+          "This is my city, driver. You are a guest in it.",
+          "Take the route I name and the night stays civil."
+        ],
+        "critical": [
+          "You were told. Being told is the courtesy you get once.",
+          "I have unmade streets for less than this."
+        ],
+        "meltdown": [
+          "Then the city takes it back, and you with it."
+        ]
+      },
+      "confidenceImpact": {
+        "warning": -0.05,
+        "critical": -0.1
+      },
+      "trustImpact": {
+        "warning": 0.05,
+        "critical": 0.1
+      }
+    },
+    "tells": [
+      {
+        "type": "verbal",
+        "intensity": "obvious",
+        "description": "Names a route as though it were already law",
+        "triggerPhrase": "the route I name",
+        "reliability": 0.9
+      },
+      {
+        "type": "environmental",
+        "intensity": "obvious",
+        "description": "Streetlights hold green wherever he is looking",
+        "reliability": 0.85
+      }
     ]
   },
   {
@@ -1798,6 +2472,70 @@
     "wantedItems": [
       "Ancient Coin",
       "Cursed Dice"
+    ],
+    "guidelineExceptions": [
+      "control_surrender",
+      "deaths_offer"
+    ],
+    "stateProfile": {
+      "needType": "hunger",
+      "initialLevel": 36,
+      "thresholds": {
+        "warning": 55,
+        "critical": 75,
+        "meltdown": 89
+      },
+      "needChange": {
+        "passive": 6,
+        "obey": 12,
+        "break": 4,
+        "exceptionRelief": 35
+      },
+      "exceptionId": "deaths_offer",
+      "tellIntensities": {
+        "warning": [
+          "moderate"
+        ],
+        "critical": [
+          "obvious"
+        ]
+      },
+      "dialogueByStage": {
+        "warning": [
+          "You have driven a long shift. I could shorten it.",
+          "Twelve before you took the offer. It is not a cruel one."
+        ],
+        "critical": [
+          "The meter runs both ways tonight, driver.",
+          "Say yes and you never have to make this turn again."
+        ],
+        "meltdown": [
+          "Then I will simply wait at the end of the street."
+        ]
+      },
+      "confidenceImpact": {
+        "warning": -0.05,
+        "critical": -0.1
+      },
+      "trustImpact": {
+        "warning": 0.05,
+        "critical": 0.1
+      }
+    },
+    "tells": [
+      {
+        "type": "verbal",
+        "intensity": "obvious",
+        "description": "Counts the drivers who came before you",
+        "triggerPhrase": "Twelve before you",
+        "reliability": 0.9
+      },
+      {
+        "type": "visual",
+        "intensity": "obvious",
+        "description": "No breath fogs the glass beside him",
+        "reliability": 0.85
+      }
     ]
   }
 ]
