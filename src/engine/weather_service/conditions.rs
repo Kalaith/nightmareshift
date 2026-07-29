@@ -60,7 +60,6 @@ impl WeatherService {
             intensity,
             visibility,
             description: Self::get_weather_description(weather_type, intensity),
-            icon: Self::get_weather_icon(weather_type, intensity),
             effects,
             duration,
             start_time: current_time,
@@ -261,28 +260,6 @@ impl WeatherService {
         }
     }
 
-    /// Get weather icon
-    fn get_weather_icon(weather_type: WeatherType, intensity: WeatherIntensity) -> String {
-        match weather_type {
-            WeatherType::Clear => "☀️".to_string(),
-            WeatherType::Rain => if intensity == WeatherIntensity::Heavy {
-                "🌧️"
-            } else {
-                "🌦️"
-            }
-            .to_string(),
-            WeatherType::Fog => "🌫️".to_string(),
-            WeatherType::Snow => if intensity == WeatherIntensity::Heavy {
-                "❄️"
-            } else {
-                "🌨️"
-            }
-            .to_string(),
-            WeatherType::Thunderstorm => "⛈️".to_string(),
-            WeatherType::Wind => "💨".to_string(),
-        }
-    }
-
     /// Get weather duration in minutes
     fn get_weather_duration(
         weather_type: WeatherType,
@@ -341,7 +318,6 @@ impl WeatherService {
                     effects: Self::get_weather_effects(current.weather_type, new_intensity),
                     description: Self::get_weather_description(current.weather_type, new_intensity),
                     visibility: Self::calculate_visibility(current.weather_type, new_intensity),
-                    icon: Self::get_weather_icon(current.weather_type, new_intensity),
                     ..current.clone()
                 };
             }
@@ -371,7 +347,6 @@ mod tests {
             intensity,
             visibility: WeatherService::calculate_visibility(weather_type, intensity),
             description: String::new(),
-            icon: String::new(),
             effects: WeatherService::get_weather_effects(weather_type, intensity),
             duration: 60,
             start_time: 0.0,

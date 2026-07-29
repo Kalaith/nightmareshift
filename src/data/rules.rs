@@ -90,8 +90,6 @@ pub struct Rule {
     pub action_type: Option<ActionType>,
     #[serde(rename = "relatedGuidelineId")]
     pub related_guideline_id: Option<u32>,
-    #[serde(rename = "defaultSafety")]
-    pub default_safety: Option<String>,
     #[serde(rename = "defaultOutcome")]
     pub default_outcome: Option<String>,
     #[serde(default)]
@@ -173,14 +171,14 @@ pub struct Guideline {
     pub description: String,
     #[serde(default)]
     pub difficulty: Difficulty,
-    #[serde(rename = "type", default)]
-    pub guideline_type: RuleType,
     #[serde(default)]
     pub visible: bool,
-    #[serde(rename = "isGuideline", default)]
-    pub is_guideline: bool,
-    #[serde(rename = "defaultSafety")]
-    pub default_safety: Option<String>,
+    // `type`, `isGuideline` and `defaultSafety` are authored on all eighteen
+    // guidelines and read by nothing. They are redundant rather than missing:
+    // whether an exception is reachable is decided by which *rule* was drawn
+    // for the shift, via `related_guideline_id`, so a guideline's own type
+    // selects nothing. `isGuideline` is true on all eighteen and
+    // `defaultSafety` is "safe" on all eighteen.
     #[serde(default)]
     pub exceptions: Vec<GuidelineException>,
     #[serde(rename = "followConsequences", default)]

@@ -19,7 +19,8 @@ pub struct Skill {
     pub name: String,
     pub description: String,
     pub cost: u32,
-    pub icon: String,
+    // `icon` is authored on every skill and read by nothing: the skill tree
+    // draws a category mark and the name's initials.
     pub category: String,
     #[serde(default)]
     pub prerequisites: Vec<String>,

@@ -205,7 +205,7 @@ impl PassengerCard {
             2,
         ) + 8.0;
 
-        let route = format!("{} → {}", passenger.pickup, passenger.destination);
+        let route = format!("{} -> {}", passenger.pickup, passenger.destination);
         y = draw_wrapped_text(
             &route,
             inner.x,

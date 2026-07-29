@@ -231,6 +231,80 @@ mod tests {
         walk(&value, "");
     }
 
+    /// Text written in Rust gets no stripping pass either.
+    ///
+    /// The two tests either side of this one walk JSON, which is where the
+    /// glyph problem was found and fixed. It was still living in the source:
+    /// an em dash in the almanac's need line and in both of the guideline
+    /// screen's almanac hints, a bullet in its decision log, an arrow between
+    /// a passenger's pickup and destination, and four emoji on the route
+    /// preference labels. The last of those never reached the screen only
+    /// because its single caller filtered non-ASCII characters itself before
+    /// drawing — which is the arrangement the loader's stripping pass exists
+    /// to replace, since it makes correctness depend on each caller
+    /// remembering.
+    ///
+    /// Only string literals are checked. Comments are prose for people and
+    /// several here use em dashes deliberately.
+    #[test]
+    fn displayed_source_text_carries_no_undrawable_glyphs() {
+        // Files whose literals reach a font, plus the data types that build
+        // strings for them. Listed rather than globbed because `include_str!`
+        // needs a literal path; a new screen should be added here.
+        const SOURCES: [(&str, &str); 8] = [
+            ("ui/components.rs", include_str!("../ui/components.rs")),
+            ("data/passenger.rs", include_str!("passenger.rs")),
+            ("data/event.rs", include_str!("event.rs")),
+            (
+                "screens/game_screens/dossier.rs",
+                include_str!("../screens/game_screens/dossier.rs"),
+            ),
+            (
+                "screens/game_screens/guidelines.rs",
+                include_str!("../screens/game_screens/guidelines.rs"),
+            ),
+            (
+                "screens/game_screens/dropoff.rs",
+                include_str!("../screens/game_screens/dropoff.rs"),
+            ),
+            (
+                "screens/game_screens/interaction.rs",
+                include_str!("../screens/game_screens/interaction.rs"),
+            ),
+            (
+                "screens/game_screens/modals.rs",
+                include_str!("../screens/game_screens/modals.rs"),
+            ),
+        ];
+
+        for (name, source) in SOURCES {
+            for (number, line) in source.lines().enumerate() {
+                let code = line.trim_start();
+                if code.starts_with("//") {
+                    continue;
+                }
+                let mut in_string = false;
+                let mut escaped = false;
+                for ch in line.chars() {
+                    if escaped {
+                        escaped = false;
+                        continue;
+                    }
+                    match ch {
+                        '\\' if in_string => escaped = true,
+                        '"' => in_string = !in_string,
+                        _ if in_string && !ch.is_ascii() => panic!(
+                            "{name}:{} draws {ch:?}, which the bundled font renders as a box: {}",
+                            number + 1,
+                            code.trim()
+                        ),
+                        _ => {}
+                    }
+                }
+            }
+        }
+    }
+
     /// The content files get no stripping pass, so what is authored there is
     /// what is drawn.
     ///

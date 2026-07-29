@@ -125,11 +125,11 @@ pub fn draw_guideline_decision(
                     );
                     let (verdict, colour) = match &active {
                         Some(exception) if exception.breaking_safer => (
-                            format!("Almanac: an exception applies — {}", exception.description),
+                            format!("Almanac: an exception applies - {}", exception.description),
                             colors::FUEL_GOOD,
                         ),
                         Some(exception) => (
-                            format!("Almanac: {} — the rule still holds", exception.description),
+                            format!("Almanac: {} - the rule still holds", exception.description),
                             colors::ACCENT_WARNING,
                         ),
                         None => (
@@ -200,7 +200,7 @@ pub fn draw_guideline_decision(
                     };
                     let age = (get_time() - tell.detection_time).max(0.0);
                     let tell_text = format!(
-                        "• [{}] {} ({}, {:.0}s)",
+                        "- [{}] {} ({}, {:.0}s)",
                         intensity_text, tell.tell.description, noticed_text, age
                     );
                     draw_ui_text(

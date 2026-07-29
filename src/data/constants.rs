@@ -9,19 +9,6 @@ fn default_nights_per_run() -> u32 {
     5
 }
 
-/// Storage keys for persistence
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct StorageKeys {
-    #[serde(rename = "PLAYER_STATS")]
-    pub player_stats: String,
-    #[serde(rename = "LEADERBOARD")]
-    pub leaderboard: String,
-    #[serde(rename = "SAVE_GAME")]
-    pub save_game: String,
-    #[serde(rename = "BACKSTORY_PROGRESS")]
-    pub backstory_progress: String,
-}
-
 /// Core game constants
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GameConstants {
@@ -99,16 +86,10 @@ pub struct FuelConstants {
 /// Timing constants
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TimingConstants {
-    #[serde(rename = "RIDE_REQUEST_BASE_DELAY_MS")]
-    pub ride_request_base_delay_ms: u32,
-    #[serde(rename = "RIDE_REQUEST_RANDOM_DELAY_MS")]
-    pub ride_request_random_delay_ms: u32,
-    #[serde(rename = "PASSENGER_INTERACTION_DELAY_MS")]
-    pub passenger_interaction_delay_ms: u32,
-    #[serde(rename = "DIALOGUE_DISPLAY_DELAY_MS")]
-    pub dialogue_display_delay_ms: u32,
-    #[serde(rename = "GAME_START_DELAY_MS")]
-    pub game_start_delay_ms: u32,
+    // The five *_DELAY_MS values authored beside these are not read. This
+    // game is frame-driven: nothing waits on a millisecond clock, and the
+    // pacing they describe belongs to the JavaScript version this was ported
+    // from. Serde ignores them.
     #[serde(rename = "SHIFT_END_WARNING_THRESHOLD")]
     pub shift_end_warning_threshold: u32,
     #[serde(rename = "CRITICAL_TIME_THRESHOLD")]
@@ -238,32 +219,9 @@ pub struct RarityWeights {
     pub legendary: u32,
 }
 
-/// Screen identifiers
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Screens {
-    #[serde(rename = "LOADING")]
-    pub loading: String,
-    #[serde(rename = "LEADERBOARD")]
-    pub leaderboard: String,
-    #[serde(rename = "BRIEFING")]
-    pub briefing: String,
-    #[serde(rename = "GAME")]
-    pub game: String,
-    #[serde(rename = "GAME_OVER")]
-    pub game_over: String,
-    #[serde(rename = "SUCCESS")]
-    pub success: String,
-    #[serde(rename = "SKILL_TREE")]
-    pub skill_tree: String,
-    #[serde(rename = "ALMANAC")]
-    pub almanac: String,
-}
-
 /// Root constants structure matching constants.json
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ConstantsData {
-    #[serde(rename = "STORAGE_KEYS")]
-    pub storage_keys: StorageKeys,
     #[serde(rename = "GAME_CONSTANTS")]
     pub game_constants: GameConstants,
     #[serde(rename = "FUEL")]
@@ -286,8 +244,6 @@ pub struct ConstantsData {
     pub scoring: ScoringConstants,
     #[serde(rename = "RARITY_WEIGHTS")]
     pub rarity_weights: RarityWeights,
-    #[serde(rename = "SCREENS")]
-    pub screens: Screens,
 }
 
 // No default() implementation - all values MUST come from constants.json

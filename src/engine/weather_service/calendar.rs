@@ -109,8 +109,6 @@ impl WeatherService {
 
         Season {
             season_type,
-            month,
-            temperature,
             description,
         }
     }

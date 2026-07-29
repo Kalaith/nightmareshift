@@ -41,14 +41,19 @@ pub enum PreferenceLevel {
 }
 
 impl PreferenceLevel {
-    /// Get display text with icon for UI
+    /// How a preference reads on the driving screen.
+    ///
+    /// Plain ASCII, because the bundled font draws nothing else. These were
+    /// authored with emoji and the one caller stripped non-ASCII characters
+    /// itself before drawing them — which worked, and made the fix depend on
+    /// that caller remembering. The strings are now already sayable.
     pub fn display_text(&self) -> &'static str {
         match self {
-            PreferenceLevel::Loves => "❤️ LOVES",
-            PreferenceLevel::Likes => "👍 Likes",
+            PreferenceLevel::Loves => "LOVES",
+            PreferenceLevel::Likes => "Likes",
             PreferenceLevel::Neutral => "",
-            PreferenceLevel::Dislikes => "👎 Dislikes",
-            PreferenceLevel::Fears => "😨 FEARS",
+            PreferenceLevel::Dislikes => "Dislikes",
+            PreferenceLevel::Fears => "FEARS",
         }
     }
 }
@@ -95,10 +100,9 @@ pub struct PassengerTell {
     pub description: String,
     #[serde(rename = "triggerPhrase")]
     pub trigger_phrase: Option<String>,
-    #[serde(rename = "animationCue")]
-    pub animation_cue: Option<String>,
-    #[serde(rename = "audioCue")]
-    pub audio_cue: Option<String>,
+    // `animationCue` and `audioCue` are authored on the tells and read by
+    // nothing, because this game has neither an animation system nor any
+    // audio at all. A tell reaches the player as text.
     #[serde(default)]
     pub reliability: f32,
 }
@@ -246,7 +250,8 @@ fn one_u32() -> u32 {
 pub struct Passenger {
     pub id: u32,
     pub name: String,
-    pub emoji: String,
+    // `emoji` is authored on all sixteen passengers and read by nothing:
+    // the screens draw vector portraits and shapes, not glyphs.
     pub description: String,
     pub pickup: String,
     pub destination: String,

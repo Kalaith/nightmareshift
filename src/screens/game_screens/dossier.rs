@@ -90,7 +90,7 @@ pub fn build(
             lines.push(DossierLine::new(
                 "Need",
                 format!(
-                    "{} — restless past {}, critical at {}",
+                    "{} - restless past {}, critical at {}",
                     need_label(profile.need_type),
                     profile.thresholds.warning,
                     profile.thresholds.critical

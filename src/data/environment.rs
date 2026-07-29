@@ -73,7 +73,7 @@ pub struct WeatherCondition {
     pub intensity: WeatherIntensity,
     pub visibility: u32,
     pub description: String,
-    pub icon: String,
+    // `icon` is an emoji the bundled font cannot draw, and nothing read it.
     #[serde(default)]
     pub effects: Vec<WeatherEffect>,
     pub duration: u32,
@@ -87,7 +87,6 @@ impl Default for WeatherCondition {
             intensity: WeatherIntensity::Light,
             visibility: 100,
             description: "Clear night skies".to_string(),
-            icon: "🌙".to_string(),
             effects: Vec::new(),
             duration: 60,
             start_time: 0.0,
@@ -168,8 +167,8 @@ pub enum Temperature {
 pub struct Season {
     #[serde(rename = "type")]
     pub season_type: SeasonType,
-    pub month: u32,
-    pub temperature: Temperature,
+    // `month` and `temperature` are authored and read by nothing: the season
+    // reaches the game through `season_type` and its description.
     pub description: String,
 }
 
@@ -177,8 +176,6 @@ impl Default for Season {
     fn default() -> Self {
         Self {
             season_type: SeasonType::Fall,
-            month: 10,
-            temperature: Temperature::Cool,
             description: "Autumn brings unpredictable conditions".to_string(),
         }
     }
