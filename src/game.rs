@@ -374,6 +374,9 @@ impl Game {
         }
 
         self.expire_delete_prompt();
+        // Whatever pushed the passenger's need this frame, settle what their
+        // escalation did to the driver's standing exactly once.
+        self.game_state.settle_passenger_trust();
 
         // Update effects
         self.transition.update(dt);

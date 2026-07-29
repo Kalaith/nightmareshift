@@ -147,10 +147,16 @@ pub struct PassengerStateProfile {
     pub tell_intensities: Option<TellIntensityMap>,
     #[serde(rename = "dialogueByStage")]
     pub dialogue_by_stage: Option<DialogueByStage>,
-    #[serde(rename = "confidenceImpact")]
-    pub confidence_impact: Option<StageImpact>,
+    /// What a passenger's escalation does to the driver's standing, keyed by
+    /// stage name. See `NeedStage::key`.
     #[serde(rename = "trustImpact")]
     pub trust_impact: Option<StageImpact>,
+    // `confidenceImpact` is authored beside `trustImpact` on thirteen
+    // profiles and is deliberately not deserialized: there is no confidence
+    // stat anywhere in the game for it to move, and a field parsed into a
+    // struct nothing reads is the thing this project keeps finding. Serde
+    // ignores it, so the authored numbers survive in the JSON for whoever
+    // builds that system.
 }
 
 fn one_f32() -> f32 {

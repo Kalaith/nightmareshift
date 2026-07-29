@@ -102,6 +102,15 @@ pub struct PassengerNeedState {
     pub last_updated: f64,
     pub revealed_stages: HashMap<NeedStage, bool>,
     pub profile: PassengerStateProfile,
+    /// Trust this passenger's escalation has earned or cost the driver, not
+    /// yet folded into `GameState::player_trust`.
+    ///
+    /// Every profile authors a `trustImpact` per stage and nothing read it.
+    /// It is accumulated here rather than applied in place because the state
+    /// machine is handed a need state, not the whole game: six different
+    /// systems push a passenger's need around and none of them should have to
+    /// remember to settle the driver's trust afterwards.
+    pub pending_trust: f32,
 }
 
 impl PassengerNeedState {
@@ -117,7 +126,13 @@ impl PassengerNeedState {
             last_updated: current_time,
             revealed_stages: HashMap::new(),
             profile,
+            pending_trust: 0.0,
         })
+    }
+
+    /// Take the trust this passenger's escalation has moved, leaving none.
+    pub fn take_pending_trust(&mut self) -> f32 {
+        std::mem::replace(&mut self.pending_trust, 0.0)
     }
 
     /// Calculate stage from level and thresholds
@@ -574,6 +589,23 @@ impl GameState {
         self.player_trust = (self.player_trust + delta).clamp(0.0, 1.0);
     }
 
+    /// Fold any trust the current passenger's escalation moved into the
+    /// driver's standing.
+    ///
+    /// Called once a frame rather than at each of the six places that push a
+    /// passenger's need around, so no system has to remember to do it and none
+    /// can do it twice.
+    pub fn settle_passenger_trust(&mut self) {
+        let delta = self
+            .current_passenger_need_state
+            .as_mut()
+            .map(|need| need.take_pending_trust())
+            .unwrap_or(0.0);
+        if delta != 0.0 {
+            self.adjust_player_trust(delta);
+        }
+    }
+
     /// Update consecutive route streak
     pub fn update_route_streak(&mut self, route: RouteType) {
         if let Some(ref mut streak) = self.consecutive_route_streak {
@@ -617,6 +649,95 @@ impl GameState {
         };
 
         (base + ride_bonus + time_bonus).saturating_sub(violation_penalty)
+    }
+}
+
+#[cfg(test)]
+mod trust_tests {
+    use super::*;
+    use crate::data::loader::{load_constants, load_passengers};
+
+    fn state_with_passenger() -> GameState {
+        let constants = load_constants();
+        let mut state = GameState::new(0.0, &constants.game_constants);
+        let passenger = load_passengers()
+            .into_iter()
+            .find(|p| p.state_profile.is_some())
+            .expect("a passenger with a profile");
+        state.current_passenger_need_state = PassengerNeedState::from_passenger(&passenger, 0.0);
+        state.current_passenger = Some(passenger);
+        state
+    }
+
+    /// Settling folds the banked trust in and leaves nothing behind, so
+    /// calling it every frame cannot apply the same escalation twice.
+    #[test]
+    fn settling_applies_once_and_drains() {
+        let mut state = state_with_passenger();
+        let before = state.player_trust;
+        state
+            .current_passenger_need_state
+            .as_mut()
+            .expect("a need state")
+            .pending_trust = 0.1;
+
+        state.settle_passenger_trust();
+        let after = state.player_trust;
+        assert!(after > before, "banked trust never reached the driver");
+
+        state.settle_passenger_trust();
+        assert_eq!(state.player_trust, after, "the same escalation paid twice");
+    }
+
+    /// Trust stays a probability. `calculate_detection_probability` multiplies
+    /// by it and compares it against `trustRequired`, so a value outside 0..1
+    /// would quietly break tell detection rather than fail loudly.
+    #[test]
+    fn settling_cannot_push_trust_out_of_range() {
+        for (start, pending) in [(0.95_f32, 1.0_f32), (0.05, -1.0)] {
+            let mut state = state_with_passenger();
+            state.player_trust = start;
+            state
+                .current_passenger_need_state
+                .as_mut()
+                .expect("a need state")
+                .pending_trust = pending;
+            state.settle_passenger_trust();
+            assert!(
+                (0.0..=1.0).contains(&state.player_trust),
+                "trust left the range: {}",
+                state.player_trust
+            );
+        }
+    }
+
+    /// Something has to call it. Banking trust that is never drained is the
+    /// same bug as never banking it, and every test above passes with the
+    /// call in `Game::update` deleted.
+    ///
+    /// This reads the frame loop's source, which is the only way to check a
+    /// call site that needs a window to run. The cost is real and this
+    /// project has paid it once: a scanning test broke on code motion when
+    /// `game.rs` was split, and the fix was repointing the path. If the frame
+    /// loop moves again, point this at wherever it went.
+    #[test]
+    fn the_frame_loop_settles_trust() {
+        let frame_loop = include_str!("../game.rs");
+        assert!(
+            frame_loop.contains("settle_passenger_trust()"),
+            "nothing in the frame loop drains pending trust, so escalation \
+             banks standing that never reaches the driver"
+        );
+    }
+
+    /// With nobody aboard there is nothing to settle.
+    #[test]
+    fn settling_with_no_passenger_is_a_no_op() {
+        let constants = load_constants();
+        let mut state = GameState::new(0.0, &constants.game_constants);
+        let before = state.player_trust;
+        state.settle_passenger_trust();
+        assert_eq!(state.player_trust, before);
     }
 }
 

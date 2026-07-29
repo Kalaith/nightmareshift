@@ -133,6 +133,20 @@ impl PassengerStateMachine {
         let triggered_tells =
             if new_stage != previous_stage && !state.revealed_stages.contains_key(&new_stage) {
                 state.revealed_stages.insert(new_stage, true);
+                // The mask slipping cuts both ways. Every profile authors a
+                // `trustImpact` per stage — Mrs. Chen's is +0.05 at warning
+                // and +0.1 at critical — and nothing read it, so a passenger
+                // visibly coming apart changed nothing about how well the
+                // driver could read them. `player_trust` scales tell
+                // detection and gates it against `trustRequired`, so this is
+                // the loop that makes watching a passenger fray pay off.
+                state.pending_trust += state
+                    .profile
+                    .trust_impact
+                    .as_ref()
+                    .and_then(|impact| impact.get(new_stage.key()))
+                    .copied()
+                    .unwrap_or(0.0);
                 Self::collect_tells(
                     passenger,
                     new_stage,
@@ -315,6 +329,85 @@ impl PassengerStateMachine {
 mod tests {
     use super::*;
     use crate::data::loader::load_passengers;
+
+    /// Crossing into a stage banks the trust that stage authors.
+    #[test]
+    fn escalating_moves_the_drivers_standing() {
+        let chen = load_passengers()
+            .into_iter()
+            .find(|p| p.id == 1)
+            .expect("Mrs. Chen");
+        let authored = *chen
+            .state_profile
+            .as_ref()
+            .expect("a profile")
+            .trust_impact
+            .as_ref()
+            .expect("Chen authors a trust impact")
+            .get(NeedStage::Warning.key())
+            .expect("a warning entry");
+
+        let mut need = PassengerStateMachine::initialize(&chen, 0.0).expect("a profile");
+        assert_eq!(need.pending_trust, 0.0);
+
+        let thresholds = need.profile.thresholds.clone();
+        let to_warning = thresholds.warning as i32 - need.level as i32;
+        PassengerStateMachine::apply_stress_delta(&mut need, &chen, to_warning, 0.0);
+
+        assert_eq!(need.stage, NeedStage::Warning);
+        assert_eq!(need.pending_trust, authored);
+    }
+
+    /// A stage pays once. `revealed_stages` already gates the tells to a
+    /// first crossing and the trust has to be gated with them, or drifting
+    /// back and forth across a threshold would farm standing.
+    #[test]
+    fn a_stage_pays_its_trust_only_once() {
+        let chen = load_passengers()
+            .into_iter()
+            .find(|p| p.id == 1)
+            .expect("Mrs. Chen");
+        let mut need = PassengerStateMachine::initialize(&chen, 0.0).expect("a profile");
+        let thresholds = need.profile.thresholds.clone();
+
+        let to_warning = thresholds.warning as i32 - need.level as i32;
+        PassengerStateMachine::apply_stress_delta(&mut need, &chen, to_warning, 0.0);
+        let after_first = need.pending_trust;
+
+        // Down below the threshold and back over it.
+        PassengerStateMachine::apply_stress_delta(&mut need, &chen, -40, 0.0);
+        PassengerStateMachine::apply_stress_delta(&mut need, &chen, 40, 0.0);
+
+        assert_eq!(need.stage, NeedStage::Warning);
+        assert_eq!(
+            need.pending_trust, after_first,
+            "re-crossing warning paid a second time"
+        );
+    }
+
+    /// Every stage a profile authors a trust impact for has to name a real
+    /// stage, or the number is silently never applied.
+    #[test]
+    fn authored_trust_impact_stages_are_recognised() {
+        let mut checked = 0;
+        for passenger in load_passengers() {
+            let Some(profile) = &passenger.state_profile else {
+                continue;
+            };
+            let Some(impact) = &profile.trust_impact else {
+                continue;
+            };
+            for key in impact.keys() {
+                assert!(
+                    NeedStage::parse(key).is_some(),
+                    "{} authors a trust impact for unknown stage {key:?}",
+                    passenger.name
+                );
+                checked += 1;
+            }
+        }
+        assert!(checked > 0, "no profile authors a trust impact any more");
+    }
 
     /// The obey pressure has to reach the level, or wiring a rule's authored
     /// follow cost through to here bought nothing.
