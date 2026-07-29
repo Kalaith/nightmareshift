@@ -279,7 +279,18 @@ impl GuidelineEngine {
     }
 
     /// Find active exception for passenger
-    fn find_active_exception(
+    /// The exception on `guideline` that currently applies to `passenger`, if
+    /// any — the same check `evaluate_guideline_choice` judges the player's
+    /// decision by.
+    ///
+    /// This was private, so nothing outside could ask the question the game
+    /// was about to answer. The playtest bot guessed from whether a detected
+    /// tell mentioned a `breakingSafer` exception, ignoring the conditions
+    /// that decide whether it is live, and broke guidelines that were not
+    /// excepted — eight of twenty shifts with a full skill tree ended on
+    /// "Breaking X was dangerous". A decider and a judge disagreeing about
+    /// the same question is the same fault as the route quote.
+    pub fn find_active_exception(
         guideline: &Guideline,
         passenger: &Passenger,
         weather: &WeatherCondition,

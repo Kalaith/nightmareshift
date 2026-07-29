@@ -1,7 +1,7 @@
 //! Automated playtest bot for smoke-testing the core gameplay loop.
 
 use crate::data::{ActionType, GameData, Passenger, PreferenceLevel, RouteType};
-use crate::engine::RouteService;
+use crate::engine::{GuidelineEngine, RouteService};
 use crate::screens::Screen;
 use crate::state::{AlmanacEntry, GamePhase, GameState, NeedStage, PlayerStats, RouteStreak};
 use crate::ui::UiAction;
@@ -340,26 +340,19 @@ impl PlaytestBot {
     /// unreachable. Now that it fires, following an exception with
     /// `breakingSafer` set is the "misread the passenger" death, so the
     /// non-coverage strategies have to actually read.
-    fn read_the_passenger(state: &GameState, data: Option<&GameData>) -> UiAction {
-        let Some((guideline, data)) = state.active_guideline.as_ref().zip(data) else {
+    fn read_the_passenger(state: &GameState, _data: Option<&GameData>) -> UiAction {
+        let Some(guideline) = state.active_guideline.as_ref() else {
             return UiAction::FollowGuideline;
         };
-        let breaking_safer = state
-            .detected_tells
-            .iter()
-            .filter(|tell| tell.related_guideline == Some(guideline.id))
-            .filter_map(|tell| tell.exception_id.as_deref())
-            .any(|exception_id| {
-                data.guidelines
-                    .iter()
-                    .flat_map(|g| g.exceptions.iter())
-                    .any(|e| e.id == exception_id && e.breaking_safer)
-            });
+        let Some(passenger) = state.current_passenger.as_ref() else {
+            return UiAction::FollowGuideline;
+        };
 
-        if breaking_safer {
-            UiAction::BreakGuideline
-        } else {
-            UiAction::FollowGuideline
+        // Ask the same question the engine will judge by, rather than
+        // inferring it from whether a tell happened to mention an exception.
+        match GuidelineEngine::find_active_exception(guideline, passenger, &state.current_weather) {
+            Some(exception) if exception.breaking_safer => UiAction::BreakGuideline,
+            _ => UiAction::FollowGuideline,
         }
     }
 

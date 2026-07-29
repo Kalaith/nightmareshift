@@ -5,15 +5,19 @@ use macroquad::prelude::*;
 use crate::data::{self, GameData};
 use crate::state::GameState;
 use crate::ui::{
-    colors, draw_cockpit_background, draw_glass_button, draw_glass_panel, fonts, layout, spacing,
-    UiAction, UiRect,
+    colors, draw_cockpit_background, draw_glass_button, draw_glass_panel, draw_wrapped_text, fonts,
+    layout, spacing, UiAction, UiRect,
 };
 use macroquad_toolkit::ui::draw_ui_text;
 
 use super::scene::draw_bottom_taxi_scene;
 
 /// Draw the guideline decision screen
-pub fn draw_guideline_decision(game_state: &GameState, game_data: Option<&GameData>) -> UiAction {
+pub fn draw_guideline_decision(
+    game_state: &GameState,
+    game_data: Option<&GameData>,
+    player_stats: &crate::state::PlayerStats,
+) -> UiAction {
     draw_cockpit_background();
 
     let scene_h = (screen_height() * 0.25).clamp(200.0, 280.0);
@@ -105,6 +109,47 @@ pub fn draw_guideline_decision(game_state: &GameState, game_data: Option<&GameDa
                 colors::TEXT_PRIMARY,
             );
             y += 50.0;
+
+            // What a studied passenger's file says about this guideline.
+            // The decision is judged on whether an exception is live, and
+            // until now nothing told the player that — tells hint at it, but
+            // the conditions deciding it were invisible. Reading the same
+            // check the engine judges by is what almanac Lv.2 buys here.
+            if let Some(passenger) = game_state.current_passenger.as_ref() {
+                let studied = player_stats.get_almanac_entry(passenger.id).knowledge_level >= 2;
+                if studied {
+                    let active = crate::engine::GuidelineEngine::find_active_exception(
+                        guideline,
+                        passenger,
+                        &game_state.current_weather,
+                    );
+                    let (verdict, colour) = match &active {
+                        Some(exception) if exception.breaking_safer => (
+                            format!("Almanac: an exception applies — {}", exception.description),
+                            colors::FUEL_GOOD,
+                        ),
+                        Some(exception) => (
+                            format!("Almanac: {} — the rule still holds", exception.description),
+                            colors::ACCENT_WARNING,
+                        ),
+                        None => (
+                            "Almanac: nothing excuses breaking this tonight".to_string(),
+                            colors::ACCENT_WARNING,
+                        ),
+                    };
+                    draw_wrapped_text(
+                        &verdict,
+                        inner.x,
+                        y + 16.0,
+                        inner.w,
+                        fonts::SIZE_SM,
+                        17.0,
+                        colour,
+                        2,
+                    );
+                    y += 40.0;
+                }
+            }
 
             // Detected tells
             draw_ui_text(

@@ -37,7 +37,9 @@ pub fn draw_game(
         GamePhase::Driving => draw_driving(game_state, game_data, player_stats),
         GamePhase::Interaction => draw_interaction(game_state, game_data, player_stats),
         GamePhase::DropOff => draw_dropoff(game_state, game_data),
-        GamePhase::GuidelineDecision => draw_guideline_decision(game_state, game_data),
+        GamePhase::GuidelineDecision => {
+            draw_guideline_decision(game_state, game_data, player_stats)
+        }
         _ => UiAction::None,
     }
 }

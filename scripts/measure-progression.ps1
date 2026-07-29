@@ -20,11 +20,14 @@
 
     The existing save is backed up and restored.
 
-    Runs are reproducible: nothing calls `srand`, so a cleared save plus the
-    same arguments and the same build always produce the same shifts. That
-    makes this a reliable regression check — but it also means a difference
-    between two runs is always a code change, never noise. Do not read a
-    movement here as sampling variation.
+    Runs are close to reproducible but not guaranteed. Nothing calls `srand`,
+    so the RNG starts from the same state every process — three pooled repeats
+    once returned byte-identical cells. But the bot acts on elapsed time, so
+    frame timing decides how many rng draws happen before each decision, and
+    two runs of the same build have differed by a couple of shifts in twenty.
+
+    Treat a small movement as possible timing jitter and a large one as a real
+    change. If a number matters, run the cell again before acting on it.
 
 .EXAMPLE
     ./scripts/measure-progression.ps1
