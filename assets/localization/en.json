@@ -126,8 +126,8 @@
         "label": "Guideline:",
         "tellsLabel": "Detected Tells:",
         "noTells": "No clear tells detected",
-        "follow": "Follow Guideline",
-        "break": "Break Guideline",
+        "follow": "Follow Guideline (F)",
+        "break": "Break Guideline (B)",
         "intensity": {
           "subtle": "Subtle",
           "moderate": "Moderate",

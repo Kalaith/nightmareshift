@@ -80,16 +80,32 @@ impl InputService {
                         }
                         Self::capture_cab_controls(&mut actions);
                     }
-                    // Guideline decisions are usually button clicks, but we could map keys here too
+                    // The guideline decision is the one timed choice in the
+                    // game and was the only phase with no keys at all, so a
+                    // thirty-second deadline had to be met with the mouse.
+                    GamePhase::GuidelineDecision => {
+                        if is_key_pressed(KeyCode::F) {
+                            actions.push(UiAction::FollowGuideline);
+                        }
+                        if is_key_pressed(KeyCode::B) {
+                            actions.push(UiAction::BreakGuideline);
+                        }
+                    }
                     _ => {}
                 }
             }
             Screen::GameOver | Screen::Success => {
+                // These screens label their buttons "Try Again (SPACE)",
+                // "Next Night (SPACE)" and "Back to Menu (ESC)". Space used to
+                // emit `ReturnToMenu`, so on a lost shift it went to the menu
+                // while the button under the player's cursor promised another
+                // attempt, and Escape was not read at all despite being
+                // advertised. `TryAgain` resolves to the right thing for an
+                // interim night or a finished run.
                 if is_key_pressed(KeyCode::Space) {
-                    // TryAgain or ReturnToMenu is handled by context, but usually Space on generic screens means "Proceed"
-                    // In handle_input previously: Screen::GameOver | Screen::Success -> return_to_menu (UiAction::ReturnToMenu)
-                    // But draw_game_over uses UiAction::TryAgain.
-                    // Let's settle on ReturnToMenu for Space, matching previous handle_input logic
+                    actions.push(UiAction::TryAgain);
+                }
+                if is_key_pressed(KeyCode::Escape) {
                     actions.push(UiAction::ReturnToMenu);
                 }
             }
@@ -129,5 +145,68 @@ impl InputService {
         if is_key_pressed(KeyCode::S) {
             actions.push(UiAction::PerformRuleAction("stop_vehicle".to_string()));
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::data::loader::load_localization;
+
+    /// Every key a button advertises must be one the input service reads on
+    /// the screen that shows it.
+    ///
+    /// This reads the source rather than simulating a keypress, because
+    /// `is_key_pressed` needs a window. It is still the check that was
+    /// missing: "Try Again (SPACE)" sat on the game-over screen while Space
+    /// there emitted `ReturnToMenu`, and "Back to Menu (ESC)" sat beside it
+    /// while Escape was not read on that screen at all.
+    #[test]
+    fn the_outcome_screens_read_the_keys_they_advertise() {
+        let source = include_str!("input_service.rs");
+        let arm = source
+            .split("Screen::GameOver | Screen::Success =>")
+            .nth(1)
+            .expect("the outcome screens have an input arm");
+        let arm = &arm[..arm.find("Screen::SkillTree").unwrap_or(arm.len())];
+
+        assert!(
+            arm.contains("KeyCode::Space"),
+            "the outcome screens advertise SPACE and do not read it"
+        );
+        assert!(
+            arm.contains("KeyCode::Escape"),
+            "the outcome screens advertise ESC and do not read it"
+        );
+        assert!(
+            arm.contains("TryAgain"),
+            "SPACE on the outcome screens does not do what the button says"
+        );
+        assert!(
+            arm.contains("ReturnToMenu"),
+            "ESC on the outcome screens does not do what the button says"
+        );
+    }
+
+    /// The guideline decision is the only timed choice, so it must be
+    /// reachable from the keyboard, and its buttons must say which keys.
+    #[test]
+    fn the_timed_decision_has_keys_and_advertises_them() {
+        let source = include_str!("input_service.rs");
+        assert!(
+            source.contains("GamePhase::GuidelineDecision"),
+            "the timed decision has no key input"
+        );
+
+        let guidelines = load_localization().ui.game.guidelines;
+        assert!(
+            guidelines.follow.contains("(F)"),
+            "the follow button does not name its key: {:?}",
+            guidelines.follow
+        );
+        assert!(
+            guidelines.break_guideline.contains("(B)"),
+            "the break button does not name its key: {:?}",
+            guidelines.break_guideline
+        );
     }
 }

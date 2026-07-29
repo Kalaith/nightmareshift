@@ -56,11 +56,7 @@ impl Game {
                 }
             }
             UiAction::ReturnToMenu => {
-                // On an interim-night results screen, the confirm key presses on
-                // into the next night rather than abandoning the run.
-                if self.screen == Screen::Success && !self.game_state.run_complete {
-                    self.advance_night();
-                } else if self.screen == Screen::GameOver
+                if self.screen == Screen::GameOver
                     || self.screen == Screen::Success
                     || self.screen == Screen::SkillTree
                     || self.screen == Screen::Almanac
@@ -72,7 +68,11 @@ impl Game {
                 }
             }
             UiAction::TryAgain => {
-                if self.screen == Screen::GameOver || self.screen == Screen::Success {
+                // On an interim-night results screen the confirm key presses
+                // on into the next night rather than starting the run over.
+                if self.screen == Screen::Success && !self.game_state.run_complete {
+                    self.advance_night();
+                } else if self.screen == Screen::GameOver || self.screen == Screen::Success {
                     self.return_to_menu();
                     self.start_game();
                 }
