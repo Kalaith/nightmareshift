@@ -47,6 +47,7 @@ pub struct PlaytestBot {
     last_signature: String,
     stale_since: f64,
     almanac_level: u32,
+    unlock_all_skills: bool,
 }
 
 impl PlaytestBot {
@@ -87,6 +88,14 @@ impl PlaytestBot {
                 .or_else(|| parse_env_u32("NIGHTMARE_SHIFT_BOT_ALMANAC_LEVEL"))
                 .unwrap_or(0)
                 .min(3);
+            // The skill tree is half of what meta-progression is supposed to
+            // buy, and the harness could only seed the almanac, so a run's
+            // skills were whatever happened to be in the save. That makes the
+            // tree's contribution unmeasurable.
+            let unlock_all_skills = args.iter().any(|arg| arg == "--bot-all-skills")
+                || std::env::var("NIGHTMARE_SHIFT_BOT_ALL_SKILLS")
+                    .map(|value| value == "1" || value.eq_ignore_ascii_case("true"))
+                    .unwrap_or(false);
 
             let bot = Self {
                 strategy,
@@ -102,17 +111,27 @@ impl PlaytestBot {
                 last_signature: String::new(),
                 stale_since: 0.0,
                 almanac_level,
+                unlock_all_skills,
             };
 
             eprintln!(
-                "[BOT] Enabled: strategy={:?}, shifts={}, delay={}ms, almanac_level={}",
-                bot.strategy, bot.max_shifts, delay_ms, bot.almanac_level
+                "[BOT] Enabled: strategy={:?}, shifts={}, delay={}ms, almanac_level={}, all_skills={}",
+                bot.strategy,
+                bot.max_shifts,
+                delay_ms,
+                bot.almanac_level,
+                bot.unlock_all_skills
             );
             Some(bot)
         }
     }
 
     pub fn apply_test_unlocks(&self, stats: &mut PlayerStats, data: &GameData) {
+        if self.unlock_all_skills {
+            stats.unlocked_skills = data.skills.iter().map(|skill| skill.id.clone()).collect();
+            eprintln!("[BOT] Unlocked all {} skills.", stats.unlocked_skills.len());
+        }
+
         if self.almanac_level == 0 {
             return;
         }
