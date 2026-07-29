@@ -1,20 +1,34 @@
 {
   "title": "Nightmare Shift",
-  "status": { "text": "Playable", "class": "playable" },
+  "status": {
+    "text": "Playable",
+    "class": "playable"
+  },
   "canvas_rendering": "pixelated",
   "canvas": {
     "width": 1920,
     "height": 1080
   },
   "about": [
-    "<strong>Nightmare Shift</strong> is a horror-themed taxi driving survival game. Drive supernatural passengers through the dangerous night, observing their strange behaviors and detecting hidden threats.",
-    "Every passenger has a story, and every shift brings new rules. Follow them strictly, manage your fuel and earnings, and try to survive until dawn. One wrong turn or missed clue could be your last."
+    "Pick up passengers who aren’t quite human. Learn each night’s rules, watch for deadly tells, manage your fuel, and survive until dawn."
   ],
   "controls": [
-    { "key": "SPACE", "desc": "Accept / Continue" },
-    { "key": "ESC", "desc": "Decline / Back / Pause" },
-    { "key": "1-3", "desc": "Select Route options" },
-    { "key": "Mouse", "desc": "Interact with UI" }
+    {
+      "key": "SPACE",
+      "desc": "Accept / Continue"
+    },
+    {
+      "key": "ESC",
+      "desc": "Decline / Back / Pause"
+    },
+    {
+      "key": "1-3",
+      "desc": "Select Route options"
+    },
+    {
+      "key": "Mouse",
+      "desc": "Interact with UI"
+    }
   ],
   "extra_sections": [
     {
@@ -23,9 +37,18 @@
     }
   ],
   "details": [
-    { "label": "Genre", "value": "Horror Simulation" },
-    { "label": "Engine", "value": "Macroquad" },
-    { "label": "Platform", "value": "Browser, Windows" }
+    {
+      "label": "Genre",
+      "value": "Horror Simulation"
+    },
+    {
+      "label": "Engine",
+      "value": "Macroquad"
+    },
+    {
+      "label": "Platform",
+      "value": "Browser, Windows"
+    }
   ],
   "download": {
     "href": "nightmare_shift_windows.zip",
