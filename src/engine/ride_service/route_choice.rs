@@ -46,7 +46,7 @@ impl RideService {
             state.current_passenger.as_ref(),
             &skill_mods,
         );
-        Self::apply_curse_route_pressure(state, &mut costs);
+        Self::apply_curse_route_pressure(state, &mut costs, &data.constants);
 
         // 1. Check resources
         if let Some(outcome) = Self::validate_resources(state, &costs) {
@@ -61,6 +61,16 @@ impl RideService {
         // 3. Apply costs and record history
         Self::apply_transit_effects(state, &costs, route, current_time);
         stats.record_route_usage(route);
+
+        // 3b. A risky leg can cost more than its stated price.
+        let encounter = Self::apply_risk_encounters(state, &costs, &data.constants, current_time);
+        if let Some(encounter) = encounter {
+            state.current_dialogue = Some(CurrentDialogue {
+                text: encounter.message,
+                speaker: DialogueSpeaker::Narrator,
+                timestamp: current_time,
+            });
+        }
 
         // 4. Update passenger state machine
         Self::update_passenger_state(
@@ -251,13 +261,17 @@ impl RideService {
         }
     }
 
-    fn apply_curse_route_pressure(state: &mut GameState, costs: &mut RouteCosts) {
+    fn apply_curse_route_pressure(
+        state: &mut GameState,
+        costs: &mut RouteCosts,
+        constants: &ConstantsData,
+    ) {
         if state.curse_danger_bonus == 0 {
             return;
         }
 
         let bonus = state.curse_danger_bonus.min(3);
-        costs.risk = (costs.risk + bonus).min(5);
+        costs.risk = (costs.risk + bonus).min(constants.risk.max_risk_level);
         costs.time += bonus * 2;
         state.curse_danger_bonus = state.curse_danger_bonus.saturating_sub(bonus);
     }

@@ -54,6 +54,12 @@ impl RouteService {
             ),
         };
 
+        // `RISK.MAX_RISK_LEVEL` is the authored ceiling. The risk maths used a
+        // hardcoded 5.0 throughout while the constant said 4, so every
+        // threshold expressed against it was being measured on a different
+        // scale from the one the constants describe.
+        let max_risk = constants.risk.max_risk_level as f32;
+
         let mut fuel = base_fuel as f32;
         let mut time = base_time as f32;
         let mut risk = base_risk as f32 + (passenger_risk as f32 - 1.0);
@@ -77,7 +83,7 @@ impl RouteService {
                     WeatherEffectType::RouteBlockage => {
                         if Self::weather_effect_applies_to_route(effect, route) {
                             time += effect.value.max(0) as f32 / 2.0;
-                            risk = (risk + effect.value.max(0) as f32 / 10.0).min(5.0);
+                            risk = (risk + effect.value.max(0) as f32 / 10.0).min(max_risk);
                         }
                     }
                     WeatherEffectType::RuleModification => {
@@ -96,12 +102,12 @@ impl RouteService {
                 {
                     fuel += 8.0;
                     time += 10.0;
-                    risk = (risk + 2.0).min(5.0);
+                    risk = (risk + 2.0).min(max_risk);
                 }
                 if route == RouteType::Scenic && w.weather_type == WeatherType::Thunderstorm {
                     fuel += 5.0;
                     time += 15.0;
-                    risk = (risk + 1.0).min(5.0);
+                    risk = (risk + 1.0).min(max_risk);
                 }
             }
         }
@@ -117,7 +123,7 @@ impl RouteService {
             if route == RouteType::Scenic && tod.phase == TimePhase::Latenight {
                 fuel += 3.0;
                 time += 8.0;
-                risk = (risk + 1.0).min(5.0);
+                risk = (risk + 1.0).min(max_risk);
             }
         }
 
@@ -126,7 +132,7 @@ impl RouteService {
             if p.fears_route(route) {
                 fuel += 2.0;
                 time += 3.0;
-                risk = (risk + 1.0).min(5.0);
+                risk = (risk + 1.0).min(max_risk);
             }
         }
 
@@ -157,7 +163,7 @@ impl RouteService {
         }
         fuel += hazard_fuel * skill_mods.hazard_mult;
         time += hazard_time * skill_mods.hazard_mult;
-        risk = (risk + hazard_risk * skill_mods.hazard_mult).min(5.0);
+        risk = (risk + hazard_risk * skill_mods.hazard_mult).min(max_risk);
 
         // Route mastery bonuses
         if let Some(&mastery) = route_mastery.get(&route) {
@@ -177,7 +183,7 @@ impl RouteService {
         RouteCosts {
             fuel: fuel.round() as u32,
             time: time.round() as u32,
-            risk: risk.round().clamp(0.0, 5.0) as u32,
+            risk: risk.round().clamp(0.0, max_risk) as u32,
         }
     }
 

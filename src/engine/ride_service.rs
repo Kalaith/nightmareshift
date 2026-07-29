@@ -4,6 +4,7 @@
 //! `events`. Both extend `RideService` with further `impl` blocks.
 
 mod events;
+mod risk;
 mod route_choice;
 
 use crate::data::*;
