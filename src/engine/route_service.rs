@@ -329,14 +329,7 @@ impl RouteService {
             return true;
         };
 
-        let route_key = match route {
-            RouteType::Normal => "normal",
-            RouteType::Shortcut => "shortcut",
-            RouteType::Scenic => "scenic",
-            RouteType::Police => "police",
-        };
-
-        applies_to.eq_ignore_ascii_case(route_key) || applies_to.eq_ignore_ascii_case("all")
+        applies_to.eq_ignore_ascii_case(route.label()) || applies_to.eq_ignore_ascii_case("all")
     }
 }
 

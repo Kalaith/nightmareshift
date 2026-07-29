@@ -27,6 +27,22 @@ pub enum RouteType {
     Police,
 }
 
+impl RouteType {
+    /// How a route is named to the player.
+    ///
+    /// Deliberately not shared with `PlayerStats::route_key`, which spells
+    /// these the same way but is a persisted save key: changing how a route
+    /// reads on screen must not silently rewrite what is on disk.
+    pub fn label(self) -> &'static str {
+        match self {
+            Self::Normal => "Normal",
+            Self::Shortcut => "Shortcut",
+            Self::Scenic => "Scenic",
+            Self::Police => "Police",
+        }
+    }
+}
+
 /// How a passenger feels about a route
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]

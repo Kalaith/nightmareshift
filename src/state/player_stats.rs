@@ -176,6 +176,10 @@ impl PlayerStats {
     }
 
     /// Stable key used for persisted route familiarity.
+    ///
+    /// Spelled the same as `RouteType::label` and deliberately kept its own
+    /// table: this string is in every save file, and a change to how a route
+    /// reads on screen must not quietly orphan a driver's route mastery.
     pub fn route_key(route: RouteType) -> &'static str {
         match route {
             RouteType::Normal => "Normal",

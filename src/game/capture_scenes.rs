@@ -7,8 +7,8 @@
 //! this project were found.
 
 use super::Game;
-use crate::data::RouteType;
-use crate::engine::RideService;
+use crate::data::{RouteType, WeatherCondition, WeatherIntensity, WeatherType};
+use crate::engine::{RideService, WeatherService};
 use crate::screens::Screen;
 use crate::state::*;
 use macroquad::prelude::*;
@@ -29,6 +29,45 @@ impl Game {
             "gameplay" => {
                 self.start_game();
                 self.start_shift();
+            }
+            // The briefing with hazards on the board. Clear weather generates
+            // none, so the plain `briefing` scene shows the empty case and
+            // this one shows the list a night is actually planned from.
+            "briefing_hazards" => {
+                self.start_game();
+                // Hazard generation is a roll, so the scene pins the RNG and
+                // takes the first draw that produces any. It still goes
+                // through the real generator rather than hand-building a
+                // hazard the game would never make.
+                macroquad_toolkit::rng::srand(20260731);
+                let hazards = self.game_data.as_ref().map(|_| {
+                    let heavy = WeatherCondition {
+                        weather_type: WeatherType::Thunderstorm,
+                        intensity: WeatherIntensity::Heavy,
+                        visibility: 30,
+                        description: "Thunderheads sitting low over the river".to_string(),
+                        effects: Vec::new(),
+                        duration: 90,
+                        start_time: 0.0,
+                    };
+                    let mut generated = Vec::new();
+                    for _ in 0..64 {
+                        generated = WeatherService::generate_hazards(
+                            &heavy,
+                            &self.game_state.time_of_day,
+                            &self.game_state.season,
+                            0.0,
+                        );
+                        if !generated.is_empty() {
+                            break;
+                        }
+                    }
+                    (heavy, generated)
+                });
+                if let Some((weather, generated)) = hazards {
+                    self.game_state.current_weather = weather;
+                    self.game_state.environmental_hazards = generated;
+                }
             }
             // A mid-ride event with the passenger's ability choice present:
             // the almanac studied and every skill bought, so both kinds of

@@ -234,6 +234,39 @@ pub struct EnvironmentalHazard {
 }
 
 impl EnvironmentalHazard {
+    /// What this hazard does to a route, or `None` if it costs nothing.
+    ///
+    /// The briefing listed a hazard's location and prose and stopped there, so
+    /// the night was planned without knowing that the road work on the
+    /// Downtown Bridge closes the Shortcut. The driving screen shows the
+    /// blocking hazard on the route card it disables, which is too late to be
+    /// a plan. Every number here already reaches route pricing; none of it
+    /// reached the player before they chose.
+    pub fn toll(&self) -> Option<String> {
+        let mut parts: Vec<String> = Vec::new();
+
+        if let Some(blocked) = self
+            .effects
+            .route_blocked
+            .as_ref()
+            .filter(|blocked| !blocked.is_empty())
+        {
+            let names: Vec<&str> = blocked.iter().map(|route| route.label()).collect();
+            parts.push(format!("closes {}", names.join(" and ")));
+        }
+        if let Some(fuel) = self.effects.fuel_increase.filter(|value| *value > 0) {
+            parts.push(format!("+{fuel} fuel"));
+        }
+        if let Some(time) = self.effects.time_delay.filter(|value| *value > 0) {
+            parts.push(format!("+{time} min"));
+        }
+        if let Some(risk) = self.effects.risk_increase.filter(|value| *value > 0) {
+            parts.push(format!("+{risk} risk"));
+        }
+
+        (!parts.is_empty()).then(|| parts.join(", "))
+    }
+
     /// Check if this hazard blocks a specific route type
     pub fn blocks_route(&self, route: RouteType) -> bool {
         self.effects
@@ -241,5 +274,90 @@ impl EnvironmentalHazard {
             .as_ref()
             .map(|blocked| blocked.contains(&route))
             .unwrap_or(false)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn hazard(effects: HazardEffects) -> EnvironmentalHazard {
+        EnvironmentalHazard {
+            id: "test".to_string(),
+            hazard_type: HazardType::Construction,
+            location: "Downtown Bridge".to_string(),
+            severity: HazardSeverity::Minor,
+            description: "Minor road work on Downtown Bridge".to_string(),
+            effects,
+            duration: 30,
+            start_time: 0.0,
+            weather_triggered: false,
+        }
+    }
+
+    /// A hazard that closes a route has to say which one. The route cards on
+    /// the driving screen disable themselves silently otherwise, and by then
+    /// the night is already underway.
+    #[test]
+    fn a_closure_names_the_route_it_closes() {
+        let blocked = hazard(HazardEffects {
+            route_blocked: Some(vec![RouteType::Shortcut]),
+            ..HazardEffects::default()
+        });
+        let toll = blocked.toll().expect("a closure costs something");
+        assert!(
+            toll.contains("Shortcut"),
+            "{toll:?} does not name the route"
+        );
+    }
+
+    /// Every surcharge the hazard applies to route pricing has to appear, or
+    /// the briefing understates the night.
+    #[test]
+    fn every_surcharge_reaches_the_briefing() {
+        let costly = hazard(HazardEffects {
+            fuel_increase: Some(4),
+            time_delay: Some(7),
+            risk_increase: Some(2),
+            ..HazardEffects::default()
+        });
+        let toll = costly.toll().expect("surcharges cost something");
+        for expected in ["4", "7", "2"] {
+            assert!(toll.contains(expected), "{toll:?} is missing {expected}");
+        }
+    }
+
+    /// A hazard with nothing behind it says nothing, rather than printing an
+    /// empty pair of brackets after its description.
+    #[test]
+    fn a_toothless_hazard_has_no_toll() {
+        assert!(hazard(HazardEffects::default()).toll().is_none());
+        let zeroed = hazard(HazardEffects {
+            route_blocked: Some(Vec::new()),
+            fuel_increase: Some(0),
+            time_delay: Some(0),
+            risk_increase: Some(0),
+            ..HazardEffects::default()
+        });
+        assert!(zeroed.toll().is_none(), "zeroes were reported as costs");
+    }
+
+    /// The display label and the persisted save key are separate tables that
+    /// happen to agree. This pins that: if a route is ever renamed on screen
+    /// this fails, which is the moment to decide whether saves migrate.
+    #[test]
+    fn the_route_label_still_matches_the_persisted_key() {
+        for route in [
+            RouteType::Normal,
+            RouteType::Shortcut,
+            RouteType::Scenic,
+            RouteType::Police,
+        ] {
+            assert_eq!(
+                route.label(),
+                crate::state::PlayerStats::route_key(route),
+                "the on-screen name and the save key have diverged"
+            );
+        }
     }
 }

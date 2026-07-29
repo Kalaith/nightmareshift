@@ -353,19 +353,31 @@ pub fn draw_briefing(game_state: &GameState, game_data: Option<&GameData>) -> Ui
             game_state.current_weather.weather_type.name(),
             game_state.current_weather.description
         );
+        // The weather box is a fixed height while the description inside it
+        // runs one to three lines, so `side_y` has to clear the box rather
+        // than the text: advancing by the text height alone drew the weather
+        // advisory and the hazard list inside the box on any clear night.
+        const WEATHER_PANEL_H: f32 = 108.0;
+        let weather_panel_top = side_y;
         draw_rectangle(
             conditions_inner.x,
             side_y,
             conditions_inner.w,
-            108.0,
+            WEATHER_PANEL_H,
             Color::new(0.020, 0.040, 0.050, 0.92),
         );
-        draw_rectangle(conditions_inner.x, side_y, 4.0, 108.0, colors::ACCENT_SKY);
+        draw_rectangle(
+            conditions_inner.x,
+            side_y,
+            4.0,
+            WEATHER_PANEL_H,
+            colors::ACCENT_SKY,
+        );
         draw_rectangle_lines(
             conditions_inner.x,
             side_y,
             conditions_inner.w,
-            108.0,
+            WEATHER_PANEL_H,
             1.0,
             colors::BORDER_DIM,
         );
@@ -376,7 +388,7 @@ pub fn draw_briefing(game_state: &GameState, game_data: Option<&GameData>) -> Ui
             fonts::SIZE_XL,
             colors::ACCENT_SKY,
         );
-        side_y = draw_wrapped_text(
+        let weather_text_bottom = draw_wrapped_text(
             &weather_text,
             conditions_inner.x + 18.0,
             side_y + 62.0,
@@ -385,7 +397,8 @@ pub fn draw_briefing(game_state: &GameState, game_data: Option<&GameData>) -> Ui
             18.0,
             colors::TEXT_SECONDARY,
             3,
-        ) + 18.0;
+        );
+        side_y = weather_text_bottom.max(weather_panel_top + WEATHER_PANEL_H) + 18.0;
 
         let weather_rule_ids = crate::engine::WeatherService::get_weather_triggered_rules(
             &game_state.current_weather,
@@ -415,7 +428,14 @@ pub fn draw_briefing(game_state: &GameState, game_data: Option<&GameData>) -> Ui
             );
             side_y += 30.0;
             for hazard in game_state.environmental_hazards.iter().take(3) {
-                let text = format!("{} - {}", hazard.location, hazard.description);
+                // `hazard.description` already names the location -- "Minor
+                // road work on Downtown Bridge" -- so prefixing it printed
+                // the place twice. What it never said was what the hazard
+                // costs, which is the only reason to read this list.
+                let text = match hazard.toll() {
+                    Some(toll) => format!("{} ({})", hazard.description, toll),
+                    None => hazard.description.clone(),
+                };
                 side_y = draw_wrapped_text(
                     &text,
                     conditions_inner.x,
