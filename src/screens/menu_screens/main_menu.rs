@@ -59,7 +59,8 @@ pub fn draw_main_menu(
             .stats
             .replacen("{}", &player_stats.total_shifts_completed.to_string(), 1)
             .replacen("{}", &player_stats.total_earnings.to_string(), 1)
-            .replacen("{}", &player_stats.total_rides_completed.to_string(), 1);
+            .replacen("{}", &player_stats.total_rides_completed.to_string(), 1)
+            .replacen("{}", &player_stats.total_rules_violated.to_string(), 1);
 
         let progression = format!(
             "Experience Lv. {} | Suggested Difficulty {}",

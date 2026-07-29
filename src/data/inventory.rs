@@ -155,8 +155,8 @@ pub struct InventoryItem {
     pub id: String,
     pub name: String,
     pub source: String,
-    #[serde(rename = "backstoryItem")]
-    pub backstory_item: bool,
+    // `backstoryItem` is on no item in the catalogue and read by nothing,
+    // so it deserialized to false sixteen times a night and decided nothing.
     #[serde(rename = "type")]
     pub item_type: ItemType,
     #[serde(default)]
@@ -269,7 +269,6 @@ impl ItemCatalog {
             id: format!("{}_{}", name.replace(' ', "_"), current_time as u64),
             name: name.to_string(),
             source: source.to_string(),
-            backstory_item: false,
             item_type: template.item_type,
             rarity: template.rarity,
             description: template.description,

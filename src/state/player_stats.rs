@@ -107,18 +107,28 @@ impl PlayerStats {
         (self.total_shifts_completed / 10).min(4)
     }
 
-    /// Record a completed shift
+    /// Fold a finished shift into the lifetime counters.
+    ///
+    /// Takes the shift rather than its numbers. `total_rules_violated` was
+    /// the forgotten sibling here — five counters were maintained in this one
+    /// place and it was not among them, so a stat the save has carried since
+    /// the port read zero however a night went. Adding a sixth argument would
+    /// have left the same hazard in place: with three `u32`s in a row the call
+    /// site is where this goes wrong, and passing the state means there is
+    /// nothing there to get wrong. `survived` and `play_time` stay parameters
+    /// because neither lives on the shift.
     pub fn record_shift_completion(
         &mut self,
-        earnings: u32,
-        rides: u32,
+        shift: &crate::state::GameState,
         survived: bool,
         play_time: u32,
     ) {
+        let earnings = shift.earnings;
         self.total_shifts_completed += 1;
-        self.total_rides_completed += rides;
+        self.total_rides_completed += shift.rides_completed;
         self.total_earnings += earnings;
         self.total_play_time += play_time;
+        self.total_rules_violated += shift.rules_violated;
 
         if earnings > self.highest_shift_earnings {
             self.highest_shift_earnings = earnings;
@@ -368,6 +378,61 @@ impl PlayerStats {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::state::GameState;
+
+    /// A finished shift with the three numbers the lifetime counters read.
+    fn shift(earnings: u32, rides: u32, violations: u32) -> GameState {
+        let constants = crate::data::loader::load_constants();
+        let mut state = GameState::new(0.0, &constants.game_constants);
+        state.earnings = earnings;
+        state.rides_completed = rides;
+        state.rules_violated = violations;
+        state
+    }
+
+    /// A shift's violations have to reach the lifetime counter. This one
+    /// counter was left out of `record_shift_completion` while its five
+    /// siblings were maintained, so it read zero for every save ever written.
+    #[test]
+    fn a_shifts_violations_reach_the_lifetime_tally() {
+        let mut stats = PlayerStats::new();
+        assert_eq!(stats.total_rules_violated, 0);
+
+        stats.record_shift_completion(&shift(120, 3, 2), true, 40);
+        assert_eq!(stats.total_rules_violated, 2);
+
+        stats.record_shift_completion(&shift(90, 2, 1), false, 30);
+        assert_eq!(
+            stats.total_rules_violated, 3,
+            "the tally replaced the running total instead of adding to it"
+        );
+    }
+
+    /// A clean night must not inflate it, and the siblings must still move —
+    /// a counter that rises on every shift regardless would look maintained
+    /// while meaning nothing.
+    #[test]
+    fn a_clean_shift_adds_no_violations() {
+        let mut stats = PlayerStats::new();
+        stats.record_shift_completion(&shift(200, 5, 0), true, 55);
+
+        assert_eq!(stats.total_rules_violated, 0);
+        assert_eq!(stats.total_shifts_completed, 1);
+        assert_eq!(stats.total_rides_completed, 5);
+    }
+
+    /// The menu line has to have somewhere to put it. `replacen` on a string
+    /// with too few placeholders silently drops the value, so the count is
+    /// the only thing standing between a wired stat and an invisible one.
+    #[test]
+    fn the_menu_stat_line_has_a_slot_for_every_value() {
+        let stats = crate::data::loader::load_localization().ui.main_menu.stats;
+        assert_eq!(
+            stats.matches("{}").count(),
+            4,
+            "the menu fills four lifetime counters into {stats:?}"
+        );
+    }
 
     /// Saves written before the `Achievements` registry adoption stored
     /// `achievements` as a bare array. Loading one of those saves must not

@@ -184,12 +184,8 @@ impl Game {
             .map(|start| ((get_time() - start) / 60.0).max(0.0) as u32)
             .unwrap_or(480 - self.game_state.time_remaining);
 
-        self.player_stats.record_shift_completion(
-            self.game_state.earnings,
-            self.game_state.rides_completed,
-            actually_successful,
-            play_time,
-        );
+        self.player_stats
+            .record_shift_completion(&self.game_state, actually_successful, play_time);
         self.player_stats.session_start = None;
 
         // Generate bank balance from earnings (50% of earnings goes to bank)
