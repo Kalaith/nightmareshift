@@ -312,7 +312,9 @@ pub fn draw_rules_panel(game_state: &GameState, game_data: Option<&GameData>) ->
             data::Difficulty::Nightmare => colors::ACCENT_DANGER,
         };
 
-        let key = format!("[{}]", rule_idx + 1);
+        // Plain numbering: rules are a list, not a set of options, and
+        // bracketed digits read as key bindings everywhere else on screen.
+        let key = format!("{}.", rule_idx + 1);
         draw_small_caps(
             &key,
             card.x + 14.0,

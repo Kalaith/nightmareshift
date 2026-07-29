@@ -54,21 +54,24 @@ impl InputService {
                         Self::capture_cab_controls(&mut actions);
                     }
                     GamePhase::Driving => {
-                        if is_key_pressed(KeyCode::Key1) || is_key_pressed(KeyCode::Kp1) {
-                            actions.push(UiAction::SelectRoute(0)); // Normal
-                        }
-                        if is_key_pressed(KeyCode::Key2) || is_key_pressed(KeyCode::Kp2) {
-                            actions.push(UiAction::SelectRoute(1)); // Shortcut
-                        }
-                        if is_key_pressed(KeyCode::Key3) || is_key_pressed(KeyCode::Kp3) {
-                            actions.push(UiAction::SelectRoute(2)); // Scenic
-                        }
-                        if is_key_pressed(KeyCode::Key4) || is_key_pressed(KeyCode::Kp4) {
-                            actions.push(UiAction::SelectRoute(3)); // Police
+                        for (index, key) in Self::number_keys().enumerate() {
+                            if is_key_pressed(key.0) || is_key_pressed(key.1) {
+                                actions.push(UiAction::SelectRoute(index));
+                            }
                         }
                         Self::capture_cab_controls(&mut actions);
                     }
                     GamePhase::Interaction => {
+                        // The mid-ride event draws its options as [1], [2],
+                        // [3] and read no number keys, so the brackets were a
+                        // promise the screen could not keep. The same digits
+                        // pick a route one phase earlier, which is where a
+                        // player would have learned to expect them.
+                        for (index, key) in Self::number_keys().enumerate() {
+                            if is_key_pressed(key.0) || is_key_pressed(key.1) {
+                                actions.push(UiAction::SelectEventChoice(index));
+                            }
+                        }
                         if is_key_pressed(KeyCode::Space) {
                             actions.push(UiAction::Continue);
                         }
@@ -118,6 +121,18 @@ impl InputService {
         }
 
         actions
+    }
+
+    /// The digits 1-4, top row and keypad, in the order the screens number
+    /// their options.
+    fn number_keys() -> impl Iterator<Item = (KeyCode, KeyCode)> {
+        [
+            (KeyCode::Key1, KeyCode::Kp1),
+            (KeyCode::Key2, KeyCode::Kp2),
+            (KeyCode::Key3, KeyCode::Kp3),
+            (KeyCode::Key4, KeyCode::Kp4),
+        ]
+        .into_iter()
     }
 
     fn capture_cab_controls(actions: &mut Vec<UiAction>) {
@@ -185,6 +200,47 @@ mod tests {
             arm.contains("ReturnToMenu"),
             "ESC on the outcome screens does not do what the button says"
         );
+    }
+
+    /// A screen that numbers its options in brackets is promising number
+    /// keys, and every phase that does so must read them.
+    ///
+    /// The mid-ride event drew [1], [2], [3] beside its choices and the
+    /// Interaction phase read no digits at all — the same digits that pick a
+    /// route one phase earlier. A player taught the binding by the driving
+    /// screen would press it on the next screen and nothing would happen.
+    #[test]
+    fn every_phase_that_numbers_its_options_reads_the_digits() {
+        let input = include_str!("input_service.rs");
+
+        for (phase, screen_source) in [
+            (
+                "GamePhase::Driving",
+                include_str!("../screens/game_screens/driving.rs"),
+            ),
+            (
+                "GamePhase::Interaction",
+                include_str!("../screens/game_screens/interaction.rs"),
+            ),
+        ] {
+            // The screen advertises digits by numbering its options.
+            assert!(
+                screen_source.contains(r#"format!("[{}]", i + 1)"#)
+                    || screen_source.contains(r#""[1]""#)
+                    || screen_source.contains("key_hint"),
+                "{phase}'s screen no longer numbers its options; update this test"
+            );
+
+            let arm = input
+                .split(&format!("{phase} => {{"))
+                .nth(1)
+                .unwrap_or_else(|| panic!("{phase} has no input arm"));
+            let arm = &arm[..arm.find("GamePhase::").unwrap_or(arm.len())];
+            assert!(
+                arm.contains("number_keys()"),
+                "{phase} numbers its options and reads no digits"
+            );
+        }
     }
 
     /// The guideline decision is the only timed choice, so it must be
