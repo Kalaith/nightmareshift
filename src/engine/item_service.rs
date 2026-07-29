@@ -162,7 +162,15 @@ impl ItemService {
     }
 
     /// Apply effects of an item
-    pub fn apply_item_effect(effect: &ItemEffect, state: &mut GameState) {
+    /// `current_time` is passed in rather than read from macroquad's clock.
+    /// Reaching for the global made the whole effect table impossible to test
+    /// outside a window, which is why the reputation effect could sit broken.
+    pub fn apply_item_effect(
+        effect: &ItemEffect,
+        state: &mut GameState,
+        reputation_constants: &ReputationConstants,
+        current_time: f64,
+    ) {
         match effect.effect_type {
             ItemEffectType::FuelBonus => {
                 let bonus = effect.value as f32;
@@ -186,15 +194,17 @@ impl ItemService {
                 state.time_remaining = state.time_remaining.saturating_sub(penalty);
             }
             ItemEffectType::ReputationModifier => {
-                // Applied to current passenger if exists
+                // `get_mut` meant this did nothing at all on a first meeting,
+                // which is most of them: a reputation entry is not created
+                // until a ride with that passenger completes, so the whole
+                // point of the withered flowers and the faded photograph was
+                // dropped on the floor the first time you offered either.
                 if let Some(passenger_id) = state.current_passenger.as_ref().map(|p| p.id) {
-                    if let Some(rep) = state.passenger_reputation.get_mut(&passenger_id) {
-                        if effect.value > 0 {
-                            rep.positive_choices += effect.value.unsigned_abs();
-                        } else {
-                            rep.negative_choices += effect.value.unsigned_abs();
-                        }
-                    }
+                    state.get_passenger_reputation(passenger_id).adjust(
+                        effect.value,
+                        current_time,
+                        reputation_constants,
+                    );
                 }
             }
             ItemEffectType::RuleTrigger => {
@@ -203,7 +213,7 @@ impl ItemService {
                     text: "The item hums against tonight's rules. The next route will be riskier."
                         .to_string(),
                     speaker: DialogueSpeaker::Narrator,
-                    timestamp: macroquad::prelude::get_time(),
+                    timestamp: current_time,
                 });
             }
         }
@@ -211,7 +221,12 @@ impl ItemService {
 
     /// Use an item from inventory
     /// Returns true if the item was successfully used
-    pub fn use_item(state: &mut GameState, idx: usize) -> bool {
+    pub fn use_item(
+        state: &mut GameState,
+        idx: usize,
+        reputation_constants: &ReputationConstants,
+        current_time: f64,
+    ) -> bool {
         if idx >= state.inventory.len() {
             return false;
         }
@@ -225,7 +240,7 @@ impl ItemService {
 
         // Apply item effects
         for effect in &item.effects {
-            Self::apply_item_effect(effect, state);
+            Self::apply_item_effect(effect, state, reputation_constants, current_time);
         }
 
         // Handle durability/consumable logic
@@ -306,7 +321,7 @@ impl ItemService {
 mod tests {
     use super::*;
     use crate::data::loader::{
-        load_item_catalog, load_item_pools, load_passengers, load_skill_tree,
+        load_constants, load_item_catalog, load_item_pools, load_passengers, load_skill_tree,
     };
     use crate::engine::RideService;
     use std::collections::HashSet;
@@ -344,6 +359,53 @@ mod tests {
         for pool in ["ghost", "vampire", "demon", "occult", "holy", "common"] {
             assert!(reached.contains(pool), "no passenger draws from {pool:?}");
         }
+    }
+
+    /// A reputation item has to work the first time you offer one.
+    ///
+    /// The effect used `passenger_reputation.get_mut`, and a reputation entry
+    /// is not created until a ride with that passenger completes — so on a
+    /// first meeting, which is most of them, there was no entry and the whole
+    /// point of the item was dropped on the floor without a word.
+    #[test]
+    fn a_reputation_item_lands_on_a_passenger_met_for_the_first_time() {
+        let constants = load_constants();
+        let catalog = load_item_catalog();
+        let passenger = load_passengers().into_iter().next().expect("a roster");
+
+        let mut state = GameState::new(0.0, &constants.game_constants);
+        state.current_passenger = Some(passenger.clone());
+        assert!(
+            state.passenger_reputation.is_empty(),
+            "this test is only meaningful before any reputation exists"
+        );
+
+        let flowers = catalog.create_item("Withered Flowers", &passenger.name, 0.0);
+        let effects: Vec<ItemEffect> = flowers
+            .effects
+            .iter()
+            .filter(|effect| effect.effect_type == ItemEffectType::ReputationModifier)
+            .cloned()
+            .collect();
+        assert!(
+            !effects.is_empty(),
+            "Withered Flowers no longer carries a reputation effect; pick another item"
+        );
+
+        for effect in &effects {
+            ItemService::apply_item_effect(effect, &mut state, &constants.reputation, 0.0);
+        }
+
+        let reputation = state
+            .passenger_reputation
+            .get(&passenger.id)
+            .expect("offering the flowers recorded nothing");
+        assert!(reputation.positive_choices > 0);
+        assert_ne!(
+            reputation.relationship_level,
+            RelationshipLevel::Neutral,
+            "standing was tallied but the level the fare reads never moved"
+        );
     }
 
     /// Trade wants are matched against inventory item names, so every wanted

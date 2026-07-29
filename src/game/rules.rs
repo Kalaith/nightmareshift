@@ -2,12 +2,21 @@ use macroquad::prelude::get_time;
 use macroquad_toolkit::rng;
 
 use super::Game;
-use crate::data::{Consequence, ConsequenceType, Passenger, ProtectionType, RouteType};
+use crate::data::{
+    Consequence, ConsequenceType, Passenger, ProtectionType, ReputationConstants, RouteType,
+};
 use crate::engine::*;
 use crate::screens::Screen;
 use crate::state::*;
 
 impl Game {
+    /// The reputation thresholds, or nothing before the data has loaded.
+    fn reputation_constants(&self) -> Option<ReputationConstants> {
+        self.game_data
+            .as_ref()
+            .map(|data| data.constants.reputation.clone())
+    }
+
     pub(super) fn perform_rule_action(&mut self, action_key: String) {
         if !self.can_perform_cab_action(&action_key) {
             self.game_state.current_dialogue = Some(CurrentDialogue {
@@ -187,16 +196,10 @@ impl Game {
                         .as_ref()
                         .map(|passenger| passenger.id)
                     {
-                        if let Some(rep) =
-                            self.game_state.passenger_reputation.get_mut(&passenger_id)
-                        {
-                            if consequence.value >= 0 {
-                                rep.positive_choices += consequence.value as u32;
-                            } else {
-                                rep.negative_choices += consequence.value.unsigned_abs();
-                            }
-                            rep.interactions += 1;
-                            rep.last_encounter = current_time;
+                        if let Some(constants) = self.reputation_constants() {
+                            self.game_state
+                                .get_passenger_reputation(passenger_id)
+                                .adjust(consequence.value, current_time, &constants);
                         }
                     }
                 }
@@ -358,10 +361,11 @@ impl Game {
         };
 
         if bonus.reputation_bonus > 0 {
-            let reputation = self.game_state.get_passenger_reputation(passenger.id);
-            reputation.positive_choices += bonus.reputation_bonus;
-            reputation.interactions += bonus.reputation_bonus;
-            reputation.last_encounter = current_time;
+            if let Some(constants) = self.reputation_constants() {
+                self.game_state
+                    .get_passenger_reputation(passenger.id)
+                    .adjust(bonus.reputation_bonus as i32, current_time, &constants);
+            }
         }
 
         if bonus.need_relief > 0 {
@@ -488,15 +492,10 @@ impl Game {
                             (self.game_state.player_trust + 0.1).min(1.0);
                     }
                     ConsequenceType::Reputation => {
-                        let rep_change = consequence.value;
-                        if let Some(rep) =
-                            self.game_state.passenger_reputation.get_mut(&passenger.id)
-                        {
-                            if rep_change > 0 {
-                                rep.positive_choices += rep_change.unsigned_abs();
-                            } else {
-                                rep.negative_choices += rep_change.unsigned_abs();
-                            }
+                        if let Some(constants) = self.reputation_constants() {
+                            self.game_state
+                                .get_passenger_reputation(passenger.id)
+                                .adjust(consequence.value, current_time, &constants);
                         }
                     }
                     ConsequenceType::Item => {}

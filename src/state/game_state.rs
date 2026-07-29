@@ -139,7 +139,41 @@ impl PassengerReputation {
             self.negative_choices += 1;
         }
 
-        // Recalculate relationship level
+        self.settle(constants);
+    }
+
+    /// Record a deliberate act toward this passenger and settle the level.
+    ///
+    /// `update` ran once, at ride completion, and was the only path that
+    /// recomputed `relationship_level` — which is the only thing anything
+    /// reads a reputation for. The fare multiplier and the route risk
+    /// modifier both branch on it and nothing else. Four other places raised
+    /// the tallies directly: using a reputation item, both of the rule
+    /// consequence sites, and the wanted-item trade bonus. All four left the
+    /// level where it was, so giving a passenger the withered flowers changed
+    /// no number the player could see for the rest of the ride.
+    ///
+    /// They also raised `positive_choices` without the matching interaction,
+    /// which skews the very ratio the level is derived from — a passenger
+    /// handed two gifts on their first ride reads as 2/1 positive. Counting
+    /// the act keeps the ratio meaning what it says.
+    pub fn adjust(&mut self, delta: i32, current_time: f64, constants: &ReputationConstants) {
+        if delta == 0 {
+            return;
+        }
+        let magnitude = delta.unsigned_abs();
+        if delta > 0 {
+            self.positive_choices += magnitude;
+        } else {
+            self.negative_choices += magnitude;
+        }
+        self.interactions += magnitude;
+        self.last_encounter = current_time;
+        self.settle(constants);
+    }
+
+    /// Derive the relationship level from the tallies.
+    fn settle(&mut self, constants: &ReputationConstants) {
         let ratio = if self.interactions > 0 {
             self.positive_choices as f32 / self.interactions as f32
         } else {
@@ -555,6 +589,79 @@ impl GameState {
         };
 
         (base + ride_bonus + time_bonus).saturating_sub(violation_penalty)
+    }
+}
+
+#[cfg(test)]
+mod reputation_tests {
+    use super::*;
+    use crate::data::loader::load_constants;
+
+    /// Standing has to move the numbers the game reads, not just the tallies.
+    ///
+    /// `relationship_level` is the only field anything consults — the fare
+    /// multiplier and the route risk modifier branch on it and nothing else.
+    /// Four call sites raised `positive_choices` and left the level alone, so
+    /// offering the withered flowers changed nothing until the ride ended.
+    #[test]
+    fn a_gift_moves_the_level_the_fare_reads() {
+        let constants = load_constants().reputation;
+        let mut reputation = PassengerReputation::default();
+        assert_eq!(reputation.relationship_level, RelationshipLevel::Neutral);
+        let before = reputation.fare_multiplier(&constants);
+
+        reputation.adjust(2, 0.0, &constants);
+
+        assert_ne!(reputation.relationship_level, RelationshipLevel::Neutral);
+        assert!(
+            reputation.fare_multiplier(&constants) > before,
+            "a gift left the fare where it was"
+        );
+    }
+
+    /// A gift is an interaction. Raising only the positive tally made a
+    /// passenger handed two gifts on their first ride read as 2/1 positive,
+    /// which is not a ratio.
+    #[test]
+    fn a_gift_counts_as_an_interaction() {
+        let constants = load_constants().reputation;
+        let mut reputation = PassengerReputation::default();
+        reputation.adjust(2, 0.0, &constants);
+
+        assert_eq!(reputation.interactions, 2);
+        assert!(
+            reputation.positive_choices <= reputation.interactions,
+            "{} positive choices out of {} interactions",
+            reputation.positive_choices,
+            reputation.interactions
+        );
+    }
+
+    /// The same path has to work downwards, or a rule's negative consequence
+    /// costs the player nothing.
+    #[test]
+    fn a_slight_moves_it_the_other_way() {
+        let constants = load_constants().reputation;
+        let mut reputation = PassengerReputation::default();
+        reputation.adjust(-2, 0.0, &constants);
+
+        assert_eq!(reputation.relationship_level, RelationshipLevel::Hostile);
+        assert!(
+            reputation.risk_modifier(&constants) > 0,
+            "a hostile passenger made the roads no more dangerous"
+        );
+    }
+
+    /// Nothing at all is still nothing.
+    #[test]
+    fn an_empty_adjustment_changes_nothing() {
+        let constants = load_constants().reputation;
+        let mut reputation = PassengerReputation::default();
+        reputation.adjust(0, 5.0, &constants);
+
+        assert_eq!(reputation.interactions, 0);
+        assert_eq!(reputation.last_encounter, 0.0);
+        assert_eq!(reputation.relationship_level, RelationshipLevel::Neutral);
     }
 }
 

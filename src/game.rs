@@ -212,7 +212,14 @@ impl Game {
 
     /// Use an item from inventory
     fn use_item(&mut self, idx: usize) {
-        if ItemService::use_item(&mut self.game_state, idx) {
+        let Some(constants) = self
+            .game_data
+            .as_ref()
+            .map(|data| data.constants.reputation.clone())
+        else {
+            return;
+        };
+        if ItemService::use_item(&mut self.game_state, idx, &constants, get_time()) {
             self.show_inventory = false;
         }
     }
