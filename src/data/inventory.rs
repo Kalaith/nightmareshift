@@ -233,6 +233,12 @@ impl ItemCatalog {
             .unwrap_or_else(ItemTemplate::keepsake)
     }
 
+    /// Every defined item name.
+    #[cfg(test)]
+    pub fn names(&self) -> Vec<String> {
+        self.templates.keys().cloned().collect()
+    }
+
     /// True when the catalog defines this name.
     #[cfg(test)]
     pub fn contains(&self, name: &str) -> bool {

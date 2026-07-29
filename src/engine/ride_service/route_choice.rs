@@ -3,8 +3,8 @@
 
 use crate::data::*;
 use crate::engine::{
-    GameEngine, PassengerStateMachine, RouteCosts, RouteService, RuleEvaluationResult,
-    SkillModifiers,
+    GameEngine, PassengerStateMachine, ProtectionService, RouteCosts, RouteService,
+    RuleEvaluationResult, SkillModifiers,
 };
 use crate::state::*;
 
@@ -179,10 +179,26 @@ impl RideService {
             .message
             .unwrap_or_else(|| "Rule violation".to_string());
 
-        if state.rule_immunity_charges > 0 {
+        let passenger_id = state.current_passenger.as_ref().map(|p| p.id);
+        let forgiven_by = if state.rule_immunity_charges > 0 {
             state.rule_immunity_charges -= 1;
+            Some(None)
+        } else {
+            ProtectionService::consume_ward(
+                &mut state.inventory,
+                ProtectionType::RuleForgiveness,
+                passenger_id,
+            )
+            .map(|ward| Some(ward.describe()))
+        };
+
+        if let Some(ward_name) = forgiven_by {
+            let ward_label = ward_name.unwrap_or_else(|| "ward".to_string());
             state.current_dialogue = Some(CurrentDialogue {
-                text: format!("The ward absorbs the {} violation. {}", rule_title, message),
+                text: format!(
+                    "The {} absorbs the {} violation. {}",
+                    ward_label, rule_title, message
+                ),
                 speaker: DialogueSpeaker::Narrator,
                 timestamp: macroquad::prelude::get_time(),
             });
@@ -366,8 +382,11 @@ impl RideService {
             .unwrap_or(false)
     }
 
+    /// Try to take a meltdown on the chin using whatever protection is
+    /// carried: first the `supernatural_protection` counter granted by item
+    /// effects and skills, then an actual warding item from the inventory.
     fn absorb_meltdown_with_protection(state: &mut GameState, current_time: f64) -> bool {
-        if state.supernatural_protection == 0 || !Self::is_passenger_meltdown(state) {
+        if !Self::is_passenger_meltdown(state) {
             return false;
         }
 
@@ -386,15 +405,37 @@ impl RideService {
             return false;
         }
 
+        // Spend the cheapest thing that will cover it: the counter first, so
+        // a carried ward survives while a skill charge is available.
+        let passenger_id = state.current_passenger.as_ref().map(|p| p.id);
+        // A carried ward pulls the passenger back by its authored strength;
+        // a bare counter charge is worth one step of it.
+        const RELIEF_PER_STRENGTH: i32 = 18;
+        let (absorbed_by, relief) = if state.supernatural_protection > 0 {
+            state.supernatural_protection -= 1;
+            (None, RELIEF_PER_STRENGTH * 2)
+        } else {
+            match ProtectionService::consume_ward(
+                &mut state.inventory,
+                ProtectionType::SupernaturalImmunity,
+                passenger_id,
+            ) {
+                Some(ward) => (
+                    Some(ward.describe()),
+                    RELIEF_PER_STRENGTH * ward.strength.max(1) as i32,
+                ),
+                None => return false,
+            }
+        };
+
         if let (Some(mut need_state), Some(passenger)) = (
             state.current_passenger_need_state.clone(),
             state.current_passenger.clone(),
         ) {
-            state.supernatural_protection -= 1;
             let triggered = PassengerStateMachine::apply_stress_delta(
                 &mut need_state,
                 &passenger,
-                -35,
+                -relief,
                 current_time,
             );
             state.current_passenger_need_state = Some(need_state);
@@ -406,8 +447,14 @@ impl RideService {
                 &state.current_guidelines,
             );
             state.current_dialogue = Some(CurrentDialogue {
-                text: "A protective charm flares and pulls the passenger back from the edge."
-                    .to_string(),
+                text: match absorbed_by {
+                    Some(name) => format!(
+                        "The {} flares and pulls the passenger back from the edge.",
+                        name
+                    ),
+                    None => "A protective charm flares and pulls the passenger back from the edge."
+                        .to_string(),
+                },
                 speaker: DialogueSpeaker::Narrator,
                 timestamp: current_time,
             });

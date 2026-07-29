@@ -20,7 +20,12 @@
     "description": "Flowers that never truly die, holding memories of the past. Offered to a passenger, they soften the mood",
     "canUse": true,
     "canTrade": true,
-    "effects": [{ "type": "reputation_modifier", "value": 2 }]
+    "effects": [
+      {
+        "type": "reputation_modifier",
+        "value": 2
+      }
+    ]
   },
   "faded photograph": {
     "type": "consumable",
@@ -28,7 +33,12 @@
     "description": "A face half-eaten by light. Showing it to a passenger buys a moment of recognition",
     "canUse": true,
     "canTrade": true,
-    "effects": [{ "type": "reputation_modifier", "value": 1 }]
+    "effects": [
+      {
+        "type": "reputation_modifier",
+        "value": 1
+      }
+    ]
   },
   "dusty mirror": {
     "type": "cursed",
@@ -45,7 +55,6 @@
       "removalCondition": "Trade it away before dawn"
     }
   },
-
   "blood vial": {
     "type": "cursed",
     "rarity": "rare",
@@ -67,7 +76,12 @@
     "description": "Older than the city. Pressed into the right palm, it buys one look the other way",
     "canUse": true,
     "canTrade": true,
-    "effects": [{ "type": "rule_immunity", "value": 1 }]
+    "effects": [
+      {
+        "type": "rule_immunity",
+        "value": 1
+      }
+    ]
   },
   "velvet cloak scrap": {
     "type": "protective",
@@ -81,7 +95,12 @@
       "protectionStrength": 1,
       "usesRemaining": 3
     },
-    "effects": [{ "type": "supernatural_protection", "value": 1 }]
+    "effects": [
+      {
+        "type": "supernatural_protection",
+        "value": 1
+      }
+    ]
   },
   "ornate ring": {
     "type": "protective",
@@ -95,9 +114,13 @@
       "protectionStrength": 2,
       "usesRemaining": 2
     },
-    "effects": [{ "type": "rule_immunity", "value": 1 }]
+    "effects": [
+      {
+        "type": "rule_immunity",
+        "value": 1
+      }
+    ]
   },
-
   "sulfur crystal": {
     "type": "consumable",
     "rarity": "uncommon",
@@ -105,8 +128,14 @@
     "canUse": true,
     "canTrade": true,
     "effects": [
-      { "type": "fuel_bonus", "value": 20 },
-      { "type": "time_penalty", "value": 20 }
+      {
+        "type": "fuel_bonus",
+        "value": 20
+      },
+      {
+        "type": "time_penalty",
+        "value": 20
+      }
     ]
   },
   "burning coal": {
@@ -115,7 +144,12 @@
     "description": "An ember that will not go out. It feeds the tank as well as anything from a pump",
     "canUse": true,
     "canTrade": true,
-    "effects": [{ "type": "fuel_bonus", "value": 15 }]
+    "effects": [
+      {
+        "type": "fuel_bonus",
+        "value": 15
+      }
+    ]
   },
   "contract fragment": {
     "type": "cursed",
@@ -146,9 +180,13 @@
       "canBeRemoved": true,
       "removalCondition": "Trade it away before dawn"
     },
-    "effects": [{ "type": "rule_immunity", "value": 2 }]
+    "effects": [
+      {
+        "type": "rule_immunity",
+        "value": 2
+      }
+    ]
   },
-
   "crystal pendant": {
     "type": "protective",
     "rarity": "rare",
@@ -175,7 +213,12 @@
     "description": "The Chariot, reversed. Reading it once tells you where the night is going",
     "canUse": true,
     "canTrade": true,
-    "effects": [{ "type": "time_bonus", "value": 60 }]
+    "effects": [
+      {
+        "type": "time_bonus",
+        "value": 60
+      }
+    ]
   },
   "incense bundle": {
     "type": "consumable",
@@ -183,7 +226,12 @@
     "description": "Burnt in the footwell, the smoke keeps the back seat honest",
     "canUse": true,
     "canTrade": true,
-    "effects": [{ "type": "supernatural_protection", "value": 2 }]
+    "effects": [
+      {
+        "type": "supernatural_protection",
+        "value": 2
+      }
+    ]
   },
   "rune stone": {
     "type": "protective",
@@ -197,9 +245,13 @@
       "protectionStrength": 1,
       "usesRemaining": 5
     },
-    "effects": [{ "type": "supernatural_protection", "value": 1 }]
+    "effects": [
+      {
+        "type": "supernatural_protection",
+        "value": 1
+      }
+    ]
   },
-
   "blessed medallion": {
     "type": "protective",
     "rarity": "rare",
@@ -211,7 +263,12 @@
       "protectionStrength": 3,
       "usesRemaining": 5
     },
-    "effects": [{ "type": "supernatural_protection", "value": 3 }]
+    "effects": [
+      {
+        "type": "supernatural_protection",
+        "value": 3
+      }
+    ]
   },
   "holy water vial": {
     "type": "consumable",
@@ -219,7 +276,12 @@
     "description": "One vial, one blessing. Spend it on the wrong fare and you have spent it",
     "canUse": true,
     "canTrade": true,
-    "effects": [{ "type": "supernatural_protection", "value": 2 }]
+    "effects": [
+      {
+        "type": "supernatural_protection",
+        "value": 2
+      }
+    ]
   },
   "prayer beads": {
     "type": "protective",
@@ -233,7 +295,12 @@
       "protectionStrength": 1,
       "usesRemaining": 4
     },
-    "effects": [{ "type": "rule_immunity", "value": 1 }]
+    "effects": [
+      {
+        "type": "rule_immunity",
+        "value": 1
+      }
+    ]
   },
   "saint's icon": {
     "type": "protective",
@@ -247,16 +314,25 @@
       "protectionStrength": 2,
       "usesRemaining": 3
     },
-    "effects": [{ "type": "supernatural_protection", "value": 2 }]
+    "effects": [
+      {
+        "type": "supernatural_protection",
+        "value": 2
+      }
+    ]
   },
-
   "forgotten wallet": {
     "type": "consumable",
     "rarity": "common",
     "description": "Somebody's whole evening, left on the seat. Enough cash in it for a tank",
     "canUse": true,
     "canTrade": true,
-    "effects": [{ "type": "fuel_bonus", "value": 15 }]
+    "effects": [
+      {
+        "type": "fuel_bonus",
+        "value": 15
+      }
+    ]
   },
   "lost phone": {
     "type": "consumable",
@@ -264,7 +340,12 @@
     "description": "Nine percent battery and one bar. Enough to call dispatch and buy yourself time",
     "canUse": true,
     "canTrade": true,
-    "effects": [{ "type": "time_bonus", "value": 90 }]
+    "effects": [
+      {
+        "type": "time_bonus",
+        "value": 90
+      }
+    ]
   },
   "crumpled note": {
     "type": "consumable",
@@ -272,23 +353,32 @@
     "description": "A warning in a stranger's handwriting. Reading it lets you break one rule knowingly",
     "canUse": true,
     "canTrade": true,
-    "effects": [{ "type": "rule_immunity", "value": 1 }]
+    "effects": [
+      {
+        "type": "rule_immunity",
+        "value": 1
+      }
+    ]
   },
   "old key": {
     "type": "protective",
     "rarity": "common",
-    "description": "It fits no door you own, but doors that matter tonight seem to agree with it",
+    "description": "It fits no door you own, but a rule that mattered tonight seems to make an exception for it",
     "canUse": true,
     "canTrade": true,
     "maxDurability": 3,
     "protectiveProperties": {
-      "protectionType": "safe_passage",
+      "protectionType": "rule_forgiveness",
       "protectionStrength": 1,
       "usesRemaining": 3
     },
-    "effects": [{ "type": "rule_immunity", "value": 1 }]
+    "effects": [
+      {
+        "type": "rule_immunity",
+        "value": 1
+      }
+    ]
   },
-
   "soul protection ward": {
     "type": "protective",
     "rarity": "legendary",
@@ -299,8 +389,15 @@
       "protectionType": "supernatural_immunity",
       "protectionStrength": 5,
       "usesRemaining": 1,
-      "protectsAgainst": ["16"]
+      "protectsAgainst": [
+        "16"
+      ]
     },
-    "effects": [{ "type": "supernatural_protection", "value": 5 }]
+    "effects": [
+      {
+        "type": "supernatural_protection",
+        "value": 5
+      }
+    ]
   }
 }

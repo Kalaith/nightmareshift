@@ -2,7 +2,7 @@ use macroquad::prelude::get_time;
 use macroquad_toolkit::rng;
 
 use super::Game;
-use crate::data::{Consequence, ConsequenceType, Passenger, RouteType};
+use crate::data::{Consequence, ConsequenceType, Passenger, ProtectionType, RouteType};
 use crate::engine::*;
 use crate::screens::Screen;
 use crate::state::*;
@@ -87,10 +87,27 @@ impl Game {
                 .clone()
                 .unwrap_or_else(|| "You violated a rule.".to_string());
 
-            if self.game_state.rule_immunity_charges > 0 {
+            // Immunity charges from item effects and skills first, then an
+            // actual `RuleForgiveness` ward carried in the inventory.
+            let passenger_id = self.game_state.current_passenger.as_ref().map(|p| p.id);
+            let forgiven_by = if self.game_state.rule_immunity_charges > 0 {
                 self.game_state.rule_immunity_charges -= 1;
+                Some("ward".to_string())
+            } else {
+                ProtectionService::consume_ward(
+                    &mut self.game_state.inventory,
+                    ProtectionType::RuleForgiveness,
+                    passenger_id,
+                )
+                .map(|ward| ward.describe())
+            };
+
+            if let Some(ward_label) = forgiven_by {
                 self.game_state.current_dialogue = Some(CurrentDialogue {
-                    text: format!("A ward absorbs the {} violation. {}", rule_title, message),
+                    text: format!(
+                        "The {} absorbs the {} violation. {}",
+                        ward_label, rule_title, message
+                    ),
                     speaker: DialogueSpeaker::Narrator,
                     timestamp: current_time,
                 });
