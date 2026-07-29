@@ -267,6 +267,11 @@ impl Game {
         self.game_state.current_event = None;
         self.game_state.last_ride_completion = None;
         self.game_state.driving_phase = None;
+        // Leaving the drop-off declines any offer still on the table. The trade
+        // modal only draws during DropOff, so a surviving offer would go
+        // invisible and then reappear over the next passenger's drop-off,
+        // trading an item the previous passenger was holding.
+        self.game_state.pending_trade = None;
 
         // Check end conditions
         if self.game_state.should_end_shift() {
