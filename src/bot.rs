@@ -616,12 +616,17 @@ impl PlaytestBot {
             .map(|entry| format!("{:?}", entry.route_type))
             .collect::<Vec<_>>()
             .join(" -> ");
+        // Night and quota are logged because they are what a run escalates:
+        // every measurement so far restarted at night one, so nothing showed
+        // how far into a campaign a shift got or what it was asked to earn.
         eprintln!(
-            "[BOT] Shift {} ended on {:?}: rides={}, earnings=${}, fuel={:.0}%, time={}, routes=[{}], reason={}",
+            "[BOT] Shift {} ended on {:?}: night={}, rides={}, earnings=${}/{}, fuel={:.0}%, time={}, routes=[{}], reason={}",
             self.completed_shifts + 1,
             screen,
+            state.night,
             state.rides_completed,
             state.earnings,
+            state.minimum_earnings,
             state.fuel,
             state.time_remaining,
             route_summary,

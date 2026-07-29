@@ -226,7 +226,8 @@ impl Game {
             let night = self.game_state.night;
             let max_diff = data.constants.scoring.max_difficulty;
             let base_diff = self.player_stats.suggested_difficulty();
-            let effective_diff = (base_diff + night - 1).min(max_diff);
+            let difficulty_step = data.constants.game_constants.difficulty_increase_per_night;
+            let effective_diff = (base_diff + (night - 1) * difficulty_step).min(max_diff);
             let synthetic_xp = effective_diff * data.constants.scoring.experience_per_level;
             let shift_rules =
                 GameEngine::generate_shift_rules(synthetic_xp, &data.rules, &data.constants);
@@ -234,9 +235,13 @@ impl Game {
             self.game_state.hidden_rules = shift_rules.hidden_rules;
             self.game_state.difficulty_level = shift_rules.difficulty_level;
 
-            // The nightly earnings quota rises each night: base + base*(night-1)/2.
+            // The nightly quota rises by an authored share of the base each
+            // night: 150, 225, 300, 375, 450 across a five-night run at the
+            // shipped 0.5, against a shift whose fuel and clock do not grow.
             let base_quota = data.constants.game_constants.minimum_earnings;
-            self.game_state.minimum_earnings = base_quota + base_quota * (night - 1) / 2;
+            let step = data.constants.game_constants.quota_increase_per_night;
+            let growth = (base_quota as f32 * step * (night - 1) as f32).round() as u32;
+            self.game_state.minimum_earnings = base_quota + growth;
 
             // Apply the player's unlocked-skill effects for this shift.
             let skill_mods =
