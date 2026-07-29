@@ -350,3 +350,108 @@ impl WeatherService {
         current.clone()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::data::loader::{load_constants, load_passengers};
+    use crate::engine::{RouteCosts, RouteService, SkillModifiers};
+    use std::collections::HashMap;
+
+    /// Route costs under a given sky, everything else held equal.
+    ///
+    /// The condition is built here rather than through
+    /// `create_weather_condition`, which rolls a random intensity — the point
+    /// is to compare the skies, so the intensity is pinned.
+    fn costs_under(weather_type: WeatherType) -> RouteCosts {
+        let constants = load_constants();
+        let intensity = WeatherIntensity::Moderate;
+        let weather = WeatherCondition {
+            weather_type,
+            intensity,
+            visibility: WeatherService::calculate_visibility(weather_type, intensity),
+            description: String::new(),
+            icon: String::new(),
+            effects: WeatherService::get_weather_effects(weather_type, intensity),
+            duration: 60,
+            start_time: 0.0,
+        };
+        let passenger = load_passengers().into_iter().next();
+        RouteService::calculate_route_costs(
+            RouteType::Normal,
+            &constants,
+            2,
+            Some(&weather),
+            None,
+            &[],
+            &HashMap::new(),
+            passenger.as_ref(),
+            &SkillModifiers::default(),
+        )
+    }
+
+    /// Clear weather must cost nothing extra, or there is no baseline to be
+    /// worse than.
+    #[test]
+    fn clear_weather_is_the_baseline() {
+        let clear = costs_under(WeatherType::Clear);
+        for worse in [
+            WeatherType::Rain,
+            WeatherType::Fog,
+            WeatherType::Snow,
+            WeatherType::Thunderstorm,
+        ] {
+            let costs = costs_under(worse);
+            assert!(
+                costs.fuel >= clear.fuel && costs.time >= clear.time,
+                "{worse:?} is cheaper than clear: {costs:?} against {clear:?}"
+            );
+        }
+    }
+
+    /// The weather types must actually differ. Six skies that all cost the
+    /// same would make the forecast on the status bar decoration, and route
+    /// risk — which has real consequences — blind to it.
+    #[test]
+    fn the_skies_are_not_all_the_same() {
+        let profiles: Vec<(WeatherType, RouteCosts)> = [
+            WeatherType::Clear,
+            WeatherType::Rain,
+            WeatherType::Fog,
+            WeatherType::Snow,
+            WeatherType::Thunderstorm,
+            WeatherType::Wind,
+        ]
+        .into_iter()
+        .map(|kind| (kind, costs_under(kind)))
+        .collect();
+
+        let distinct: std::collections::HashSet<(u32, u32, u32)> = profiles
+            .iter()
+            .map(|(_, c)| (c.fuel, c.time, c.risk))
+            .collect();
+
+        assert!(
+            distinct.len() >= 4,
+            "only {} distinct cost profiles across six skies: {:?}",
+            distinct.len(),
+            profiles
+                .iter()
+                .map(|(k, c)| (format!("{k:?}"), c.fuel, c.time, c.risk))
+                .collect::<Vec<_>>()
+        );
+    }
+
+    /// A thunderstorm is the worst sky the game has — it is the only one that
+    /// draws the supernatural and unsettles the passenger — so it must not
+    /// price below a shower.
+    #[test]
+    fn a_thunderstorm_outweighs_a_shower() {
+        let storm = costs_under(WeatherType::Thunderstorm);
+        let rain = costs_under(WeatherType::Rain);
+        assert!(
+            storm.risk >= rain.risk,
+            "a thunderstorm is no riskier than rain: {storm:?} against {rain:?}"
+        );
+    }
+}

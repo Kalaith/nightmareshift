@@ -52,7 +52,6 @@ pub enum WeatherEffectType {
     SupernaturalAttraction,
     PassengerBehavior,
     RouteBlockage,
-    RuleModification,
 }
 
 /// A weather effect applied during a condition

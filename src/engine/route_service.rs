@@ -132,9 +132,6 @@ impl RouteService {
                             risk = (risk + effect.value.max(0) as f32 / 10.0).min(max_risk);
                         }
                     }
-                    WeatherEffectType::RuleModification => {
-                        risk += effect.value.max(0) as f32 / 50.0;
-                    }
                 }
             }
 
