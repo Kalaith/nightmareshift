@@ -1,6 +1,7 @@
 //! Skill tree screen: spend bank balance to unlock permanent skills.
 
 use crate::data::GameData;
+use crate::engine::RideService;
 use crate::state::PlayerStats;
 use crate::ui::{
     colors, draw_glass_button, draw_glass_panel, draw_noir_city_background, draw_small_caps,
@@ -40,6 +41,36 @@ fn draw_skill_category_mark(category: &str, x: f32, y: f32, color: Color) {
             draw_circle_lines(x, y, 14.0, 2.0, color);
         }
     }
+}
+
+/// For an `ability_unlock` skill, how many passengers carry its trait and how
+/// many of those the player has studied. `None` for every other skill.
+///
+/// The choice an ability skill buys only appears for a passenger who carries
+/// the matching trait *and* whom the player has studied to Almanac Lv.1. That
+/// second requirement is nowhere in `prerequisites`, so the skill tree used to
+/// offer Night Vision for $750 with no hint that an unstudied roster makes it
+/// inert — which is most of why a skills-only run measures barely better than
+/// no progression at all. The studied count is the number of times the
+/// purchase can ever fire.
+pub(crate) fn ability_carriers(
+    skill: &crate::data::Skill,
+    passengers: &[crate::data::Passenger],
+    player_stats: &PlayerStats,
+) -> Option<(usize, usize)> {
+    if skill.effect.effect_type != "ability_unlock" {
+        return None;
+    }
+    let carried = passengers.iter().filter(|passenger| {
+        passenger
+            .traits
+            .iter()
+            .any(|name| RideService::trait_skill_id(name) == skill.effect.target)
+    });
+    Some(carried.fold((0, 0), |(studied, total), passenger| {
+        let known = player_stats.get_almanac_entry(passenger.id).knowledge_level >= 1;
+        (studied + usize::from(known), total + 1)
+    }))
 }
 
 fn draw_skill_card(
@@ -119,7 +150,7 @@ fn draw_skill_card(
         2,
     );
 
-    let prereq_text = if skill.prerequisites.is_empty() {
+    let mut prereq_text = if skill.prerequisites.is_empty() {
         "No prerequisite".to_string()
     } else {
         let met = skill
@@ -129,12 +160,33 @@ fn draw_skill_card(
             .count();
         format!("Prerequisites {}/{}", met, skill.prerequisites.len())
     };
+
+    // An ability skill has a second requirement that is not in
+    // `prerequisites` at all: the choice it buys only appears for a
+    // passenger who carries the matching trait *and* whom the player has
+    // studied to Almanac Lv.1. Buying one against an unstudied roster buys
+    // nothing, and this screen said nothing about it — which is why a
+    // skills-only run measures as barely better than no progression.
+    //
+    // Naming the count rather than the rule makes it actionable: five
+    // passengers carry Night Vision, and the number of them you have
+    // studied is the number of times this purchase can ever fire.
+    let mut unmet_ability = false;
+    if let Some((studied, total)) = ability_carriers(skill, &data.passengers, player_stats) {
+        prereq_text = format!("{prereq_text}  |  {studied}/{total} carriers studied");
+        unmet_ability = studied == 0;
+    }
+
     draw_small_caps(
         &prereq_text,
         text_x,
         (desc_bottom + 12.0).min(rect.y + rect.h - 18.0),
         fonts::SIZE_XS,
-        colors::TEXT_MUTED,
+        if unmet_ability {
+            colors::ACCENT_WARNING
+        } else {
+            colors::TEXT_MUTED
+        },
     );
 
     if can_unlock {
@@ -387,4 +439,73 @@ pub fn draw_skill_tree(
     }
 
     UiAction::None
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::data::loader::{load_passengers, load_skill_tree};
+
+    /// A fresh driver has studied nobody, so every ability skill reads as
+    /// zero-of-something and the card warns rather than looking ready.
+    #[test]
+    fn a_new_driver_has_no_one_to_use_an_ability_on() {
+        let passengers = load_passengers();
+        let stats = PlayerStats::default();
+        let mut ability_skills = 0;
+        for skill in load_skill_tree() {
+            let Some((studied, total)) = ability_carriers(&skill, &passengers, &stats) else {
+                continue;
+            };
+            ability_skills += 1;
+            assert_eq!(studied, 0, "{} reads as studied on a fresh save", skill.id);
+            assert!(total > 0, "{} names a trait no passenger carries", skill.id);
+        }
+        assert!(ability_skills > 0, "no ability skills to check");
+    }
+
+    /// Studying a carrier moves that skill's count, so the line is live
+    /// rather than a fixed caption.
+    #[test]
+    fn studying_a_carrier_moves_the_count() {
+        let passengers = load_passengers();
+        let skill = load_skill_tree()
+            .into_iter()
+            .find(|skill| skill.effect.effect_type == "ability_unlock")
+            .expect("an ability skill");
+        let carrier = passengers
+            .iter()
+            .find(|passenger| {
+                passenger
+                    .traits
+                    .iter()
+                    .any(|name| RideService::trait_skill_id(name) == skill.effect.target)
+            })
+            .expect("a carrier");
+
+        let mut stats = PlayerStats::default();
+        let before = ability_carriers(&skill, &passengers, &stats)
+            .expect("counts")
+            .0;
+        stats.mark_passenger_encountered(carrier.id);
+        stats.lore_fragments += 999;
+        stats.upgrade_almanac_knowledge(carrier.id, 0);
+        let after = ability_carriers(&skill, &passengers, &stats)
+            .expect("counts")
+            .0;
+
+        assert_eq!(before + 1, after, "studying a carrier changed nothing");
+    }
+
+    /// Skills that are not ability unlocks have no carrier line at all.
+    #[test]
+    fn an_ordinary_skill_has_no_carrier_line() {
+        let passengers = load_passengers();
+        let stats = PlayerStats::default();
+        let skill = load_skill_tree()
+            .into_iter()
+            .find(|skill| skill.effect.effect_type != "ability_unlock")
+            .expect("an ordinary skill");
+        assert!(ability_carriers(&skill, &passengers, &stats).is_none());
+    }
 }
