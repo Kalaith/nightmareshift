@@ -12,6 +12,15 @@ use crate::state::*;
 use crate::ui::layout;
 use macroquad_toolkit::ui::ScrollArea;
 
+/// What a press on the menu's delete button should do.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum DeleteDecision {
+    /// Prime the button and wait for a second press.
+    Arm,
+    /// Confirmed — destroy the save.
+    Erase,
+}
+
 /// Main game structure
 pub struct Game {
     screen: Screen,
@@ -31,6 +40,10 @@ pub struct Game {
     skill_tree_scroll: ScrollArea,
     almanac_scroll: ScrollArea,
     almanac_selected: Option<u32>,
+    /// When the menu's delete button is armed until, if it is. A first click
+    /// arms it and a second inside the window confirms; anything else lets it
+    /// lapse. Deleting takes every meta-progression the player has.
+    delete_armed_until: Option<f64>,
     /// Set while the screenshot harness is driving the game. Capture scenes
     /// seed bank balance, lore, and almanac levels directly into
     /// `player_stats`; persisting any of that would hand the player a save
@@ -75,6 +88,7 @@ impl Game {
             skill_tree_scroll: ScrollArea::new(),
             almanac_scroll: ScrollArea::new(),
             almanac_selected: None,
+            delete_armed_until: None,
             capture_mode: false,
         }
     }
@@ -141,6 +155,14 @@ impl Game {
             }
             // The leaderboard with a spread of recorded runs, so the ranking
             // and the achievement list are both populated in the capture.
+            // The menu with the delete button already armed, so the warning
+            // state is visible without a click.
+            "delete_armed" => {
+                self.player_stats.bank_balance += 4200;
+                self.player_stats.lore_fragments += 260;
+                self.delete_armed_until = Some(get_time() + 3600.0);
+                self.change_screen(Screen::MainMenu);
+            }
             "leaderboard" => {
                 let entries = [
                     (1840_u32, 9_u32, 4_u32, 0_u32, true),
@@ -643,6 +665,52 @@ impl Game {
         self.player_stats.lore_fragments += total.lore;
     }
 
+    /// How long a primed delete stays primed.
+    const DELETE_CONFIRM_WINDOW: f64 = 5.0;
+
+    /// First press arms the delete, second inside the window carries it out.
+    ///
+    /// This used to erase the save on a single click from the menu. Everything
+    /// the meta-progression holds — bank balance, lore, almanac levels,
+    /// unlocked skills, the leaderboard, achievements — went with one press of
+    /// a button sitting directly under "Leaderboard".
+    fn arm_or_delete_save(&mut self) {
+        let now = get_time();
+        match Self::delete_decision(self.delete_armed_until, now) {
+            DeleteDecision::Arm => {
+                self.delete_armed_until = Some(now + Self::DELETE_CONFIRM_WINDOW);
+            }
+            DeleteDecision::Erase => {
+                self.delete_armed_until = None;
+                if Persistence::delete_save().is_ok() {
+                    self.player_stats = PlayerStats::new();
+                    self.player_stats.init_achievements();
+                }
+            }
+        }
+    }
+
+    /// Whether a press on the delete button arms it or carries it out.
+    ///
+    /// Split out from `arm_or_delete_save` so it can be tested without a
+    /// window: the branch that decides whether a save is destroyed is worth
+    /// pinning, and `get_time` needs a graphics context.
+    fn delete_decision(armed_until: Option<f64>, now: f64) -> DeleteDecision {
+        match armed_until {
+            Some(until) if now < until => DeleteDecision::Erase,
+            _ => DeleteDecision::Arm,
+        }
+    }
+
+    /// Let an untouched delete prompt lapse rather than waiting for a click.
+    fn expire_delete_prompt(&mut self) {
+        if let Some(until) = self.delete_armed_until {
+            if get_time() >= until || self.screen != Screen::MainMenu {
+                self.delete_armed_until = None;
+            }
+        }
+    }
+
     /// Return to main menu
     fn return_to_menu(&mut self) {
         self.change_screen(Screen::MainMenu);
@@ -745,6 +813,8 @@ impl Game {
                 self.change_screen(Screen::MainMenu);
             }
         }
+
+        self.expire_delete_prompt();
 
         // Update effects
         self.transition.update(dt);
@@ -886,5 +956,42 @@ impl Game {
                 let _ = code;
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod delete_tests {
+    use super::{DeleteDecision, Game};
+
+    /// A first press must never erase. This was a single click from the main
+    /// menu, taking the bank, every lore fragment, every almanac level and
+    /// every unlocked skill with it.
+    #[test]
+    fn a_first_press_only_arms() {
+        assert_eq!(Game::delete_decision(None, 100.0), DeleteDecision::Arm);
+    }
+
+    /// A second press inside the window is the confirmation.
+    #[test]
+    fn a_second_press_inside_the_window_erases() {
+        let armed_until = 100.0 + Game::DELETE_CONFIRM_WINDOW;
+        assert_eq!(
+            Game::delete_decision(Some(armed_until), 101.0),
+            DeleteDecision::Erase
+        );
+    }
+
+    /// Once the window has passed the prompt is stale, and a press starts
+    /// over rather than destroying a save the player stopped thinking about.
+    #[test]
+    fn a_press_after_the_window_arms_again() {
+        assert_eq!(
+            Game::delete_decision(Some(100.0), 100.0),
+            DeleteDecision::Arm
+        );
+        assert_eq!(
+            Game::delete_decision(Some(100.0), 500.0),
+            DeleteDecision::Arm
+        );
     }
 }

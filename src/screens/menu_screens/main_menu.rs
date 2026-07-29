@@ -13,7 +13,11 @@ use macroquad_toolkit::ui::draw_ui_text;
 use super::widgets::draw_menu_command;
 
 /// Draw the main menu
-pub fn draw_main_menu(player_stats: &PlayerStats, game_data: Option<&GameData>) -> UiAction {
+pub fn draw_main_menu(
+    player_stats: &PlayerStats,
+    game_data: Option<&GameData>,
+    delete_armed: bool,
+) -> UiAction {
     draw_noir_city_background();
 
     // Default strings if data missing (shouldn't happen)
@@ -220,17 +224,31 @@ pub fn draw_main_menu(player_stats: &PlayerStats, game_data: Option<&GameData>) 
             return UiAction::OpenLeaderboard;
         }
 
-        if Persistence::save_exists()
-            && draw_menu_command(
+        // Deleting a save was one click from the menu, and it takes the bank
+        // balance, every lore fragment, every almanac level, every unlocked
+        // skill, the leaderboard and the achievements with it. The first
+        // click now only arms the button; `Game` holds the arming and expires
+        // it, so a mis-click resolves itself by being left alone.
+        if Persistence::save_exists() {
+            let (label, detail, colour) = if delete_armed {
+                (
+                    "Confirm Delete",
+                    "Erases skills, almanac and bank",
+                    colors::FUEL_CRITICAL,
+                )
+            } else {
+                ("Delete Save", "Reset Progress", colors::ACCENT_DANGER)
+            };
+            if draw_menu_command(
                 UiRect::new(menu_x, menu_y + (menu_h + gap) * 4.0, menu_w, menu_h),
                 "delete",
-                "Delete Save",
-                "Reset Progress",
-                colors::ACCENT_DANGER,
+                label,
+                detail,
+                colour,
                 menu_scale,
-            )
-        {
-            return UiAction::DeleteSave;
+            ) {
+                return UiAction::DeleteSave;
+            }
         }
     }
 

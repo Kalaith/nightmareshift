@@ -154,12 +154,7 @@ impl Game {
             UiAction::OpenLeaderboard => {
                 self.change_screen(Screen::Leaderboard);
             }
-            UiAction::DeleteSave => {
-                if Persistence::delete_save().is_ok() {
-                    self.player_stats = PlayerStats::new();
-                    self.player_stats.init_achievements();
-                }
-            }
+            UiAction::DeleteSave => self.arm_or_delete_save(),
             UiAction::PurchaseSkill(skill_id) => {
                 if let Some(ref data) = self.game_data {
                     if let Some(skill) = data.skills.iter().find(|s| s.id == skill_id) {

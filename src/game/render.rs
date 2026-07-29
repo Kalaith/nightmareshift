@@ -18,9 +18,11 @@ impl Game {
 
         let action = match self.screen {
             Screen::Loading => menu_screens::draw_loading(self.game_data.as_ref()),
-            Screen::MainMenu => {
-                menu_screens::draw_main_menu(&self.player_stats, self.game_data.as_ref())
-            }
+            Screen::MainMenu => menu_screens::draw_main_menu(
+                &self.player_stats,
+                self.game_data.as_ref(),
+                self.delete_armed_until.is_some(),
+            ),
             Screen::Briefing => {
                 menu_screens::draw_briefing(&self.game_state, self.game_data.as_ref())
             }
