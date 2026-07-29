@@ -110,6 +110,7 @@ impl RideService {
                 "take_shortcut",
                 state.current_passenger.as_ref(),
                 state.current_passenger_need_state.as_ref(),
+                &state.current_guidelines,
             );
 
             if violation.violation {
@@ -122,6 +123,7 @@ impl RideService {
                 "take_shortcut",
                 state.current_passenger.as_ref(),
                 state.current_passenger_need_state.as_ref(),
+                &state.current_guidelines,
             );
 
             if hidden_violation.violation {

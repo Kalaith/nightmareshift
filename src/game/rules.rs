@@ -27,6 +27,7 @@ impl Game {
             &action_key,
             self.game_state.current_passenger.as_ref(),
             self.game_state.current_passenger_need_state.as_ref(),
+            &self.game_state.current_guidelines,
         );
 
         if visible.violation || visible.rule.is_some() {
@@ -39,6 +40,7 @@ impl Game {
             &action_key,
             self.game_state.current_passenger.as_ref(),
             self.game_state.current_passenger_need_state.as_ref(),
+            &self.game_state.current_guidelines,
         );
 
         if hidden.violation || hidden.rule.is_some() {

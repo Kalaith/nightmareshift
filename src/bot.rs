@@ -1,9 +1,9 @@
 //! Automated playtest bot for smoke-testing the core gameplay loop.
 
-use crate::data::{GameData, Passenger, PreferenceLevel, RouteType};
+use crate::data::{ActionType, GameData, Passenger, PreferenceLevel, RouteType};
 use crate::engine::RouteService;
 use crate::screens::Screen;
-use crate::state::{AlmanacEntry, GamePhase, GameState, PlayerStats, RouteStreak};
+use crate::state::{AlmanacEntry, GamePhase, GameState, NeedStage, PlayerStats, RouteStreak};
 use crate::ui::UiAction;
 
 #[cfg_attr(target_arch = "wasm32", allow(dead_code))]
@@ -48,6 +48,8 @@ pub struct PlaytestBot {
     stale_since: f64,
     almanac_level: u32,
     unlock_all_skills: bool,
+    /// Leg index the bot last spent a soothing cab action on.
+    soothed_at_leg: Option<usize>,
 }
 
 impl PlaytestBot {
@@ -112,6 +114,7 @@ impl PlaytestBot {
                 stale_since: 0.0,
                 almanac_level,
                 unlock_all_skills,
+                soothed_at_leg: None,
             };
 
             eprintln!(
@@ -247,7 +250,21 @@ impl PlaytestBot {
             }
             GamePhase::RideRequest => UiAction::AcceptRide,
             GamePhase::Driving => {
-                UiAction::SelectRoute(self.choose_route_index(state, stats, data))
+                // Settle the passenger before driving on. Cab actions are the
+                // main counter to a meltdown and the bot never used one, so
+                // every meltdown figure it has ever reported was of a bot
+                // declining to defend itself.
+                // Once per leg only: performing a cab action does not change
+                // the phase, so repeating it would spin until the watchdog
+                // stopped the run.
+                let leg = state.route_history.len();
+                match Self::soothing_action(state, data) {
+                    Some(action_key) if self.soothed_at_leg != Some(leg) => {
+                        self.soothed_at_leg = Some(leg);
+                        UiAction::PerformRuleAction(action_key)
+                    }
+                    _ => UiAction::SelectRoute(self.choose_route_index(state, stats, data)),
+                }
             }
             GamePhase::Interaction => {
                 if let Some(event) = &state.current_event {
@@ -279,6 +296,40 @@ impl PlaytestBot {
             GamePhase::GameOver | GamePhase::Success => UiAction::None,
             _ => UiAction::None,
         }
+    }
+
+    /// The cab action that would relieve the current passenger, if they are
+    /// stressed enough for their exception to be active and it has not been
+    /// used on this leg yet.
+    ///
+    /// Breaking the rule that belongs to a passenger's own exception is worth
+    /// `exceptionNeedAdjustment` — between -12 and -30 — which is the largest
+    /// single relief in the game.
+    fn soothing_action(state: &GameState, data: Option<&GameData>) -> Option<String> {
+        let data = data?;
+        let need = state.current_passenger_need_state.as_ref()?;
+        if need.stage < NeedStage::Warning {
+            return None;
+        }
+        let exception_id = need.profile.exception_id.as_deref()?;
+
+        // The guideline that owns this passenger's exception.
+        let guideline_id = data
+            .guidelines
+            .iter()
+            .find(|guideline| guideline.exceptions.iter().any(|e| e.id == exception_id))
+            .map(|guideline| guideline.id)?;
+
+        // A rule in force tonight that belongs to it, and the action it forbids.
+        state
+            .current_rules
+            .iter()
+            .chain(state.hidden_rules.iter())
+            .find(|rule| {
+                rule.related_guideline_id == Some(guideline_id)
+                    && rule.action_type == Some(ActionType::Forbidden)
+            })
+            .and_then(|rule| rule.action_key.clone())
     }
 
     /// Decide a guideline the way an informed player would: if a tell detected

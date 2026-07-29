@@ -189,12 +189,13 @@ impl GameEngine {
         action: &str,
         passenger: Option<&Passenger>,
         need_state: Option<&PassengerNeedState>,
+        guidelines: &[Guideline],
     ) -> RuleEvaluationResult {
         for rule in rules {
             if rule.forbids_action(action) {
                 // Check for passenger-specific exceptions
                 if let Some(p) = passenger {
-                    if Self::passenger_has_exception(rule, p, need_state) {
+                    if Self::passenger_has_exception(rule, p, need_state, guidelines) {
                         return RuleEvaluationResult {
                             violation: false,
                             rule: Some(rule.clone()),
@@ -266,30 +267,43 @@ impl GameEngine {
     }
 
     /// Check if passenger has an exception to a rule
+    /// Whether breaking `rule` is what this passenger actually needs.
+    ///
+    /// The rule argument used to be `_rule` — ignored entirely — so any
+    /// forbidden cab action relieved any stressed passenger by that rule's
+    /// `exceptionNeedAdjustment`. Mrs. Chen, who wants to be looked at, was
+    /// soothed just as well by opening a window, and the `exceptionId` every
+    /// profile authors decided nothing. The rule must now belong to the
+    /// guideline that owns the passenger's own exception.
     fn passenger_has_exception(
-        _rule: &Rule,
+        rule: &Rule,
         passenger: &Passenger,
         need_state: Option<&PassengerNeedState>,
+        guidelines: &[Guideline],
     ) -> bool {
-        // Check if passenger's personal rule conflicts/overrides
+        // A passenger who rewrites the rules is a law unto themselves.
         if let Some(modification) = &passenger.rule_modification {
             if modification.can_modify {
                 return true;
             }
         }
 
-        // Check need state for exception activation
-        if let Some(state) = need_state {
-            if state.stage >= NeedStage::Warning {
-                // High stress passengers may trigger exceptions
-                if let Some(ref _exception_id) = state.profile.exception_id {
-                    // Exception is active when passenger is stressed
-                    return true;
-                }
-            }
+        let Some(state) = need_state else {
+            return false;
+        };
+        if state.stage < NeedStage::Warning {
+            return false;
         }
+        let Some(exception_id) = state.profile.exception_id.as_deref() else {
+            return false;
+        };
 
-        false
+        // The guideline that owns this passenger's exception, matched against
+        // the one this rule belongs to.
+        guidelines
+            .iter()
+            .filter(|guideline| guideline.exceptions.iter().any(|e| e.id == exception_id))
+            .any(|guideline| rule.related_guideline_id == Some(guideline.id))
     }
 
     /// Calculate fare with all modifiers
@@ -461,6 +475,62 @@ mod tests {
             with_hidden > 0,
             "no shift out of 500 at max difficulty carried a hidden rule"
         );
+    }
+
+    /// Breaking the rule a passenger's own exception belongs to must relieve
+    /// them; breaking an unrelated one must not. The rule argument used to be
+    /// ignored, so every forbidden action soothed every stressed passenger
+    /// equally and `exceptionId` decided nothing.
+    #[test]
+    fn only_the_passengers_own_rule_grants_an_exception() {
+        use crate::data::loader::{load_guidelines, load_passengers};
+        use crate::engine::PassengerStateMachine;
+
+        let rules = load_rules();
+        let guidelines = load_guidelines();
+        let passengers = load_passengers();
+
+        // Mrs. Chen's exception is `eye_contact_lonely`, owned by guideline
+        // 1001, which rule 1 "No Eye Contact" belongs to.
+        let chen = passengers.iter().find(|p| p.id == 1).expect("Mrs. Chen");
+        let mut need = PassengerStateMachine::initialize(chen, 0.0).expect("Chen has a profile");
+        // Push her past the warning threshold so the exception can be active.
+        PassengerStateMachine::apply_stress_delta(&mut need, chen, 100, 0.0);
+
+        let own_rule = rules.iter().find(|r| r.id == 1).expect("No Eye Contact");
+        let other_rule = rules.iter().find(|r| r.id == 4).expect("Windows Sealed");
+
+        assert!(
+            GameEngine::passenger_has_exception(own_rule, chen, Some(&need), &guidelines),
+            "breaking her own rule does not relieve her"
+        );
+        assert!(
+            !GameEngine::passenger_has_exception(other_rule, chen, Some(&need), &guidelines),
+            "an unrelated rule still relieves her"
+        );
+    }
+
+    /// A calm passenger has no exception however well the rule matches.
+    #[test]
+    fn a_calm_passenger_grants_no_exception() {
+        use crate::data::loader::{load_guidelines, load_passengers};
+        use crate::engine::PassengerStateMachine;
+
+        let rules = load_rules();
+        let guidelines = load_guidelines();
+        let chen = load_passengers()
+            .into_iter()
+            .find(|p| p.id == 1)
+            .expect("Mrs. Chen");
+        let need = PassengerStateMachine::initialize(&chen, 0.0).expect("Chen has a profile");
+        let own_rule = rules.iter().find(|r| r.id == 1).expect("No Eye Contact");
+
+        assert!(!GameEngine::passenger_has_exception(
+            own_rule,
+            &chen,
+            Some(&need),
+            &guidelines
+        ));
     }
 
     /// A shift must still produce rules. Filtering conflicts too eagerly —
