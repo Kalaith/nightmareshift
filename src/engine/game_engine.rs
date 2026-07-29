@@ -658,6 +658,62 @@ mod tests {
         );
     }
 
+    /// Keeping a rule has to be worth something, so the rule a passenger
+    /// pulls against must author a reward for keeping it.
+    ///
+    /// Thirteen rules do and none of it paid until now. This checks the data
+    /// rather than the payment, because the payment needs a `Game`: what it
+    /// guards is a rule quietly losing its `followConsequences` and going back
+    /// to being pure downside.
+    #[test]
+    fn the_rules_that_can_be_a_passengers_own_reward_keeping_them() {
+        use crate::data::loader::{load_guidelines, load_passengers};
+        use crate::engine::PassengerStateMachine;
+
+        let rules = load_rules();
+        let guidelines = load_guidelines();
+        let mut checked = 0;
+        for passenger in load_passengers() {
+            let Some(need) = PassengerStateMachine::initialize(&passenger, 0.0) else {
+                continue;
+            };
+            let Some(own) = GameEngine::passengers_rule_in_force(&rules, Some(&need), &guidelines)
+            else {
+                continue;
+            };
+            assert!(
+                !own.follow_consequences.is_empty(),
+                "{}'s own rule {} pays nothing for keeping it",
+                passenger.name,
+                own.id
+            );
+            checked += 1;
+        }
+        assert!(checked > 0, "no passenger's rule was found in the full set");
+    }
+
+    /// Every authored follow reward has to be a consequence type the appliers
+    /// actually handle. `apply_rule_consequences` names Death, Survival,
+    /// Reputation, Money, Fuel, Time, Item and StoryUnlock; a reward of any
+    /// other kind would be accepted by serde and then dropped.
+    #[test]
+    fn every_follow_reward_is_a_kind_something_applies() {
+        for rule in load_rules() {
+            for reward in &rule.follow_consequences {
+                assert!(
+                    reward.probability > 0.0,
+                    "rule {} authors a follow reward at zero probability",
+                    rule.id
+                );
+                assert!(
+                    !matches!(reward.consequence_type, ConsequenceType::Death),
+                    "rule {} rewards keeping it with death",
+                    rule.id
+                );
+            }
+        }
+    }
+
     /// The passenger's own rule is found when it is in force and not when it
     /// is absent, because that difference is now what decides how fast they
     /// wear down.

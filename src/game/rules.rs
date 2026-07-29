@@ -245,6 +245,39 @@ impl Game {
         }
     }
 
+    /// Pay a rule's `followConsequences` for having kept it all ride.
+    ///
+    /// Thirteen of the twenty-eight rules author one — rule 1's is "You
+    /// resisted the passenger's pull and finished the ride unharmed" — and
+    /// none had ever paid, so a rule was pure downside. It could kill you and
+    /// it could be excused, but keeping it was worth nothing.
+    ///
+    /// Only the passenger's own rule pays, the one their exception belongs to.
+    /// That is deliberate and matches how `followNeedAdjustment` is spent: it
+    /// is the rule they were pulling against, so it is the one that took
+    /// something to keep. Paying every rule in force would hand out three to
+    /// five rewards a ride and slam the driver's trust to its ceiling.
+    ///
+    /// And only if it was actually kept. A violation is usually fatal but not
+    /// always — a ward absorbs one and the first ride of a shift is forgiven —
+    /// so reaching the drop-off does not prove obedience on its own.
+    pub(super) fn pay_for_keeping_the_rule(&mut self, current_time: f64) {
+        if self.game_state.rules_violated != self.game_state.violations_at_ride_start {
+            return;
+        }
+        let rewards = GameEngine::passengers_rule_in_force(
+            &self.game_state.current_rules,
+            self.game_state.current_passenger_need_state.as_ref(),
+            &self.game_state.current_guidelines,
+        )
+        .map(|rule| rule.follow_consequences.clone())
+        .unwrap_or_default();
+
+        if !rewards.is_empty() {
+            self.apply_rule_consequences(&rewards, current_time);
+        }
+    }
+
     /// Reveal a sliver of the current passenger's story.
     ///
     /// `StoryUnlock` only marked the passenger *encountered*, which every ride

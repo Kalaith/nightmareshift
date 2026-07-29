@@ -92,8 +92,11 @@ pub struct Rule {
     pub related_guideline_id: Option<u32>,
     #[serde(rename = "defaultOutcome")]
     pub default_outcome: Option<String>,
-    #[serde(default)]
-    pub exceptions: Vec<serde_json::Value>, // Complex nested structure
+    // A rule carries no exceptions of its own. None of the twenty-eight
+    // authors any, nothing read the field, and it was typed as raw
+    // `serde_json::Value` because there was no shape to give it. A rule
+    // reaches its exceptions through `related_guideline_id` -- the guideline
+    // that owns them.
     #[serde(rename = "followConsequences", default)]
     pub follow_consequences: Vec<Consequence>,
     #[serde(rename = "breakConsequences", default)]

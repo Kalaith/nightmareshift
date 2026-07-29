@@ -129,6 +129,7 @@ impl RideService {
         // Last ride's swap belongs to last ride; without this its line would
         // still be sitting on the next drop-off summary.
         state.trade_outcome = None;
+        state.violations_at_ride_start = state.rules_violated;
 
         // Three passengers rewrite the night as they get in.
         let change = state

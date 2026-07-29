@@ -152,6 +152,11 @@ impl Game {
             ) {
                 self.game_state.game_over_reason = Some(reason);
                 self.end_shift(false);
+                return;
+            }
+
+            if self.game_state.game_phase == GamePhase::DropOff {
+                self.pay_for_keeping_the_rule(current_time);
             }
         }
     }

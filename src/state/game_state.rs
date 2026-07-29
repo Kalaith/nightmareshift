@@ -419,6 +419,14 @@ pub struct GameState {
     pub rule_immunity_charges: u32,
     pub supernatural_protection: u32,
     pub curse_danger_bonus: u32,
+    /// `rules_violated` as it stood when this ride was accepted.
+    ///
+    /// The shift-long count cannot answer "did the driver keep the rules on
+    /// *this* ride", which is what a rule's `followConsequences` is a reward
+    /// for. A violation is usually fatal, but not always -- a ward can absorb
+    /// one, and the first ride of a shift is forgiven -- so surviving to the
+    /// drop-off is not the same as having obeyed.
+    pub violations_at_ride_start: u32,
     pub pending_trade: Option<(String, InventoryItem)>, // (passenger_name, offered_item)
     /// What the last swap did, for the drop-off screen to say out loud.
     ///
@@ -485,6 +493,7 @@ impl GameState {
             rule_immunity_charges: 0,
             supernatural_protection: 0,
             curse_danger_bonus: 0,
+            violations_at_ride_start: 0,
             pending_trade: None,
             trade_outcome: None,
             current_dialogue: None,
