@@ -42,6 +42,22 @@ difficulty rise each night.
 - Add scenario replays for full-shift survival paths across different upgrade and route choices.
 - Separate meta-screen state from active shift state so pause, upgrades, and results cannot leak into route simulation.
 
+## Verifying A Deploy
+
+`scripts/verify-deployment.ps1` checks a published build over HTTP: that every
+file serves, that the wasm arrives as `application/wasm`, that every storage
+import the binary asks for is registered by the shared `storage.js`, and that
+the scripts load in the order the bridge needs.
+
+The third of those is the one worth having. `mq_js_bundle` stubs a missing
+import rather than failing, so a game whose save bridge does not match writes
+into nothing and looks perfectly healthy doing it - a bug this catalogue has
+shipped before.
+
+It cannot tell you the game runs. A WebGL context, macroquad's start-up and
+the first frame need a real browser, and nothing in the script executes
+JavaScript. Open `http://127.0.0.1/games/nightmare_shift/` for that.
+
 ## Notes For Whoever Publishes This
 
 `publish.ps1` packs `assets/` into an `assets.zip` beside the wasm, per this
