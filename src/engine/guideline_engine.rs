@@ -9,6 +9,10 @@ pub struct GuidelineEvaluationResult {
     pub is_safe: bool,
     pub consequences: Vec<Consequence>,
     pub message: String,
+    /// The exception the player read correctly, if any. Naming it lets the
+    /// caller relieve the passenger's need when it is the one their
+    /// `stateProfile.exceptionId` points at.
+    pub satisfied_exception: Option<String>,
 }
 
 /// Guideline engine for exception detection and evaluation
@@ -207,6 +211,7 @@ impl GuidelineEngine {
                         "Breaking \"{}\" was the right choice - {}",
                         guideline.title, exc.description
                     ),
+                    satisfied_exception: Some(exc.id.clone()),
                 }
             }
             (Some(exc), GuidelineAction::Follow) if !exc.breaking_safer => {
@@ -215,6 +220,7 @@ impl GuidelineEngine {
                     is_safe: true,
                     consequences: guideline.follow_consequences.clone(),
                     message: format!("Following \"{}\" was the right choice", guideline.title),
+                    satisfied_exception: Some(exc.id.clone()),
                 }
             }
             (Some(_exc), _) => {
@@ -226,6 +232,7 @@ impl GuidelineEngine {
                         "Wrong choice regarding \"{}\" - misread the passenger",
                         guideline.title
                     ),
+                    satisfied_exception: None,
                 }
             }
             (None, GuidelineAction::Follow) => {
@@ -234,6 +241,7 @@ impl GuidelineEngine {
                     is_safe: true,
                     consequences: guideline.follow_consequences.clone(),
                     message: format!("Following \"{}\" was the safe choice", guideline.title),
+                    satisfied_exception: None,
                 }
             }
             (None, GuidelineAction::Break) => {
@@ -242,6 +250,7 @@ impl GuidelineEngine {
                     is_safe: false,
                     consequences: guideline.break_consequences.clone(),
                     message: format!("Breaking \"{}\" was dangerous", guideline.title),
+                    satisfied_exception: None,
                 }
             }
         }
@@ -368,6 +377,42 @@ mod tests {
                     || matched.passenger_types.contains(&passenger.supernatural),
                 "exception {exception_id:?} does not target {}",
                 passenger.name
+            );
+        }
+    }
+
+    /// Relief is the only downward pressure on a passenger's need, so a
+    /// profile that authors none can never be settled by reading it right.
+    #[test]
+    fn every_profile_authors_relief() {
+        for passenger in load_passengers() {
+            let Some(profile) = &passenger.state_profile else {
+                continue;
+            };
+            assert!(
+                profile.need_change.exception_relief > 0,
+                "{} has no exceptionRelief",
+                passenger.name
+            );
+        }
+    }
+
+    /// Reading a passenger correctly must win back more than a single leg of
+    /// the ride costs, or the relief is cosmetic and the need still ratchets
+    /// to meltdown no matter how well the player plays.
+    #[test]
+    fn relief_outpaces_a_leg_of_need_growth() {
+        for passenger in load_passengers() {
+            let Some(profile) = &passenger.state_profile else {
+                continue;
+            };
+            let change = &profile.need_change;
+            let worst_leg = change.passive + change.obey.max(change.break_rule);
+            assert!(
+                change.exception_relief > worst_leg,
+                "{}: relief {} does not beat one leg's {worst_leg}",
+                passenger.name,
+                change.exception_relief
             );
         }
     }

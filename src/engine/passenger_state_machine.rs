@@ -124,7 +124,12 @@ impl PassengerStateMachine {
         let triggered_tells =
             if new_stage != previous_stage && !state.revealed_stages.contains_key(&new_stage) {
                 state.revealed_stages.insert(new_stage, true);
-                Self::collect_tells(passenger, new_stage, rule_outcome)
+                Self::collect_tells(
+                    passenger,
+                    new_stage,
+                    rule_outcome,
+                    state.profile.exception_id.as_deref(),
+                )
             } else {
                 Vec::new()
             };
@@ -137,10 +142,17 @@ impl PassengerStateMachine {
     }
 
     /// Collect tells appropriate for the current stage
+    ///
+    /// `profile_exception` is the passenger's own `stateProfile.exceptionId`.
+    /// A tell raised by the need rising is *about* that exception, so it is
+    /// used whenever the rule outcome does not name one; without the fallback
+    /// a need-driven tell carries no exception and no guideline, and
+    /// `check_guideline_triggers` can never match it.
     fn collect_tells(
         passenger: &Passenger,
         stage: NeedStage,
         rule_outcome: Option<&RuleEvaluationResult>,
+        profile_exception: Option<&str>,
     ) -> Vec<TriggeredTell> {
         let intensities = Self::get_stage_intensities(stage);
 
@@ -151,7 +163,8 @@ impl PassengerStateMachine {
             .map(|tell| TriggeredTell {
                 tell: tell.clone(),
                 exception_id: rule_outcome
-                    .and_then(|r| r.triggered_exception.as_ref().map(|e| e.id.clone())),
+                    .and_then(|r| r.triggered_exception.as_ref().map(|e| e.id.clone()))
+                    .or_else(|| profile_exception.map(str::to_string)),
                 related_guideline_id: rule_outcome
                     .and_then(|r| r.rule.as_ref().and_then(|ru| ru.related_guideline_id)),
             })
@@ -188,20 +201,33 @@ impl PassengerStateMachine {
             .and_then(|lines| macroquad_toolkit::rng::choose(lines).cloned())
     }
 
-    /// Merge triggered tells into detected tells list
+    /// Merge triggered tells into detected tells list.
+    ///
+    /// A tell that names an exception but no guideline is resolved against
+    /// `guidelines` to find the one that owns that exception. The guideline
+    /// decision only triggers on tells that carry a `related_guideline`, so
+    /// this is what connects a rising need to the decision it should provoke.
     pub fn merge_detected_tells(
         existing: &mut Vec<DetectedTell>,
         triggered: Vec<TriggeredTell>,
         passenger_id: u32,
         current_time: f64,
+        guidelines: &[Guideline],
     ) {
         for trigger in triggered {
+            let related_guideline = trigger.related_guideline_id.or_else(|| {
+                let exception_id = trigger.exception_id.as_deref()?;
+                guidelines
+                    .iter()
+                    .find(|g| g.exceptions.iter().any(|e| e.id == exception_id))
+                    .map(|g| g.id)
+            });
             existing.push(DetectedTell {
                 tell: trigger.tell,
                 passenger_id,
                 detection_time: current_time,
                 player_noticed: false,
-                related_guideline: trigger.related_guideline_id,
+                related_guideline,
                 exception_id: trigger.exception_id,
             });
         }

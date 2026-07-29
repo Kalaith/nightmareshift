@@ -230,6 +230,7 @@ impl RideService {
                 triggered,
                 passenger.id,
                 current_time,
+                &state.current_guidelines,
             );
         }
     }
@@ -328,6 +329,7 @@ impl RideService {
                 triggered_tells,
                 passenger.id,
                 current_time,
+                &state.current_guidelines,
             );
 
             if let Some(dialogue) = dialogue {
@@ -401,6 +403,7 @@ impl RideService {
                 triggered,
                 passenger.id,
                 current_time,
+                &state.current_guidelines,
             );
             state.current_dialogue = Some(CurrentDialogue {
                 text: "A protective charm flares and pulls the passenger back from the edge."
@@ -413,11 +416,27 @@ impl RideService {
         !Self::is_passenger_meltdown(state)
     }
 
-    /// Check if guideline decision should be triggered
+    /// Check if guideline decision should be triggered.
+    ///
+    /// Fires on the ride's final leg, because resolving the decision completes
+    /// the ride (`evaluate_guideline_decision` calls `complete_ride`). This
+    /// used to gate on `DrivingPhase::Destination`, a phase the mid-ride-event
+    /// flow never enters — `transition_driving_phase` even marks its
+    /// `Destination` arm "should not happen with new flow" — so the decision,
+    /// and with it every authored guideline exception, was unreachable.
     fn check_guideline_triggers(state: &mut GameState, current_time: f64) -> Option<RouteOutcome> {
-        let should_check = !state.current_guidelines.is_empty()
-            && !state.detected_tells.is_empty()
-            && state.driving_phase == Some(DrivingPhase::Destination);
+        // `apply_transit_effects` has already recorded this leg, so a count
+        // above one means we are on the second (final) leg of the ride.
+        let passenger_id = state.current_passenger.as_ref().map(|p| p.id);
+        let final_leg = state
+            .route_history
+            .iter()
+            .filter(|r| r.passenger_id == passenger_id)
+            .count()
+            > 1;
+
+        let should_check =
+            !state.current_guidelines.is_empty() && !state.detected_tells.is_empty() && final_leg;
 
         if should_check {
             // Find a guideline that has detected tells

@@ -253,12 +253,43 @@ impl PlaytestBot {
                     self.guideline_cursor += 1;
                     action
                 } else {
-                    UiAction::FollowGuideline
+                    Self::read_the_passenger(state, data)
                 }
             }
             GamePhase::DropOff => UiAction::Continue,
             GamePhase::GameOver | GamePhase::Success => UiAction::None,
             _ => UiAction::None,
+        }
+    }
+
+    /// Decide a guideline the way an informed player would: if a tell detected
+    /// for this guideline names an exception where breaking is the safer
+    /// course, break it; otherwise follow.
+    ///
+    /// Blindly following was harmless while the decision phase was
+    /// unreachable. Now that it fires, following an exception with
+    /// `breakingSafer` set is the "misread the passenger" death, so the
+    /// non-coverage strategies have to actually read.
+    fn read_the_passenger(state: &GameState, data: Option<&GameData>) -> UiAction {
+        let Some((guideline, data)) = state.active_guideline.as_ref().zip(data) else {
+            return UiAction::FollowGuideline;
+        };
+        let breaking_safer = state
+            .detected_tells
+            .iter()
+            .filter(|tell| tell.related_guideline == Some(guideline.id))
+            .filter_map(|tell| tell.exception_id.as_deref())
+            .any(|exception_id| {
+                data.guidelines
+                    .iter()
+                    .flat_map(|g| g.exceptions.iter())
+                    .any(|e| e.id == exception_id && e.breaking_safer)
+            });
+
+        if breaking_safer {
+            UiAction::BreakGuideline
+        } else {
+            UiAction::FollowGuideline
         }
     }
 

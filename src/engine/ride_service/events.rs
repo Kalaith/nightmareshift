@@ -162,6 +162,7 @@ impl RideService {
                 triggered,
                 passenger.id,
                 now,
+                &state.current_guidelines,
             );
         }
     }

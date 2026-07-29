@@ -2,7 +2,7 @@ use macroquad::prelude::get_time;
 use macroquad_toolkit::rng;
 
 use super::Game;
-use crate::data::{Consequence, ConsequenceType, RouteType};
+use crate::data::{Consequence, ConsequenceType, Passenger, RouteType};
 use crate::engine::*;
 use crate::screens::Screen;
 use crate::state::*;
@@ -149,6 +149,7 @@ impl Game {
                 triggered,
                 passenger.id,
                 current_time,
+                &self.game_state.current_guidelines,
             );
         }
     }
@@ -283,6 +284,53 @@ impl Game {
         }
     }
 
+    /// Reading a passenger correctly settles them.
+    ///
+    /// Every `stateProfile` authors an `exceptionRelief` and names the
+    /// `exceptionId` that earns it. This is the only downward pressure on a
+    /// passenger's need — without it the level only ever rises and the ride
+    /// ends in meltdown regardless of how well the player plays. Relief is
+    /// paid only for the passenger's own exception; correctly reading some
+    /// other guideline is safe, but it is not what this passenger needed.
+    fn relieve_need_for_exception(
+        &mut self,
+        satisfied: Option<&str>,
+        passenger: &Passenger,
+        current_time: f64,
+    ) {
+        let Some(satisfied) = satisfied else {
+            return;
+        };
+        let Some(need) = self.game_state.current_passenger_need_state.as_mut() else {
+            return;
+        };
+        if need.profile.exception_id.as_deref() != Some(satisfied) {
+            return;
+        }
+
+        let relief = need.profile.need_change.exception_relief;
+        if relief <= 0 {
+            return;
+        }
+
+        let mut need = need.clone();
+        let triggered =
+            PassengerStateMachine::apply_stress_delta(&mut need, passenger, -relief, current_time);
+        self.game_state.current_passenger_need_state = Some(need);
+        PassengerStateMachine::merge_detected_tells(
+            &mut self.game_state.detected_tells,
+            triggered,
+            passenger.id,
+            current_time,
+            &self.game_state.current_guidelines,
+        );
+        self.game_state.current_dialogue = Some(CurrentDialogue {
+            text: "They settle back into the seat. You read them right.".to_string(),
+            speaker: DialogueSpeaker::Narrator,
+            timestamp: current_time,
+        });
+    }
+
     pub(super) fn evaluate_guideline_decision(&mut self, action: GuidelineAction) {
         let current_time = get_time();
 
@@ -319,6 +367,12 @@ impl Game {
             } else {
                 self.game_state.adjust_player_trust(-0.12);
             }
+
+            self.relieve_need_for_exception(
+                result.satisfied_exception.as_deref(),
+                &passenger,
+                current_time,
+            );
 
             for consequence in &result.consequences {
                 match consequence.consequence_type {
