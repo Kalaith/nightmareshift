@@ -7,6 +7,8 @@
 //! and neither can drift from the authored rewards.
 
 use crate::data::{GameData, NeedType, Passenger, TellIntensity};
+use crate::engine::GameEngine;
+use crate::state::NeedStage;
 
 /// One revealed fact about a passenger.
 pub struct DossierLine {
@@ -48,6 +50,16 @@ fn candour_label(deception: f32) -> &'static str {
         d if d <= 0.45 => "Guarded; expect to miss things",
         d if d <= 0.65 => "Covers well; absence of a tell proves nothing",
         _ => "Practised liar; trust the almanac over your eyes",
+    }
+}
+
+/// How a need stage reads as a moment to act on, rather than as a label.
+fn stage_phrase(stage: NeedStage) -> &'static str {
+    match stage {
+        NeedStage::Calm => "they are still settled",
+        NeedStage::Warning => "they turn restless",
+        NeedStage::Critical => "they are close to breaking",
+        NeedStage::Meltdown => "it is nearly too late",
     }
 }
 
@@ -136,6 +148,40 @@ pub fn build(
                 3,
             ));
         }
+        // What actually settles them, and when.
+        //
+        // The engine grants a passenger's exception only for the guideline
+        // that owns their `exceptionId`, and only once they have reached the
+        // stage that exception authors. Both facts decided whether a ride
+        // survived and neither was reachable from anywhere in the game — a
+        // player could study a passenger to Mastered and still be guessing
+        // which forbidden action would calm them. This is the line the
+        // almanac exists to sell.
+        if let (Some(data), Some(profile)) = (data, passenger.state_profile.as_ref()) {
+            if let Some(exception_id) = profile.exception_id.as_deref() {
+                if let Some((guideline, exception)) = data
+                    .guidelines
+                    .iter()
+                    .flat_map(|guideline| {
+                        guideline
+                            .exceptions
+                            .iter()
+                            .map(move |exception| (guideline, exception))
+                    })
+                    .find(|(_, exception)| exception.id == exception_id)
+                {
+                    lines.push(DossierLine::new(
+                        "Relief",
+                        format!(
+                            "break \"{}\" once {}",
+                            guideline.title,
+                            stage_phrase(GameEngine::required_stage(exception))
+                        ),
+                        3,
+                    ));
+                }
+            }
+        }
         // How much to trust what you see them do. `deceptionLevel` now scales
         // tell detection, so knowing it is knowing whether an absent tell
         // means calm or means well hidden.
@@ -170,6 +216,84 @@ mod tests {
                 );
                 previous = count;
             }
+        }
+    }
+
+    /// Every passenger with a need profile must have a way to be settled,
+    /// and Mastered must name it.
+    ///
+    /// A profile authors an `exceptionId`; the engine grants relief only for
+    /// the guideline owning that id. An id that matches no guideline is a
+    /// passenger who cannot be soothed at all — and until this line existed
+    /// there was nowhere in the game that would have shown it.
+    #[test]
+    fn mastering_a_passenger_names_what_settles_them() {
+        let data = GameData::load();
+        let mut named = 0;
+        for passenger in load_passengers() {
+            let Some(profile) = &passenger.state_profile else {
+                continue;
+            };
+            let Some(exception_id) = profile.exception_id.as_deref() else {
+                continue;
+            };
+            assert!(
+                data.guidelines.iter().any(|guideline| guideline
+                    .exceptions
+                    .iter()
+                    .any(|exception| exception.id == exception_id)),
+                "{} needs exception {exception_id:?}, which no guideline owns",
+                passenger.name
+            );
+
+            let lines = build(&passenger, 3, Some(&data));
+            assert!(
+                lines.iter().any(|line| line.label == "Relief"),
+                "{} can be mastered without learning what settles them",
+                passenger.name
+            );
+            named += 1;
+        }
+        assert!(named > 0, "no passenger authors an exception any more");
+    }
+
+    /// The stage the almanac quotes must be the stage the engine gates on.
+    ///
+    /// Both now come from `GameEngine::required_stage`, but the point of the
+    /// test is that they must keep coming from the same place: an almanac
+    /// that promises relief at a stage the engine will not grant it at is
+    /// worse than an almanac that stays quiet.
+    #[test]
+    fn the_quoted_relief_stage_is_the_one_the_engine_gates_on() {
+        let data = GameData::load();
+        for passenger in load_passengers() {
+            let Some(exception_id) = passenger
+                .state_profile
+                .as_ref()
+                .and_then(|profile| profile.exception_id.as_deref())
+            else {
+                continue;
+            };
+            let Some(exception) = data
+                .guidelines
+                .iter()
+                .flat_map(|guideline| guideline.exceptions.iter())
+                .find(|exception| exception.id == exception_id)
+            else {
+                continue;
+            };
+
+            let expected = stage_phrase(GameEngine::required_stage(exception));
+            let relief = build(&passenger, 3, Some(&data))
+                .into_iter()
+                .find(|line| line.label == "Relief")
+                .expect("a relief line");
+            assert!(
+                relief.value.ends_with(expected),
+                "{} is told {:?}, but the engine unlocks at {expected:?}",
+                passenger.name,
+                relief.value
+            );
         }
     }
 

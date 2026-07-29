@@ -185,7 +185,7 @@ impl PassengerStateMachine {
         authored: Option<&TellIntensityMap>,
     ) -> Vec<TellIntensity> {
         if let Some(map) = authored {
-            if let Some(names) = map.get(Self::stage_key(stage)) {
+            if let Some(names) = map.get(stage.key()) {
                 let parsed: Vec<TellIntensity> = names
                     .iter()
                     .filter_map(|n| Self::parse_intensity(n))
@@ -200,17 +200,6 @@ impl PassengerStateMachine {
             NeedStage::Warning => vec![TellIntensity::Moderate],
             NeedStage::Critical => vec![TellIntensity::Obvious],
             NeedStage::Meltdown => vec![TellIntensity::Obvious],
-        }
-    }
-
-    /// The JSON key a stage is authored under in `tellIntensities` and
-    /// `dialogueByStage`.
-    fn stage_key(stage: NeedStage) -> &'static str {
-        match stage {
-            NeedStage::Calm => "calm",
-            NeedStage::Warning => "warning",
-            NeedStage::Critical => "critical",
-            NeedStage::Meltdown => "meltdown",
         }
     }
 
@@ -246,7 +235,7 @@ impl PassengerStateMachine {
         _passenger: &Passenger,
         state: &PassengerNeedState,
     ) -> Option<String> {
-        let stage_key = Self::stage_key(state.stage);
+        let stage_key = state.stage.key();
 
         state
             .profile
@@ -350,10 +339,10 @@ mod tests {
     #[test]
     fn authored_stage_keys_are_recognised() {
         let known = [
-            PassengerStateMachine::stage_key(NeedStage::Calm),
-            PassengerStateMachine::stage_key(NeedStage::Warning),
-            PassengerStateMachine::stage_key(NeedStage::Critical),
-            PassengerStateMachine::stage_key(NeedStage::Meltdown),
+            NeedStage::Calm.key(),
+            NeedStage::Warning.key(),
+            NeedStage::Critical.key(),
+            NeedStage::Meltdown.key(),
         ];
         for passenger in load_passengers() {
             let Some(profile) = &passenger.state_profile else {

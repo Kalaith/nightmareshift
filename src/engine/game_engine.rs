@@ -293,19 +293,43 @@ impl GameEngine {
         let Some(state) = need_state else {
             return false;
         };
-        if state.stage < NeedStage::Warning {
-            return false;
-        }
         let Some(exception_id) = state.profile.exception_id.as_deref() else {
             return false;
         };
 
-        // The guideline that owns this passenger's exception, matched against
-        // the one this rule belongs to.
+        // The passenger's own exception, on the guideline this rule belongs
+        // to, and only once they are visibly far enough gone to justify it.
         guidelines
             .iter()
-            .filter(|guideline| guideline.exceptions.iter().any(|e| e.id == exception_id))
-            .any(|guideline| rule.related_guideline_id == Some(guideline.id))
+            .filter(|guideline| rule.related_guideline_id == Some(guideline.id))
+            .flat_map(|guideline| guideline.exceptions.iter())
+            .filter(|exception| exception.id == exception_id)
+            .any(|exception| state.stage >= Self::required_stage(exception))
+    }
+
+    /// The need stage an exception becomes available at.
+    ///
+    /// Every exception in `guidelineData.json` authors `requiredStage`, all
+    /// nineteen of them saying "warning" — and the gate was a hardcoded
+    /// `NeedStage::Warning` that never read the field. The two agreed, so
+    /// nothing was visibly wrong; authoring "critical" for an exception that
+    /// should cost more to earn would simply have been ignored.
+    ///
+    /// An absent or unrecognised name falls back to Warning, which is what the
+    /// code did before and what every exception asks for. A typo therefore
+    /// keeps the exception reachable rather than quietly stranding a passenger
+    /// with no way to be soothed.
+    ///
+    /// Public because the almanac dossier quotes it: the stage a passenger's
+    /// relief unlocks at is exactly the sort of thing studying them should
+    /// buy, and it must be the number the engine gates on, not a second copy
+    /// of the same rule.
+    pub fn required_stage(exception: &GuidelineException) -> NeedStage {
+        exception
+            .required_stage
+            .as_deref()
+            .and_then(NeedStage::parse)
+            .unwrap_or(NeedStage::Warning)
     }
 
     /// Calculate fare with all modifiers
@@ -603,6 +627,69 @@ mod tests {
             !GameEngine::passenger_has_exception(other_rule, Some(&need), &guidelines),
             "an unrelated rule still relieves her"
         );
+    }
+
+    /// An exception waits for the stage it authors, not a stage the engine
+    /// assumed. The gate was a hardcoded `NeedStage::Warning` while every
+    /// exception carried a `requiredStage` the engine never read, so raising
+    /// one to "critical" would have changed nothing.
+    #[test]
+    fn an_exception_waits_for_the_stage_it_authors() {
+        use crate::data::loader::{load_guidelines, load_passengers};
+        use crate::engine::PassengerStateMachine;
+
+        let rules = load_rules();
+        let mut guidelines = load_guidelines();
+        let chen = load_passengers()
+            .into_iter()
+            .find(|p| p.id == 1)
+            .expect("Mrs. Chen");
+        let mut need = PassengerStateMachine::initialize(&chen, 0.0).expect("Chen has a profile");
+        let own_rule = rules.iter().find(|r| r.id == 1).expect("No Eye Contact");
+
+        // Make her exception cost more to earn than it does today.
+        let exception = guidelines
+            .iter_mut()
+            .flat_map(|guideline| guideline.exceptions.iter_mut())
+            .find(|exception| Some(exception.id.as_str()) == need.profile.exception_id.as_deref())
+            .expect("Chen's exception");
+        exception.required_stage = Some("critical".to_string());
+
+        need.stage = NeedStage::Warning;
+        assert!(
+            !GameEngine::passenger_has_exception(own_rule, Some(&need), &guidelines),
+            "a critical-only exception was granted at warning"
+        );
+
+        need.stage = NeedStage::Critical;
+        assert!(
+            GameEngine::passenger_has_exception(own_rule, Some(&need), &guidelines),
+            "a critical-only exception was withheld at critical"
+        );
+    }
+
+    /// Every authored `requiredStage` must name a stage. An unrecognised name
+    /// falls back to Warning rather than stranding the passenger, so a typo
+    /// would never show up in play — only here.
+    #[test]
+    fn every_authored_required_stage_names_a_stage() {
+        use crate::data::loader::load_guidelines;
+
+        let mut checked = 0;
+        for guideline in load_guidelines() {
+            for exception in &guideline.exceptions {
+                if let Some(name) = exception.required_stage.as_deref() {
+                    assert!(
+                        NeedStage::parse(name).is_some(),
+                        "exception {:?} on guideline {} requires unknown stage {name:?}",
+                        exception.id,
+                        guideline.id
+                    );
+                    checked += 1;
+                }
+            }
+        }
+        assert!(checked > 0, "no exception authors a requiredStage any more");
     }
 
     /// A calm passenger has no exception however well the rule matches.

@@ -44,6 +44,34 @@ pub enum NeedStage {
     Meltdown,
 }
 
+impl NeedStage {
+    /// The JSON key a stage is authored under, in `tellIntensities`,
+    /// `dialogueByStage` and an exception's `requiredStage`.
+    pub fn key(self) -> &'static str {
+        match self {
+            Self::Calm => "calm",
+            Self::Warning => "warning",
+            Self::Critical => "critical",
+            Self::Meltdown => "meltdown",
+        }
+    }
+
+    /// Parse an authored stage name, or nothing if it names no stage.
+    ///
+    /// Returning `Option` rather than defaulting keeps the two directions
+    /// honest: a caller decides for itself whether an unrecognised name is a
+    /// typo to fall back from or a mistake to surface.
+    pub fn parse(name: &str) -> Option<Self> {
+        match name.to_ascii_lowercase().as_str() {
+            "calm" => Some(Self::Calm),
+            "warning" => Some(Self::Warning),
+            "critical" => Some(Self::Critical),
+            "meltdown" => Some(Self::Meltdown),
+            _ => None,
+        }
+    }
+}
+
 /// Relationship level with a passenger
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum RelationshipLevel {
@@ -589,6 +617,47 @@ impl GameState {
         };
 
         (base + ride_bonus + time_bonus).saturating_sub(violation_penalty)
+    }
+}
+
+#[cfg(test)]
+mod stage_tests {
+    use super::*;
+
+    /// The two directions have to agree. They were separate mappings — the
+    /// state machine spelled stages one way for `tellIntensities` and
+    /// `dialogueByStage`, and an exception's `requiredStage` was read by
+    /// nothing at all — so nothing held them together.
+    #[test]
+    fn stage_names_round_trip() {
+        for stage in [
+            NeedStage::Calm,
+            NeedStage::Warning,
+            NeedStage::Critical,
+            NeedStage::Meltdown,
+        ] {
+            assert_eq!(NeedStage::parse(stage.key()), Some(stage));
+        }
+    }
+
+    /// Authoring is case-insensitive, and a name that is not a stage is not
+    /// quietly treated as one.
+    #[test]
+    fn parsing_is_forgiving_about_case_and_nothing_else() {
+        assert_eq!(NeedStage::parse("CRITICAL"), Some(NeedStage::Critical));
+        assert_eq!(NeedStage::parse("Warning"), Some(NeedStage::Warning));
+        assert_eq!(NeedStage::parse("panicking"), None);
+        assert_eq!(NeedStage::parse(""), None);
+    }
+
+    /// The order the exception gate compares on. Reading `requiredStage`
+    /// means nothing if a later stage does not count as having reached an
+    /// earlier one.
+    #[test]
+    fn later_stages_include_earlier_ones() {
+        assert!(NeedStage::Meltdown > NeedStage::Critical);
+        assert!(NeedStage::Critical > NeedStage::Warning);
+        assert!(NeedStage::Warning > NeedStage::Calm);
     }
 }
 
