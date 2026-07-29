@@ -311,7 +311,9 @@
     "wantedItems": [
       "Ancient Coin",
       "Ornate Ring"
-    ]
+    ],
+    "deceptionLevel": 0.2,
+    "trustRequired": 0.4
   },
   {
     "id": 3,
@@ -790,7 +792,9 @@
         "description": "Eyes settle on whatever you are carrying",
         "reliability": 0.65
       }
-    ]
+    ],
+    "deceptionLevel": 0.5,
+    "trustRequired": 0.7
   },
   {
     "id": 6,
@@ -1581,7 +1585,9 @@
         "description": "The footwell is wet and stays wet",
         "reliability": 0.8
       }
-    ]
+    ],
+    "deceptionLevel": 0.1,
+    "trustRequired": 0.3
   },
   {
     "id": 11,
@@ -1745,7 +1751,9 @@
         "description": "Flinches at turns you have not made yet",
         "reliability": 0.7
       }
-    ]
+    ],
+    "deceptionLevel": 0.3,
+    "trustRequired": 0.5
   },
   {
     "id": 12,
@@ -1897,7 +1905,9 @@
         "description": "Fingers a keyboard that is not there, leaving marks",
         "reliability": 0.7
       }
-    ]
+    ],
+    "deceptionLevel": 0.4,
+    "trustRequired": 0.6
   },
   {
     "id": 13,
@@ -2052,7 +2062,9 @@
         "description": "Works the rosary faster than she is speaking",
         "reliability": 0.65
       }
-    ]
+    ],
+    "deceptionLevel": 0.1,
+    "trustRequired": 0.4
   },
   {
     "id": 14,
@@ -2196,7 +2208,9 @@
         "description": "Writes down your answers without looking at the pad",
         "reliability": 0.7
       }
-    ]
+    ],
+    "deceptionLevel": 0.4,
+    "trustRequired": 0.5
   },
   {
     "id": 15,
@@ -2380,7 +2394,9 @@
         "triggerPhrase": "the route I name",
         "reliability": 0.6
       }
-    ]
+    ],
+    "deceptionLevel": 0.6,
+    "trustRequired": 0.8
   },
   {
     "id": 16,
@@ -2549,6 +2565,8 @@
         "description": "The meter reading does not change between blocks",
         "reliability": 0.6
       }
-    ]
+    ],
+    "deceptionLevel": 0.7,
+    "trustRequired": 0.9
   }
 ]

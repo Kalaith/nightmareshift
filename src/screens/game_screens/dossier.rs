@@ -40,6 +40,17 @@ pub fn need_label(need: NeedType) -> &'static str {
     }
 }
 
+/// Plain description of how much a passenger covers what they are.
+fn candour_label(deception: f32) -> &'static str {
+    match deception {
+        d if d <= 0.05 => "Hides nothing; their tells read true",
+        d if d <= 0.25 => "Mostly straight; the odd sign slips past",
+        d if d <= 0.45 => "Guarded; expect to miss things",
+        d if d <= 0.65 => "Covers well; absence of a tell proves nothing",
+        _ => "Practised liar; trust the almanac over your eyes",
+    }
+}
+
 fn intensity_label(intensity: TellIntensity) -> &'static str {
     match intensity {
         TellIntensity::Subtle => "subtle",
@@ -125,6 +136,14 @@ pub fn build(
                 3,
             ));
         }
+        // How much to trust what you see them do. `deceptionLevel` now scales
+        // tell detection, so knowing it is knowing whether an absent tell
+        // means calm or means well hidden.
+        lines.push(DossierLine::new(
+            "Candour",
+            candour_label(passenger.deception_level).to_string(),
+            3,
+        ));
     }
 
     lines

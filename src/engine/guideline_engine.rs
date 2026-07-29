@@ -43,7 +43,8 @@ impl GuidelineEngine {
 
                 // Add detected tells
                 for tell in &exception.tells {
-                    let player_noticed = Self::calculate_detection_probability(tell, player_trust);
+                    let player_noticed =
+                        Self::calculate_detection_probability(tell, passenger, player_trust);
                     detected.push(DetectedTell {
                         tell: tell.clone(),
                         passenger_id: passenger.id,
@@ -176,8 +177,21 @@ impl GuidelineEngine {
         }
     }
 
-    /// Calculate if player notices a tell
-    fn calculate_detection_probability(tell: &PassengerTell, player_trust: f32) -> bool {
+    /// Calculate if the player notices a tell.
+    ///
+    /// Two authored passenger fields feed this and were read by nothing.
+    /// `deceptionLevel` is how well a passenger covers what they are, and
+    /// scales the tell down; `trustRequired` is how much they need to trust
+    /// the driver before they let anything slip at all, and below it their
+    /// tells are much harder to catch. Together they mean the Midnight Mayor
+    /// and Death's Taxi Driver — 0.6 and 0.7 deception — are genuinely hard
+    /// to read, while Tommy Sullivan hides nothing, and that reading anyone
+    /// gets easier as the night earns their trust.
+    fn calculate_detection_probability(
+        tell: &PassengerTell,
+        passenger: &Passenger,
+        player_trust: f32,
+    ) -> bool {
         let base_prob = tell.reliability;
 
         let intensity_mult = match tell.intensity {
@@ -186,7 +200,15 @@ impl GuidelineEngine {
             TellIntensity::Obvious => 1.0,
         };
 
-        let final_prob = base_prob * intensity_mult * (0.5 + player_trust * 0.5);
+        let candour = (1.0 - passenger.deception_level).clamp(0.0, 1.0);
+        let guarded = if player_trust < passenger.trust_required {
+            0.5
+        } else {
+            1.0
+        };
+
+        let final_prob =
+            base_prob * intensity_mult * candour * guarded * (0.5 + player_trust * 0.5);
         macroquad_toolkit::rng::rand() < final_prob
     }
 
@@ -379,6 +401,60 @@ mod tests {
                 passenger.name
             );
         }
+    }
+
+    /// Deception must be a real gradient. If every passenger hides the same
+    /// amount the field may as well not exist, and the almanac's Candour line
+    /// tells the player nothing worth paying for.
+    #[test]
+    fn deception_varies_across_the_roster() {
+        let levels: Vec<f32> = load_passengers()
+            .iter()
+            .map(|p| p.deception_level)
+            .collect();
+        let lowest = levels.iter().cloned().fold(f32::INFINITY, f32::min);
+        let highest = levels.iter().cloned().fold(f32::NEG_INFINITY, f32::max);
+        assert!(
+            highest - lowest > 0.4,
+            "deception spans only {lowest}..{highest}"
+        );
+    }
+
+    /// Nobody may be authored past total deception or total secrecy, which
+    /// would make their tells undetectable however well the player plays.
+    #[test]
+    fn nobody_is_completely_unreadable() {
+        for passenger in load_passengers() {
+            assert!(
+                (0.0..1.0).contains(&passenger.deception_level),
+                "{} has deception {}",
+                passenger.name,
+                passenger.deception_level
+            );
+            assert!(
+                (0.0..=1.0).contains(&passenger.trust_required),
+                "{} requires trust {}",
+                passenger.name,
+                passenger.trust_required
+            );
+        }
+    }
+
+    /// The harder a passenger is to read, the more trust they should want
+    /// first — otherwise the two fields pull against each other and the
+    /// difficulty they describe is incoherent.
+    #[test]
+    fn deception_and_trust_required_agree() {
+        let mut passengers = load_passengers();
+        passengers.sort_by(|a, b| a.deception_level.total_cmp(&b.deception_level));
+        let least = &passengers[0];
+        let most = passengers.last().expect("roster is not empty");
+        assert!(
+            most.trust_required >= least.trust_required,
+            "{} hides most but asks less trust than {}",
+            most.name,
+            least.name
+        );
     }
 
     /// Relief is the only downward pressure on a passenger's need, so a
