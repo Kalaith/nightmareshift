@@ -84,6 +84,37 @@ impl RideService {
         Self::transition_driving_phase(state, data, stats, route, current_time)
     }
 
+    /// Whether every route out of here is beyond the fuel or the clock.
+    ///
+    /// The driving screen refuses a route the player cannot pay for, which
+    /// stopped a shift ending on a choice they could not see the price of.
+    /// It also created a corner with no way out: with too little left for any
+    /// of the four, every button is disabled, the clock only advances when a
+    /// leg is driven, and nothing checks for the end of a shift while driving.
+    /// The night would sit there with a passenger aboard and no legal move.
+    pub fn is_stranded(state: &GameState, data: &GameData, stats: &PlayerStats) -> bool {
+        if state.current_passenger.is_none() {
+            return false;
+        }
+        [
+            RouteType::Normal,
+            RouteType::Shortcut,
+            RouteType::Scenic,
+            RouteType::Police,
+        ]
+        .into_iter()
+        .filter(|route| {
+            !state
+                .environmental_hazards
+                .iter()
+                .any(|hazard| hazard.blocks_route(*route))
+        })
+        .all(|route| {
+            let costs = RouteService::quote_route(route, state, data, stats);
+            (state.fuel as u32) < costs.fuel || state.time_remaining < costs.time
+        })
+    }
+
     /// Check if player has enough resources for the route
     fn validate_resources(state: &GameState, costs: &RouteCosts) -> Option<RouteOutcome> {
         if (state.fuel as u32) < costs.fuel {
@@ -599,5 +630,58 @@ impl RideService {
             }
             None => RouteOutcome::Success,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::data::loader::{load_constants, load_passengers, GameData};
+
+    fn driving_state(fuel: f32, time: u32) -> (GameState, GameData, PlayerStats) {
+        let data = GameData::load();
+        let constants = load_constants();
+        let mut state = GameState::new(0.0, &constants.game_constants);
+        state.current_passenger = load_passengers().into_iter().next();
+        state.fuel = fuel;
+        state.time_remaining = time;
+        (state, data, PlayerStats::new())
+    }
+
+    /// A driver with the tank and the clock full is never stranded.
+    #[test]
+    fn a_full_tank_is_not_stranded() {
+        let (state, data, stats) = driving_state(100.0, 480);
+        assert!(!RideService::is_stranded(&state, &data, &stats));
+    }
+
+    /// With too little of either for any of the four routes, the shift has to
+    /// end — the driving screen offers no other action, so without this the
+    /// night sits on four disabled buttons and a clock that only moves when a
+    /// leg is driven.
+    #[test]
+    fn no_affordable_route_is_stranded() {
+        let (state, data, stats) = driving_state(1.0, 1);
+        assert!(
+            RideService::is_stranded(&state, &data, &stats),
+            "a driver who cannot pay for any route was not counted as stranded"
+        );
+    }
+
+    /// Time alone is enough to strand: the cheapest route still costs
+    /// minutes, so a full tank does not help an empty clock.
+    #[test]
+    fn an_empty_clock_strands_a_full_tank() {
+        let (state, data, stats) = driving_state(100.0, 1);
+        assert!(RideService::is_stranded(&state, &data, &stats));
+    }
+
+    /// With nobody aboard there is no leg to make, so the waiting screen —
+    /// which can still refuel — must not be cut short.
+    #[test]
+    fn an_empty_cab_is_never_stranded() {
+        let (mut state, data, stats) = driving_state(1.0, 1);
+        state.current_passenger = None;
+        assert!(!RideService::is_stranded(&state, &data, &stats));
     }
 }

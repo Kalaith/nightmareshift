@@ -695,6 +695,29 @@ impl Game {
                 _ => {}
             }
 
+            // Stranded: not enough left for any route out. End the night
+            // where it stands rather than leaving the player with four
+            // disabled buttons and a clock that only moves when they drive.
+            if self.game_state.game_phase == GamePhase::Driving {
+                let stranded = self
+                    .game_data
+                    .as_ref()
+                    .map(|data| {
+                        RideService::is_stranded(&self.game_state, data, &self.player_stats)
+                    })
+                    .unwrap_or(false);
+                if stranded {
+                    self.game_state.game_over_reason = Some(
+                        "You could not make the next leg. The shift ends where it stands."
+                            .to_string(),
+                    );
+                    let earned_enough =
+                        self.game_state.earnings >= self.game_state.minimum_earnings;
+                    self.end_shift(earned_enough);
+                    return;
+                }
+            }
+
             // Update guideline decision timer
             let mut guideline_timed_out = false;
             if self.game_state.game_phase == GamePhase::GuidelineDecision {
