@@ -3,12 +3,19 @@
 use crate::data::*;
 use std::collections::HashMap;
 
-/// Current game phase
+/// What is happening inside a shift.
+///
+/// This deliberately does not mirror `Screen`. It used to carry `MainMenu`,
+/// `SkillTree`, `Almanac` and `Leaderboard` variants that existed only to
+/// shadow the screen the player was on, kept in step by hand in
+/// `change_screen` while five other places assigned `screen` directly and
+/// could leave the two disagreeing. Nothing ever read them. Navigation is
+/// `Screen`'s job; this describes the night.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum GamePhase {
+    /// Before a shift has begun — boot, menus, and the meta screens.
     #[default]
     Loading,
-    MainMenu,
     Briefing,
     Waiting,
     RideRequest,
@@ -18,9 +25,6 @@ pub enum GamePhase {
     DropOff,
     GameOver,
     Success,
-    SkillTree,
-    Almanac,
-    Leaderboard,
 }
 
 /// Driving sub-phase

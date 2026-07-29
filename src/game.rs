@@ -89,7 +89,7 @@ impl Game {
             "skill_tree" => {
                 self.player_stats.bank_balance += 2500;
                 self.player_stats.lore_fragments += 40;
-                self.screen = Screen::SkillTree;
+                self.change_screen(Screen::SkillTree);
             }
             "gameplay" => {
                 self.start_game();
@@ -562,16 +562,16 @@ impl Game {
     fn change_screen(&mut self, new_screen: Screen) {
         self.transition.begin_scene();
         self.screen = new_screen;
+        // Only the screens that correspond to a moment in a shift move the
+        // phase; the meta screens leave the night as it was.
         self.game_state.game_phase = match new_screen {
-            Screen::Loading => GamePhase::Loading,
-            Screen::MainMenu => GamePhase::MainMenu,
+            Screen::Loading | Screen::MainMenu => GamePhase::Loading,
             Screen::Briefing => GamePhase::Briefing,
-            Screen::Game => self.game_state.game_phase,
             Screen::GameOver => GamePhase::GameOver,
             Screen::Success => GamePhase::Success,
-            Screen::SkillTree => GamePhase::SkillTree,
-            Screen::Almanac => GamePhase::Almanac,
-            Screen::Leaderboard => GamePhase::Leaderboard,
+            Screen::Game | Screen::SkillTree | Screen::Almanac | Screen::Leaderboard => {
+                self.game_state.game_phase
+            }
         };
         if new_screen != Screen::Game {
             self.particles.clear();

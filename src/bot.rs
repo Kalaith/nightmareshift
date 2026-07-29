@@ -289,7 +289,7 @@ impl PlaytestBot {
                     self.guideline_cursor += 1;
                     action
                 } else {
-                    Self::read_the_passenger(state, data)
+                    Self::read_the_passenger(state, stats)
                 }
             }
             GamePhase::DropOff => UiAction::Continue,
@@ -340,7 +340,7 @@ impl PlaytestBot {
     /// unreachable. Now that it fires, following an exception with
     /// `breakingSafer` set is the "misread the passenger" death, so the
     /// non-coverage strategies have to actually read.
-    fn read_the_passenger(state: &GameState, _data: Option<&GameData>) -> UiAction {
+    fn read_the_passenger(state: &GameState, stats: &PlayerStats) -> UiAction {
         let Some(guideline) = state.active_guideline.as_ref() else {
             return UiAction::FollowGuideline;
         };
@@ -348,11 +348,41 @@ impl PlaytestBot {
             return UiAction::FollowGuideline;
         };
 
-        // Ask the same question the engine will judge by, rather than
-        // inferring it from whether a tell happened to mention an exception.
-        match GuidelineEngine::find_active_exception(guideline, passenger, &state.current_weather) {
-            Some(exception) if exception.breaking_safer => UiAction::BreakGuideline,
-            _ => UiAction::FollowGuideline,
+        // The verdict is what almanac Lv.2 buys, so the bot may only consult
+        // it on a passenger it has studied. Reading it unconditionally left
+        // the bot better informed than any unstudied player and hid the cost
+        // of not studying: guideline deaths measured zero at every level.
+        if stats.get_almanac_entry(passenger.id).knowledge_level >= 2 {
+            return match GuidelineEngine::find_active_exception(
+                guideline,
+                passenger,
+                &state.current_weather,
+            ) {
+                Some(exception) if exception.breaking_safer => UiAction::BreakGuideline,
+                _ => UiAction::FollowGuideline,
+            };
+        }
+
+        // Unstudied, the player still has the tells on the screen in front of
+        // them. Inferring from those is what the decision costs without the
+        // almanac — worse than the verdict, but not blind, which is what
+        // always following would have modelled.
+        let hints_at_exception = state
+            .detected_tells
+            .iter()
+            .filter(|tell| tell.related_guideline == Some(guideline.id) && tell.player_noticed)
+            .filter_map(|tell| tell.exception_id.as_deref())
+            .any(|exception_id| {
+                guideline
+                    .exceptions
+                    .iter()
+                    .any(|e| e.id == exception_id && e.breaking_safer)
+            });
+
+        if hints_at_exception {
+            UiAction::BreakGuideline
+        } else {
+            UiAction::FollowGuideline
         }
     }
 
