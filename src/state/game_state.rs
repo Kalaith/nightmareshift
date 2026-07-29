@@ -498,9 +498,89 @@ impl GameState {
     pub fn calculate_score(&self, constants: &ConstantsData) -> u32 {
         let base = self.earnings;
         let ride_bonus = self.rides_completed * constants.scoring.ride_bonus;
-        let time_bonus = self.time_remaining * constants.scoring.time_bonus_multiplier;
         let violation_penalty = self.rules_violated * constants.scoring.rule_violation_penalty;
 
+        // Time left over is only worth something if the night was actually
+        // worked. Paid unconditionally it rewards not driving: a shift that
+        // ends on the first fare keeps the whole clock, and at two points a
+        // minute that is 960 — which outscored real shifts on the
+        // leaderboard, where an eight-hour night with nine passengers and no
+        // violations sat below two instant losses.
+        let time_bonus = if self.earnings >= self.minimum_earnings {
+            self.time_remaining * constants.scoring.time_bonus_multiplier
+        } else {
+            0
+        };
+
         (base + ride_bonus + time_bonus).saturating_sub(violation_penalty)
+    }
+}
+
+#[cfg(test)]
+mod score_tests {
+    use super::*;
+    use crate::data::loader::load_constants;
+
+    fn shift(earnings: u32, rides: u32, time_left: u32, violations: u32) -> GameState {
+        let constants = load_constants();
+        let mut state = GameState::new(0.0, &constants.game_constants);
+        state.earnings = earnings;
+        state.rides_completed = rides;
+        state.time_remaining = time_left;
+        state.rules_violated = violations;
+        state
+    }
+
+    /// A night that ended before it started must not outscore one that was
+    /// worked. The time bonus used to be paid regardless, so keeping the
+    /// whole clock by losing the first fare scored 960 — above real shifts
+    /// on the leaderboard.
+    #[test]
+    fn an_instant_loss_does_not_outscore_a_worked_night() {
+        let constants = load_constants();
+        let instant_loss = shift(0, 0, constants.game_constants.initial_time, 0);
+        let worked = shift(200, 6, 90, 1);
+        assert!(
+            worked.calculate_score(&constants) > instant_loss.calculate_score(&constants),
+            "a worked night scored {} against {} for losing immediately",
+            worked.calculate_score(&constants),
+            instant_loss.calculate_score(&constants)
+        );
+    }
+
+    /// Falling short of the quota forfeits the time bonus entirely, so what
+    /// is left on the clock cannot carry a failed night.
+    #[test]
+    fn time_left_pays_only_when_the_quota_is_met() {
+        let constants = load_constants();
+        let quota = constants.game_constants.minimum_earnings;
+
+        let short = shift(quota - 1, 3, 200, 0);
+        let met = shift(quota, 3, 200, 0);
+        let expected_step = constants.scoring.time_bonus_multiplier * 200 + 1;
+        assert_eq!(
+            met.calculate_score(&constants) - short.calculate_score(&constants),
+            expected_step,
+            "crossing the quota did not turn the time bonus on"
+        );
+    }
+
+    /// Among nights that met the quota, finishing sooner still scores higher
+    /// — the bonus keeps the meaning it was added for.
+    #[test]
+    fn finishing_sooner_still_pays() {
+        let constants = load_constants();
+        let quota = constants.game_constants.minimum_earnings;
+        let brisk = shift(quota + 50, 5, 180, 0);
+        let slow = shift(quota + 50, 5, 40, 0);
+        assert!(brisk.calculate_score(&constants) > slow.calculate_score(&constants));
+    }
+
+    /// Violations still cost, and cannot push a score below zero.
+    #[test]
+    fn violations_cost_without_underflowing() {
+        let constants = load_constants();
+        let reckless = shift(0, 0, 0, 99);
+        assert_eq!(reckless.calculate_score(&constants), 0);
     }
 }

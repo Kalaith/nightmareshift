@@ -95,6 +95,29 @@ impl Game {
                 self.start_game();
                 self.start_shift();
             }
+            // The leaderboard with a spread of recorded runs, so the ranking
+            // and the achievement list are both populated in the capture.
+            "leaderboard" => {
+                let entries = [
+                    (1840_u32, 9_u32, 4_u32, 0_u32, true),
+                    (1470, 7, 3, 1, true),
+                    (1120, 6, 3, 0, true),
+                    (860, 5, 2, 2, false),
+                    (410, 3, 1, 1, false),
+                    (150, 1, 0, 3, false),
+                ];
+                for (score, rides, difficulty, violations, survived) in entries {
+                    self.player_stats.add_leaderboard_entry(LeaderboardEntry {
+                        score,
+                        date: "2026-07-29 23:15".to_string(),
+                        survived,
+                        passengers_transported: rides,
+                        difficulty_level: difficulty,
+                        rules_violated: violations,
+                    });
+                }
+                self.change_screen(Screen::Leaderboard);
+            }
             // The inventory holding a cursed item and a plain one, so the
             // curse line and its way out are visible in the capture.
             "inventory" => {
