@@ -50,6 +50,8 @@ pub struct PlaytestBot {
     unlock_all_skills: bool,
     /// Leg index the bot last spent a soothing cab action on.
     soothed_at_leg: Option<usize>,
+    /// Rotates the blind guess at which action settles an unstudied fare.
+    soothe_cursor: usize,
 }
 
 impl PlaytestBot {
@@ -115,6 +117,7 @@ impl PlaytestBot {
                 almanac_level,
                 unlock_all_skills,
                 soothed_at_leg: None,
+                soothe_cursor: 0,
             };
 
             eprintln!(
@@ -258,7 +261,7 @@ impl PlaytestBot {
                 // the phase, so repeating it would spin until the watchdog
                 // stopped the run.
                 let leg = state.route_history.len();
-                match Self::soothing_action(state, data) {
+                match self.soothing_action(state, stats, data) {
                     Some(action_key) if self.soothed_at_leg != Some(leg) => {
                         self.soothed_at_leg = Some(leg);
                         UiAction::PerformRuleAction(action_key)
@@ -305,31 +308,77 @@ impl PlaytestBot {
     /// Breaking the rule that belongs to a passenger's own exception is worth
     /// `exceptionNeedAdjustment` — between -12 and -30 — which is the largest
     /// single relief in the game.
-    fn soothing_action(state: &GameState, data: Option<&GameData>) -> Option<String> {
+    fn soothing_action(
+        &mut self,
+        state: &GameState,
+        stats: &PlayerStats,
+        data: Option<&GameData>,
+    ) -> Option<String> {
         let data = data?;
+        let passenger = state.current_passenger.as_ref()?;
         let need = state.current_passenger_need_state.as_ref()?;
         if need.stage < NeedStage::Warning {
             return None;
         }
-        let exception_id = need.profile.exception_id.as_deref()?;
 
-        // The guideline that owns this passenger's exception.
+        // Every forbidden action tonight's rules name.
+        let forbidden: Vec<(&str, Option<u32>)> = state
+            .current_rules
+            .iter()
+            .chain(state.hidden_rules.iter())
+            .filter(|rule| rule.action_type == Some(ActionType::Forbidden))
+            .filter_map(|rule| {
+                rule.action_key
+                    .as_deref()
+                    .map(|key| (key, rule.related_guideline_id))
+            })
+            .collect();
+        if forbidden.is_empty() {
+            return None;
+        }
+
+        // Knowing which action settles a passenger is what the almanac's
+        // first level buys: the dossier names their need and the levels it
+        // turns at. Without it the driver has only a stability percentage and
+        // a line of dialogue, so the bot guesses — and under exception
+        // matching a guess usually soothes nothing.
+        if stats.get_almanac_entry(passenger.id).knowledge_level == 0 {
+            // A tell the driver actually noticed names the guideline it is
+            // about, and that is on the screen whether or not the passenger
+            // has been studied. Acting on it is what an attentive unstudied
+            // driver does; the rotation is the fallback for having spotted
+            // nothing yet.
+            let noticed: Vec<u32> = state
+                .detected_tells
+                .iter()
+                .filter(|tell| tell.passenger_id == passenger.id && tell.player_noticed)
+                .filter_map(|tell| tell.related_guideline)
+                .collect();
+            if let Some((key, _)) = forbidden
+                .iter()
+                .find(|(_, related)| related.is_some_and(|id| noticed.contains(&id)))
+            {
+                return Some((*key).to_string());
+            }
+
+            let guess = forbidden[self.soothe_cursor % forbidden.len()]
+                .0
+                .to_string();
+            self.soothe_cursor += 1;
+            return Some(guess);
+        }
+
+        let exception_id = need.profile.exception_id.as_deref()?;
         let guideline_id = data
             .guidelines
             .iter()
             .find(|guideline| guideline.exceptions.iter().any(|e| e.id == exception_id))
             .map(|guideline| guideline.id)?;
 
-        // A rule in force tonight that belongs to it, and the action it forbids.
-        state
-            .current_rules
-            .iter()
-            .chain(state.hidden_rules.iter())
-            .find(|rule| {
-                rule.related_guideline_id == Some(guideline_id)
-                    && rule.action_type == Some(ActionType::Forbidden)
-            })
-            .and_then(|rule| rule.action_key.clone())
+        forbidden
+            .into_iter()
+            .find(|(_, related)| *related == Some(guideline_id))
+            .map(|(key, _)| key.to_string())
     }
 
     /// Decide a guideline the way an informed player would: if a tell detected
