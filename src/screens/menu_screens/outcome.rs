@@ -81,7 +81,14 @@ pub fn draw_success(game_state: &GameState, game_data: Option<&GameData>) -> UiA
     let center_x = screen_width() / 2.0;
 
     if let Some(data) = game_data {
-        let panel = UiRect::centered_x(screen_width(), 104.0, screen_width().min(540.0), 350.0);
+        // Tall enough for the meta-payout lines beneath the score; the run
+        // summary carries one more than a night's does.
+        let panel_h = if game_state.run_complete {
+            430.0
+        } else {
+            400.0
+        };
+        let panel = UiRect::centered_x(screen_width(), 104.0, screen_width().min(540.0), panel_h);
         draw_glass_panel(panel, colors::ACCENT_GOLD);
         let inner = panel.inset(spacing::PADDING_LG);
 
@@ -158,6 +165,27 @@ pub fn draw_success(game_state: &GameState, game_data: Option<&GameData>) -> UiA
             &game_state.calculate_score(&data.constants).to_string(),
         );
         draw_ui_text(&score_text, inner.x, y + 100.0, 24.0, colors::ACCENT_DANGER);
+
+        // What the night bought towards the next one. The bank and lore a
+        // shift pays are what the skill tree and the almanac are bought with,
+        // and the screen that ends the night never mentioned them — nor the
+        // separate bonus a completed run pays, which has been credited
+        // silently since it was wired.
+        let payout = &game_state.shift_payout;
+        let banked = format!(
+            "Banked: ${} | Lore: {}",
+            payout.bank + payout.run_bonus_bank,
+            payout.lore + payout.run_bonus_lore
+        );
+        draw_ui_text(&banked, inner.x, y + 134.0, 20.0, colors::ACCENT_SKY);
+
+        if payout.completed_a_run() {
+            let bonus = format!(
+                "  including ${} and {} lore for seeing the run out",
+                payout.run_bonus_bank, payout.run_bonus_lore
+            );
+            draw_ui_text(&bonus, inner.x, y + 160.0, 16.0, colors::FUEL_GOOD);
+        }
 
         if interim {
             // One button: press on into the next night.

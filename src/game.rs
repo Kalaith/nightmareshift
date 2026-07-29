@@ -95,6 +95,50 @@ impl Game {
                 self.start_game();
                 self.start_shift();
             }
+            // Where a run ends. Three states of the same screen: a lost
+            // shift, an interim night survived, and a completed run.
+            "game_over" => {
+                self.start_game();
+                self.game_state.night = 3;
+                self.game_state.earnings = 118;
+                self.game_state.rides_completed = 4;
+                self.game_state.time_remaining = 96;
+                self.game_state.game_over_reason =
+                    Some("The passenger's need became uncontrollable.".to_string());
+                self.game_state.game_phase = GamePhase::GameOver;
+                self.change_screen(Screen::GameOver);
+            }
+            "night_complete" => {
+                self.start_game();
+                self.game_state.night = 2;
+                self.game_state.earnings = 288;
+                self.game_state.rides_completed = 7;
+                self.game_state.time_remaining = 74;
+                self.game_state.run_complete = false;
+                self.game_state.shift_payout = MetaPayout {
+                    bank: 144,
+                    lore: 11,
+                    ..MetaPayout::default()
+                };
+                self.game_state.game_phase = GamePhase::Success;
+                self.change_screen(Screen::Success);
+            }
+            "run_complete" => {
+                self.start_game();
+                self.game_state.night = 5;
+                self.game_state.earnings = 471;
+                self.game_state.rides_completed = 9;
+                self.game_state.time_remaining = 51;
+                self.game_state.run_complete = true;
+                self.game_state.shift_payout = MetaPayout {
+                    bank: 235,
+                    lore: 14,
+                    run_bonus_bank: 1500,
+                    run_bonus_lore: 15,
+                };
+                self.game_state.game_phase = GamePhase::Success;
+                self.change_screen(Screen::Success);
+            }
             // The leaderboard with a spread of recorded runs, so the ranking
             // and the achievement list are both populated in the capture.
             "leaderboard" => {
@@ -507,6 +551,7 @@ impl Game {
         // Generate bank balance from earnings (50% of earnings goes to bank)
         let bank_earnings = self.game_state.earnings / 2;
         self.player_stats.bank_balance += bank_earnings;
+        self.game_state.shift_payout.bank = bank_earnings;
 
         // Generate lore fragments
         // Base: 1 per completed ride
@@ -522,6 +567,7 @@ impl Game {
         // Difficulty bonus
         lore_earned += self.game_state.difficulty_level;
         self.player_stats.lore_fragments += lore_earned;
+        self.game_state.shift_payout.lore = lore_earned;
 
         // Mark all encountered passengers in almanac
         for passenger_id in &self.game_state.used_passengers {
@@ -566,6 +612,8 @@ impl Game {
                 let payout = data.rewards.run_completion.payout(nights);
                 self.player_stats.bank_balance += payout.bank;
                 self.player_stats.lore_fragments += payout.lore;
+                self.game_state.shift_payout.run_bonus_bank = payout.bank;
+                self.game_state.shift_payout.run_bonus_lore = payout.lore;
             }
         }
 

@@ -199,6 +199,23 @@ pub struct RouteStreak {
     pub count: u32,
 }
 
+/// What a finished shift paid into the meta-progression currencies.
+#[derive(Debug, Clone, Copy, Default)]
+pub struct MetaPayout {
+    pub bank: u32,
+    pub lore: u32,
+    /// Extra bank paid for finishing the whole run, separate from the night.
+    pub run_bonus_bank: u32,
+    pub run_bonus_lore: u32,
+}
+
+impl MetaPayout {
+    /// True when the run-completion bonus was part of this payout.
+    pub fn completed_a_run(&self) -> bool {
+        self.run_bonus_bank > 0 || self.run_bonus_lore > 0
+    }
+}
+
 /// A rule imposed for a limited number of rides.
 #[derive(Debug, Clone)]
 pub struct TemporaryRuleState {
@@ -265,6 +282,10 @@ pub struct GameState {
     pub run_complete: bool,
     /// Whether the one-shot end-of-shift warning has already been given.
     pub shift_end_warning_shown: bool,
+    /// Bank and lore this shift paid into the meta-progression, and any
+    /// separate bonus for completing the run, so the outcome screen can say
+    /// what the night was worth beyond its own fare.
+    pub shift_payout: MetaPayout,
     pub earnings: u32,
     pub time_remaining: u32,
     pub rides_completed: u32,
@@ -335,6 +356,7 @@ impl GameState {
             night: 1,
             run_complete: false,
             shift_end_warning_shown: false,
+            shift_payout: MetaPayout::default(),
             earnings: 0,
             time_remaining: constants.initial_time,
             rides_completed: 0,
@@ -403,6 +425,7 @@ impl GameState {
         self.used_passengers.clear();
         self.shift_start_time = Some(current_time);
         self.shift_end_warning_shown = false;
+        self.shift_payout = MetaPayout::default();
         self.current_passenger_need_state = None;
         self.detected_tells.clear();
         self.route_history.clear();
@@ -529,6 +552,45 @@ mod score_tests {
         state.time_remaining = time_left;
         state.rules_violated = violations;
         state
+    }
+
+    /// The run bonus is what distinguishes finishing a campaign from
+    /// surviving another night, so the outcome screen keys its extra line on
+    /// this. A night's own banking must not trip it.
+    #[test]
+    fn only_a_run_bonus_counts_as_completing_a_run() {
+        let nightly = MetaPayout {
+            bank: 300,
+            lore: 12,
+            ..MetaPayout::default()
+        };
+        assert!(!nightly.completed_a_run());
+
+        let finished = MetaPayout {
+            bank: 300,
+            lore: 12,
+            run_bonus_bank: 1500,
+            run_bonus_lore: 15,
+        };
+        assert!(finished.completed_a_run());
+    }
+
+    /// A fresh shift starts with nothing recorded, so a night cannot inherit
+    /// the previous one's payout on the screen that reports it.
+    #[test]
+    fn a_new_shift_clears_the_recorded_payout() {
+        let constants = load_constants();
+        let mut state = shift(400, 8, 100, 0);
+        state.shift_payout = MetaPayout {
+            bank: 200,
+            lore: 9,
+            run_bonus_bank: 1500,
+            run_bonus_lore: 15,
+        };
+        state.reset_for_new_shift(0.0, &constants.game_constants);
+        assert_eq!(state.shift_payout.bank, 0);
+        assert_eq!(state.shift_payout.lore, 0);
+        assert!(!state.shift_payout.completed_a_run());
     }
 
     /// A night that ended before it started must not outscore one that was
