@@ -182,6 +182,16 @@ pub struct InventoryItem {
     pub cursed_properties: Option<CursedProperties>,
     #[serde(rename = "protectiveProperties")]
     pub protective_properties: Option<ProtectiveProperties>,
+    /// Whether this item's curse has already taken its toll.
+    ///
+    /// `should_trigger_curse` is a threshold -- possession time past
+    /// `triggersAfter` -- and `update_items` runs every frame, so without this
+    /// a held curse charged its penalty sixty times a second once the clock
+    /// passed. The Dusty Mirror drains three fuel, which is a full tank inside a
+    /// second; the Blood Vial takes thirty minutes off a shift that only has
+    /// four hundred and eighty.
+    #[serde(default)]
+    pub curse_fired: bool,
 }
 
 impl InventoryItem {
@@ -309,6 +319,7 @@ impl ItemCatalog {
             can_trade: template.can_trade,
             cursed_properties: template.cursed_properties,
             protective_properties: template.protective_properties,
+            curse_fired: false,
         }
     }
 }

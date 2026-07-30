@@ -317,10 +317,21 @@ impl ItemService {
 
     /// Updated item states (deterioration, curses)
     pub fn update_items(state: &mut GameState, current_time: f64) {
-        // Apply curse penalties
-        // Need to clone inventory to allow mutation of state
-        let inventory_snapshot = state.inventory.clone();
-        Self::apply_curse_penalties(&inventory_snapshot, state, current_time);
+        // Which curses come due this frame. Marked as they are collected, so
+        // each one is charged once however long the item is carried afterwards.
+        let mut coming_due: Vec<(String, CursedProperties)> = Vec::new();
+        for item in &mut state.inventory {
+            if item.curse_fired || !item.is_cursed() || !item.should_trigger_curse(current_time) {
+                continue;
+            }
+            if let Some(curse) = item.cursed_properties.clone() {
+                item.curse_fired = true;
+                coming_due.push((item.name.clone(), curse));
+            }
+        }
+        for (name, curse) in coming_due {
+            Self::apply_curse(&name, &curse, state, current_time);
+        }
 
         // Apply item deterioration
         for item in &mut state.inventory {
@@ -331,41 +342,56 @@ impl ItemService {
         state.inventory.retain(|item| !item.is_broken());
     }
 
-    /// Apply curse penalties from all cursed items
-    pub fn apply_curse_penalties(
-        inventory: &[InventoryItem],
+    /// Charge one curse's toll, and say so.
+    ///
+    /// Three of the four penalties used to take their toll in silence: fuel and
+    /// the clock simply dropped, and the danger bonus climbed, with nothing on
+    /// screen connecting any of it to the thing in the driver's pocket. Only
+    /// `ForcedChoices` spoke. A curse the player cannot attribute is
+    /// indistinguishable from the game cheating, and the inventory already names
+    /// which item is cursed and how to be rid of it -- this is the moment that
+    /// warning comes true.
+    fn apply_curse(
+        item_name: &str,
+        curse: &CursedProperties,
         state: &mut GameState,
         current_time: f64,
     ) {
-        for item in inventory {
-            if item.is_cursed() && item.should_trigger_curse(current_time) {
-                if let Some(ref curse) = item.cursed_properties {
-                    match curse.penalty_type {
-                        CursePenalty::FuelDrain => {
-                            state.fuel = (state.fuel - curse.penalty_value as f32).max(0.0);
-                        }
-                        CursePenalty::TimeAcceleration => {
-                            state.time_remaining = state
-                                .time_remaining
-                                .saturating_sub(curse.penalty_value as u32);
-                        }
-                        CursePenalty::AttractingDanger => {
-                            // Increases risk level of next route
-                            state.curse_danger_bonus += curse.penalty_value as u32;
-                        }
-                        CursePenalty::ForcedChoices => {
-                            state.curse_danger_bonus += curse.penalty_value.max(1) as u32;
-                            state.current_dialogue = Some(CurrentDialogue {
-                                text: "The cursed item narrows your options. The next route feels more dangerous."
-                                    .to_string(),
-                                speaker: DialogueSpeaker::Narrator,
-                                timestamp: current_time,
-                            });
-                        }
-                    }
-                }
+        let told = match curse.penalty_type {
+            CursePenalty::FuelDrain => {
+                state.fuel = (state.fuel - curse.penalty_value as f32).max(0.0);
+                format!(
+                    "The {} has been drinking. {}% of the tank, gone.",
+                    item_name, curse.penalty_value
+                )
             }
-        }
+            CursePenalty::TimeAcceleration => {
+                state.time_remaining = state
+                    .time_remaining
+                    .saturating_sub(curse.penalty_value as u32);
+                format!(
+                    "The {} runs the clock forward. {} minutes you will not get back.",
+                    item_name, curse.penalty_value
+                )
+            }
+            CursePenalty::AttractingDanger => {
+                state.curse_danger_bonus += curse.penalty_value as u32;
+                format!("The {} starts drawing something toward the cab.", item_name)
+            }
+            CursePenalty::ForcedChoices => {
+                state.curse_danger_bonus += curse.penalty_value.max(1) as u32;
+                format!(
+                    "The {} narrows your options. The roads ahead feel worse.",
+                    item_name
+                )
+            }
+        };
+
+        state.current_dialogue = Some(CurrentDialogue {
+            text: told,
+            speaker: DialogueSpeaker::Narrator,
+            timestamp: current_time,
+        });
     }
 }
 
@@ -530,6 +556,85 @@ mod tests {
             authored += 1;
         }
         assert!(authored > 0, "no passenger offers a trade reward any more");
+    }
+
+    /// A curse fires once, not once a frame.
+    ///
+    /// `update_items` is called from the frame loop and `should_trigger_curse`
+    /// is a threshold rather than an event -- possession time past
+    /// `triggersAfter` -- so a held curse applied its penalty on every frame
+    /// once the clock passed. A one-point fuel drain becomes sixty a second.
+    #[test]
+    fn a_curse_bites_once_rather_than_every_frame() {
+        let constants = load_constants();
+        let catalog = load_item_catalog();
+
+        // The Dusty Mirror drains fuel eighty minutes after it is picked up.
+        let mut state = GameState::new(0.0, &constants.game_constants);
+        state.fuel = 100.0;
+        state
+            .inventory
+            .push(catalog.create_item("Dusty Mirror", "test", 0.0));
+        let curse = state.inventory[0]
+            .cursed_properties
+            .as_ref()
+            .expect("the mirror is cursed")
+            .clone();
+        assert_eq!(curse.penalty_type, crate::data::CursePenalty::FuelDrain);
+
+        // Well past its trigger, then several frames of the game running.
+        let past_trigger = (curse.triggers_after as f64 + 1.0) * 60.0;
+        ItemService::update_items(&mut state, past_trigger);
+        let after_one = state.fuel;
+        for frame in 1..=10 {
+            ItemService::update_items(&mut state, past_trigger + frame as f64 * 0.016);
+        }
+
+        assert!(after_one < 100.0, "the curse never bit at all");
+        assert_eq!(
+            state.fuel, after_one,
+            "the curse bit again on later frames: {} against {after_one}",
+            state.fuel
+        );
+    }
+
+    /// Every curse names itself when it bites.
+    ///
+    /// Three of the four penalties took their toll in silence: fuel and the
+    /// clock simply dropped and the danger bonus climbed, with nothing on screen
+    /// connecting any of it to the thing in the driver's pocket. A loss the
+    /// player cannot attribute is indistinguishable from the game cheating.
+    #[test]
+    fn every_curse_says_which_item_took_the_toll() {
+        let constants = load_constants();
+        let catalog = load_item_catalog();
+        let mut names: Vec<String> = catalog.names();
+        names.sort();
+
+        let mut checked = 0;
+        for name in names {
+            let item = catalog.create_item(&name, "test", 0.0);
+            let Some(curse) = item.cursed_properties.clone() else {
+                continue;
+            };
+
+            let mut state = GameState::new(0.0, &constants.game_constants);
+            state.fuel = 100.0;
+            state.inventory.push(item);
+            ItemService::update_items(&mut state, (curse.triggers_after as f64 + 1.0) * 60.0);
+
+            let said = state
+                .current_dialogue
+                .as_ref()
+                .map(|dialogue| dialogue.text.clone())
+                .unwrap_or_else(|| panic!("{name} took its toll without a word"));
+            assert!(
+                said.contains(&name),
+                "{name:?} bit and the line did not name it: {said:?}"
+            );
+            checked += 1;
+        }
+        assert!(checked > 0, "no cursed items in the catalogue");
     }
 
     /// An item that counts its uses reports them, and spending one lowers the
