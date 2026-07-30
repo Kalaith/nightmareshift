@@ -262,7 +262,13 @@ pub fn draw_leaderboard(player_stats: &PlayerStats, game_data: Option<&GameData>
             };
             // Room for the progress line on a locked card that counts toward
             // something; an unlocked one has nothing left to say.
-            let counts = !unlocked && player_stats.achievement_progress(&achievement.id).is_some();
+            let counts = !unlocked
+                && (player_stats.achievement_progress(&achievement.id).is_some()
+                    || data
+                        .rewards
+                        .for_achievement(&achievement.id)
+                        .describe()
+                        .is_some());
             let card_h = if counts { 100.0 } else { 82.0 };
             let card_rect = UiRect::new(right_inner.x, achievements_y, right_inner.w, card_h);
             draw_rectangle(
@@ -330,9 +336,17 @@ pub fn draw_leaderboard(player_stats: &PlayerStats, game_data: Option<&GameData>
             // card stated a goal, the save knew the answer, and the player was
             // told only "Locked".
             if !unlocked {
-                if let Some(progress) = player_stats.achievement_progress(&achievement.id) {
+                let progress = player_stats.achievement_progress(&achievement.id);
+                let worth = data.rewards.for_achievement(&achievement.id).describe();
+                // Progress and payout on one line: how close, and why bother.
+                let line = match (progress, worth) {
+                    (Some(progress), Some(worth)) => Some(format!("{progress}  |  {worth}")),
+                    (Some(only), None) | (None, Some(only)) => Some(only),
+                    (None, None) => None,
+                };
+                if let Some(line) = line {
                     draw_small_caps(
-                        &progress,
+                        &line,
                         card_rect.x + 18.0,
                         description_bottom + 4.0,
                         fonts::SIZE_XS,

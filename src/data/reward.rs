@@ -121,11 +121,79 @@ impl RewardData {
     }
 }
 
+impl Payout {
+    /// How this payout reads on a card, or `None` when it is worth nothing.
+    ///
+    /// Achievements fund both halves of the meta-progression -- bank buys
+    /// skills, lore buys almanac levels -- and the amounts run from $250 with 3
+    /// lore up to $1500 with 8. All of it was authored, paid on unlock, and
+    /// shown nowhere, so a player could not tell which goal was worth chasing
+    /// first. Big Earner pays the most bank in the game and the card said only
+    /// "Locked".
+    pub fn describe(&self) -> Option<String> {
+        match (self.bank, self.lore) {
+            (0, 0) => None,
+            (bank, 0) => Some(format!("pays ${bank}")),
+            (0, lore) => Some(format!("pays {lore} lore")),
+            (bank, lore) => Some(format!("pays ${bank} and {lore} lore")),
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::data::loader::load_rewards;
     use crate::state::PlayerStats;
     use std::collections::HashSet;
+
+    /// Every achievement's payout has to be sayable, since the card now prints
+    /// it. A payout of nothing prints nothing, and that must not happen for a
+    /// real achievement -- the existing test above covers it being non-zero, and
+    /// this covers the sentence actually forming.
+    #[test]
+    fn every_achievement_payout_reads_as_a_sentence() {
+        let rewards = load_rewards();
+        for achievement in PlayerStats::achievement_definitions() {
+            let payout = rewards.for_achievement(&achievement.id);
+            let line = payout.describe().unwrap_or_else(|| {
+                panic!("{} has nothing to say about what it pays", achievement.id)
+            });
+            if payout.bank > 0 {
+                assert!(
+                    line.contains(&payout.bank.to_string()),
+                    "{} pays ${} and says {line:?}",
+                    achievement.id,
+                    payout.bank
+                );
+            }
+            if payout.lore > 0 {
+                assert!(
+                    line.contains(&payout.lore.to_string()),
+                    "{} pays {} lore and says {line:?}",
+                    achievement.id,
+                    payout.lore
+                );
+            }
+        }
+    }
+
+    /// Both halves are named when both are paid, and a payout of one currency
+    /// does not claim the other.
+    #[test]
+    fn a_payout_names_only_what_it_pays() {
+        use crate::data::reward::Payout;
+
+        assert_eq!(Payout { bank: 0, lore: 0 }.describe(), None);
+
+        let bank_only = Payout { bank: 250, lore: 0 }.describe().expect("a line");
+        assert!(bank_only.contains("250") && !bank_only.contains("lore"));
+
+        let lore_only = Payout { bank: 0, lore: 4 }.describe().expect("a line");
+        assert!(lore_only.contains("lore") && !lore_only.contains('$'));
+
+        let both = Payout { bank: 800, lore: 6 }.describe().expect("a line");
+        assert!(both.contains("800") && both.contains('6'));
+    }
 
     /// Every achievement must be worth something. An achievement with no
     /// reward entry is a scoreboard line the meta-progression never sees.
