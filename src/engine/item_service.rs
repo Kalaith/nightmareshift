@@ -295,19 +295,30 @@ impl ItemService {
             Self::apply_item_effect(effect, state, reputation_constants, current_time);
         }
 
-        // Handle durability/consumable logic
+        // What using it costs the item.
+        //
+        // A consumable goes. Anything that counts charges spends one and goes on
+        // its last. Anything that counts nothing is spent outright -- three
+        // protective items author ward charges but no `maxDurability`, and this
+        // branch used to find `None`, do nothing, and hand the item back, so a
+        // single Blessed Medallion granted supernatural protection on every
+        // click for ever. `ProtectionService::consume_ward` already applies that
+        // rule on the passive side; this is the same rule actively.
         if item.item_type == ItemType::Consumable {
             state.inventory.remove(idx);
         } else {
-            // Decrease durability for other usable items
-            if let Some(stored_item) = state.inventory.get_mut(idx) {
-                if let Some(durability) = stored_item.durability {
-                    if durability > 0 {
+            match state
+                .inventory
+                .get_mut(idx)
+                .and_then(|item| item.durability)
+            {
+                Some(durability) if durability > 1 => {
+                    if let Some(stored_item) = state.inventory.get_mut(idx) {
                         stored_item.durability = Some(durability - 1);
-                        if durability <= 1 {
-                            state.inventory.remove(idx);
-                        }
                     }
+                }
+                _ => {
+                    state.inventory.remove(idx);
                 }
             }
         }
@@ -747,6 +758,96 @@ mod tests {
             checked += 1;
         }
         assert!(checked > 0, "no cursed items in the catalogue");
+    }
+
+    /// A ward that authors no active-use count is still spent when it is used.
+    ///
+    /// `use_item` removes a consumable and otherwise decrements `durability`.
+    /// Three protective items -- the Blessed Medallion, the Crystal Pendant and
+    /// the Soul Protection Ward -- author ward charges but no `maxDurability`,
+    /// so the decrement branch found `None`, did nothing, and left the item in
+    /// hand. Each grants its effect again on every click: unlimited supernatural
+    /// protection from one medallion.
+    ///
+    /// `ProtectionService::consume_ward` already states the rule for the passive
+    /// side -- "a ward with no authored use count is spent on first use rather
+    /// than warding forever" -- and this is the same rule on the active side.
+    #[test]
+    fn a_ward_with_no_use_count_is_spent_when_used() {
+        let constants = load_constants();
+        let catalog = load_item_catalog();
+        let uncanny = load_passengers()
+            .into_iter()
+            .find(|p| p.is_supernatural)
+            .expect("a supernatural fare");
+
+        let mut state = GameState::new(0.0, &constants.game_constants);
+        state.current_passenger = Some(uncanny);
+        state
+            .inventory
+            .push(catalog.create_item("Blessed Medallion", "test", 0.0));
+        assert!(
+            state.inventory[0].max_durability.is_none(),
+            "pick an item with no authored durability for this test"
+        );
+
+        assert!(ItemService::use_item(
+            &mut state,
+            0,
+            &constants.reputation,
+            0.0
+        ));
+        let after_one = state.supernatural_protection;
+        assert!(after_one > 0, "the medallion granted nothing");
+        assert!(
+            state.inventory.is_empty(),
+            "the medallion survived being used and can be used again for ever"
+        );
+    }
+
+    /// No usable item survives being used enough times.
+    ///
+    /// Sweeps the whole catalogue rather than the three that were broken, since
+    /// the fault was a branch that quietly did nothing for a shape of item
+    /// nobody had thought about.
+    #[test]
+    fn no_usable_item_can_be_used_for_ever() {
+        let constants = load_constants();
+        let catalog = load_item_catalog();
+        let uncanny = load_passengers()
+            .into_iter()
+            .find(|p| p.is_supernatural)
+            .expect("a supernatural fare");
+
+        let mut names: Vec<String> = catalog.names();
+        names.sort();
+        let mut checked = 0;
+        for name in names {
+            let template = catalog.create_item(&name, "test", 0.0);
+            if !template.can_use {
+                continue;
+            }
+
+            let mut state = GameState::new(0.0, &constants.game_constants);
+            state.current_passenger = Some(uncanny.clone());
+            state.fuel = 50.0;
+            state.inventory.push(template);
+
+            // Its own charge count, plus slack, is more than enough.
+            let budget = state.inventory[0].max_durability.unwrap_or(1) + 3;
+            for _ in 0..budget {
+                if state.inventory.is_empty() {
+                    break;
+                }
+                ItemService::use_item(&mut state, 0, &constants.reputation, 0.0);
+            }
+            assert!(
+                state.inventory.is_empty(),
+                "{name} outlasted {budget} uses and can be spent for ever"
+            );
+            checked += 1;
+        }
+        assert!(checked > 0, "no usable items in the catalogue");
     }
 
     /// An item that counts its uses reports them, and spending one lowers the
