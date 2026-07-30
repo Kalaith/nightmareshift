@@ -11,7 +11,13 @@ use macroquad_toolkit::ui::{draw_ui_text, measure_ui_text, ScrollArea};
 
 /// Height (in unscrolled content-space) a single almanac card occupies,
 /// mirroring the sizing rules the draw loop below applies.
-fn card_height_for(entry: &crate::state::AlmanacEntry, is_selected: bool) -> f32 {
+/// `story_known` covers a backstory earned in play rather than bought with
+/// lore, which shows the same block and so needs the same room.
+fn card_height_for(
+    entry: &crate::state::AlmanacEntry,
+    is_selected: bool,
+    story_known: bool,
+) -> f32 {
     let base_height = if entry.encountered && entry.knowledge_level < 3 {
         95.0
     } else {
@@ -19,6 +25,7 @@ fn card_height_for(entry: &crate::state::AlmanacEntry, is_selected: bool) -> f32
     };
     let expanded_extra = if is_selected && entry.encountered {
         match entry.knowledge_level {
+            _ if story_known => 180.0,
             0 => 60.0,  // Just basic info
             1 => 100.0, // Description + traits
             2 => 160.0, // + route preferences
@@ -46,7 +53,11 @@ fn compute_content_height(
     let mut extent = 0.0_f32;
     for (idx, passenger) in data.passengers.iter().enumerate() {
         let entry = player_stats.get_almanac_entry(passenger.id);
-        let card_height = card_height_for(&entry, selected_id == Some(passenger.id));
+        let card_height = card_height_for(
+            &entry,
+            selected_id == Some(passenger.id),
+            player_stats.is_backstory_unlocked(passenger.id),
+        );
         if wide_layout && idx % 2 == 1 {
             right_y += card_height + 12.0;
             extent = extent.max(right_y);
@@ -151,7 +162,8 @@ pub fn draw_almanac(
                 .unwrap_or(&data.localization.ui.meta.almanac.unknown_level);
 
             let is_selected = selected_id == Some(passenger.id);
-            let card_height = card_height_for(&entry, is_selected);
+            let story_known = player_stats.is_backstory_unlocked(passenger.id);
+            let card_height = card_height_for(&entry, is_selected, story_known);
             let card_x = if wide_layout && idx % 2 == 1 {
                 left_x + card_width + gap
             } else {
@@ -371,8 +383,18 @@ pub fn draw_almanac(
                         details_y += 16.0;
                     }
 
-                    // Level 3: Backstory
-                    if entry.knowledge_level >= 3 {
+                    // Level 3, or a story earned rather than bought.
+                    //
+                    // `unlocked_backstories` is set two ways that have nothing
+                    // to do with lore: the ride-completion roll, and reading a
+                    // passenger's guideline right, which pays a `StoryUnlock`.
+                    // The almanac only ever asked about knowledge level, so a
+                    // story earned in play was shown once on the drop-off
+                    // summary and then vanished from the one screen built to
+                    // hold what the driver knows about people. It also already
+                    // counts for something invisible -- a known story raises
+                    // that passenger's item drop chance by half again.
+                    if entry.knowledge_level >= 3 || story_known {
                         let backstory_preview = if passenger.backstory_details.len() > 80 {
                             format!("Backstory: {}...", &passenger.backstory_details[..80])
                         } else {
@@ -423,10 +445,12 @@ pub fn draw_almanac(
                 // a price and the name of a tier and never what the tier
                 // reveals. Deciding whether to invest was guesswork.
                 if entry.encountered && entry.knowledge_level < 3 {
+                    // Nothing already in hand is promised again.
+                    let already: &[&str] = if story_known { &["Backstory"] } else { &[] };
                     let next_line = data
                         .almanac
                         .get_level(entry.knowledge_level + 1)
-                        .and_then(|next| next.reveals_line());
+                        .and_then(|next| next.reveals_line(already));
                     if let Some(next_line) = next_line {
                         {
                             draw_wrapped_text(

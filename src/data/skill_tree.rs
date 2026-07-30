@@ -52,11 +52,21 @@ impl AlmanacLevel {
     /// The sentence lives here rather than in the draw call so the wording is
     /// testable without a window -- the same reason `PlayerStats::reveal_story`
     /// holds what a story unlock means.
-    pub fn reveals_line(&self) -> Option<String> {
-        if self.rewards.is_empty() {
+    /// `already_known` is anything the player has by another route, left out
+    /// so a card that has just shown someone's backstory does not go on
+    /// promising it one level later. A story can be earned in play instead of
+    /// bought with lore.
+    pub fn reveals_line(&self, already_known: &[&str]) -> Option<String> {
+        let remaining: Vec<&str> = self
+            .rewards
+            .iter()
+            .map(String::as_str)
+            .filter(|reward| !already_known.contains(reward))
+            .collect();
+        if remaining.is_empty() {
             return None;
         }
-        Some(format!("{} reveals {}", self.name, self.rewards.join(", ")))
+        Some(format!("{} reveals {}", self.name, remaining.join(", ")))
     }
 }
 
@@ -139,7 +149,7 @@ mod tests {
         for level in 1..=3 {
             let entry = almanac.get_level(level).expect("a level");
             let line = entry
-                .reveals_line()
+                .reveals_line(&[])
                 .unwrap_or_else(|| panic!("level {level} prints nothing"));
             for reward in &entry.rewards {
                 assert!(
@@ -148,6 +158,40 @@ mod tests {
                 );
             }
         }
+    }
+
+    /// Something already in hand is not promised again. A story earned in play
+    /// shows on the card immediately, and the next level's line used to go on
+    /// offering the same backstory one tier later.
+    #[test]
+    fn a_reward_already_in_hand_is_not_promised_again() {
+        let mastered = load_almanac().get_level(3).expect("level 3").clone();
+        assert!(
+            mastered.rewards.iter().any(|r| r == "Backstory"),
+            "level 3 no longer offers a backstory; pick another reward"
+        );
+
+        let full = mastered.reveals_line(&[]).expect("a line");
+        assert!(full.contains("Backstory"));
+
+        let trimmed = mastered.reveals_line(&["Backstory"]).expect("a line");
+        assert!(
+            !trimmed.contains("Backstory"),
+            "a known backstory was promised again in {trimmed:?}"
+        );
+        assert!(
+            trimmed.contains("True Nature"),
+            "excluding one reward dropped the others: {trimmed:?}"
+        );
+    }
+
+    /// Excluding everything a level offers leaves nothing to say, rather than
+    /// a tier name with a dangling "reveals".
+    #[test]
+    fn excluding_every_reward_prints_nothing() {
+        let mastered = load_almanac().get_level(3).expect("level 3").clone();
+        let all: Vec<&str> = mastered.rewards.iter().map(String::as_str).collect();
+        assert!(mastered.reveals_line(&all).is_none());
     }
 
     /// A level that reveals nothing prints nothing, rather than a bare tier
@@ -159,7 +203,7 @@ mod tests {
             description: String::new(),
             rewards: Vec::new(),
         };
-        assert!(silent.reveals_line().is_none());
+        assert!(silent.reveals_line(&[]).is_none());
     }
 
     /// Level 0 is the not-yet-met state and is named, since the card falls

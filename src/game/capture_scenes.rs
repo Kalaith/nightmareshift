@@ -70,6 +70,18 @@ impl Game {
                             .upgrade_almanac_knowledge(passenger_id, cost);
                     }
                 }
+                // One passenger whose story was earned in play rather than
+                // bought with lore, expanded, so the almanac honouring that is
+                // visible. Selected because the backstory only shows on an
+                // expanded card.
+                let earned = self
+                    .game_data
+                    .as_ref()
+                    .and_then(|data| data.passengers.first().map(|p| p.id));
+                if let Some(passenger_id) = earned {
+                    self.player_stats.reveal_story(passenger_id);
+                    self.almanac_selected = Some(passenger_id);
+                }
                 self.change_screen(Screen::Almanac);
             }
             // A guideline decision with the clock running, the passenger's
