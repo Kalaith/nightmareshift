@@ -219,6 +219,138 @@ mod tests {
         }
     }
 
+    /// What a level promises is what that level delivers.
+    ///
+    /// `almanacData.json` authors a reward list per level, and since the almanac
+    /// card prints it -- "Studied reveals Route Preferences, Common Tells..." --
+    /// the list is now a promise made to the player in the UI. It was wrong in
+    /// both directions before this test existed. Level 1 claimed "Name" and
+    /// "Description", both of which an encountered passenger shows for free at
+    /// level 0, and omitted Traits, which it does buy. Level 3 claimed "Hidden
+    /// Rules", which no almanac level touches -- hidden rules belong to the
+    /// shift, not to a passenger, so a per-passenger mastery could not reveal
+    /// them even in principle -- and omitted Relief and Candour.
+    ///
+    /// The mapping is spelled out rather than inferred, because the two sides
+    /// are deliberately worded differently: the player reads "Basic Needs", the
+    /// dossier labels the line "Need".
+    #[test]
+    fn every_promised_reward_is_delivered_at_that_level() {
+        use crate::data::loader::load_almanac;
+
+        // Reward name -> the dossier label that carries it.
+        const DELIVERED_BY: [(&str, &str); 9] = [
+            ("Basic Needs", "Need"),
+            ("Traits", "Traits"),
+            ("Common Tells", "Tell"),
+            ("Carried Items", "Carries"),
+            ("Associates", "Associates"),
+            ("Their Rule", "Their rule"),
+            ("True Nature", "True nature"),
+            ("Relief", "Relief"),
+            ("Candour", "Candour"),
+        ];
+        // Delivered somewhere other than the dossier: route preferences appear
+        // on the almanac card and the driving screen's route cards, and the
+        // backstory on the almanac card.
+        const ELSEWHERE: [&str; 2] = ["Route Preferences", "Backstory"];
+
+        let data = GameData::load();
+        let passengers = load_passengers();
+        let almanac = load_almanac();
+
+        for level in 1..=3u32 {
+            let entry = almanac.get_level(level).expect("a level");
+            for reward in &entry.rewards {
+                if ELSEWHERE.contains(&reward.as_str()) {
+                    continue;
+                }
+                let label = DELIVERED_BY
+                    .iter()
+                    .find(|(name, _)| name == reward)
+                    .map(|(_, label)| *label)
+                    .unwrap_or_else(|| {
+                        panic!("level {level} promises {reward:?}, which nothing delivers")
+                    });
+
+                // Some lines need underlying data the passenger may not have,
+                // so it is enough that one passenger gains this label exactly
+                // here -- and none gains it a level earlier.
+                let gained_here = passengers.iter().any(|passenger| {
+                    let has = |at| {
+                        build(passenger, at, Some(&data))
+                            .iter()
+                            .any(|line| line.label == label)
+                    };
+                    has(level) && !has(level - 1)
+                });
+                assert!(
+                    gained_here,
+                    "level {level} promises {reward:?} but no passenger gains {label:?} there"
+                );
+            }
+        }
+    }
+
+    /// And nothing a level delivers goes unmentioned, or the card understates
+    /// what the lore buys.
+    #[test]
+    fn every_delivered_line_is_promised() {
+        use crate::data::loader::load_almanac;
+        use std::collections::HashSet;
+
+        // The dossier labels, as the reward lists spell them.
+        const PROMISED_AS: [(&str, &str); 9] = [
+            ("Need", "Basic Needs"),
+            ("Traits", "Traits"),
+            ("Tell", "Common Tells"),
+            ("Carries", "Carried Items"),
+            ("Associates", "Associates"),
+            ("Their rule", "Their Rule"),
+            ("True nature", "True Nature"),
+            ("Relief", "Relief"),
+            ("Candour", "Candour"),
+        ];
+
+        let data = GameData::load();
+        let almanac = load_almanac();
+
+        for level in 1..=3u32 {
+            let promised: HashSet<&str> = almanac
+                .get_level(level)
+                .expect("a level")
+                .rewards
+                .iter()
+                .map(String::as_str)
+                .collect();
+
+            for passenger in load_passengers() {
+                let before: HashSet<String> = build(&passenger, level - 1, Some(&data))
+                    .into_iter()
+                    .map(|line| line.label)
+                    .collect();
+                for line in build(&passenger, level, Some(&data)) {
+                    if before.contains(&line.label) {
+                        continue;
+                    }
+                    let name = PROMISED_AS
+                        .iter()
+                        .find(|(label, _)| *label == line.label)
+                        .map(|(_, name)| *name)
+                        .unwrap_or_else(|| {
+                            panic!("dossier line {:?} maps to no reward name", line.label)
+                        });
+                    assert!(
+                        promised.contains(name),
+                        "level {level} delivers {:?} to {} and never says so",
+                        line.label,
+                        passenger.name
+                    );
+                }
+            }
+        }
+    }
+
     /// Every passenger with a need profile must have a way to be settled,
     /// and Mastered must name it.
     ///

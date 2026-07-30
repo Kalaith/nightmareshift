@@ -8,17 +8,31 @@
     "1": {
       "name": "Observed",
       "description": "You have seen this entity and know its basic nature.",
-      "rewards": ["Name", "Description", "Basic Needs"]
+      "rewards": [
+        "Basic Needs",
+        "Traits"
+      ]
     },
     "2": {
       "name": "Studied",
       "description": "You understand the behavioral patterns of this entity.",
-      "rewards": ["Route Preferences", "Common Tells", "Likes/Dislikes"]
+      "rewards": [
+        "Route Preferences",
+        "Common Tells",
+        "Carried Items",
+        "Associates"
+      ]
     },
     "3": {
       "name": "Mastered",
       "description": "You know the deepest secrets of this entity.",
-      "rewards": ["Hidden Rules", "True Nature", "Backstory"]
+      "rewards": [
+        "Their Rule",
+        "True Nature",
+        "Relief",
+        "Candour",
+        "Backstory"
+      ]
     }
   },
   "LORE_COSTS": {
