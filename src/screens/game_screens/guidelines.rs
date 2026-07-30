@@ -110,6 +110,33 @@ pub fn draw_guideline_decision(
             );
             y += 50.0;
 
+            // The last thing the passenger said.
+            //
+            // Sixteen profiles author eighty escalation lines across warning,
+            // critical and meltdown, and they are written during route
+            // resolution -- which is also where a guideline decision gets
+            // triggered. The line lands in state and this screen appears over
+            // the top of it, so the most immediate tell there is went unread
+            // on the one screen that asks the player to read the passenger.
+            // It costs no almanac level, unlike the verdict below it.
+            if let Some(spoken) = game_state.current_passenger_dialogue.as_ref() {
+                let speaker = game_state
+                    .current_passenger
+                    .as_ref()
+                    .map(|passenger| passenger.name.as_str())
+                    .unwrap_or("The passenger");
+                y = draw_wrapped_text(
+                    &format!("{speaker}: \"{spoken}\""),
+                    inner.x,
+                    y + 16.0,
+                    inner.w,
+                    fonts::SIZE_SM,
+                    17.0,
+                    colors::CAB_YELLOW,
+                    2,
+                ) + 12.0;
+            }
+
             // What a studied passenger's file says about this guideline.
             // The decision is judged on whether an exception is live, and
             // until now nothing told the player that — tells hint at it, but

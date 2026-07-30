@@ -330,6 +330,46 @@ mod tests {
     use super::*;
     use crate::data::loader::load_passengers;
 
+    /// A passenger past calm always has something to say.
+    ///
+    /// Their line is the only tell an unstudied driver gets on the guideline
+    /// screen, which now shows it. If a profile authors nothing for a stage the
+    /// screen falls silent exactly when the passenger is worst.
+    #[test]
+    fn every_escalated_stage_gives_the_passenger_a_line() {
+        for passenger in load_passengers() {
+            let Some(mut need) = PassengerStateMachine::initialize(&passenger, 0.0) else {
+                continue;
+            };
+            for stage in [NeedStage::Warning, NeedStage::Critical, NeedStage::Meltdown] {
+                need.stage = stage;
+                assert!(
+                    PassengerStateMachine::get_dialogue_for_stage(&passenger, &need).is_some(),
+                    "{} says nothing at {:?}",
+                    passenger.name,
+                    stage
+                );
+            }
+        }
+    }
+
+    /// A calm passenger says nothing extra, which is why no profile authors a
+    /// `calm` block. The screens fall back to their opening line.
+    #[test]
+    fn a_calm_passenger_has_no_escalation_line() {
+        for passenger in load_passengers() {
+            let Some(mut need) = PassengerStateMachine::initialize(&passenger, 0.0) else {
+                continue;
+            };
+            need.stage = NeedStage::Calm;
+            assert!(
+                PassengerStateMachine::get_dialogue_for_stage(&passenger, &need).is_none(),
+                "{} has an escalation line while still calm",
+                passenger.name
+            );
+        }
+    }
+
     /// Crossing into a stage banks the trust that stage authors.
     #[test]
     fn escalating_moves_the_drivers_standing() {

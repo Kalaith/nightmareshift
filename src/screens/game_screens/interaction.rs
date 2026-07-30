@@ -89,7 +89,7 @@ pub fn draw_interaction(game_state: &GameState) -> UiAction {
                 fonts::SIZE_LG,
                 colors::CAB_YELLOW,
             );
-            draw_wrapped_text(
+            let route_bottom = draw_wrapped_text(
                 &format!("{} -> {}", passenger.pickup, passenger.destination),
                 portrait_rect.x + portrait_rect.w + 18.0,
                 portrait_rect.y + 72.0,
@@ -99,6 +99,22 @@ pub fn draw_interaction(game_state: &GameState) -> UiAction {
                 colors::TEXT_MUTED,
                 3,
             );
+
+            // And what they last said. The escalation line is written during
+            // route resolution, which is the same step that can send the
+            // player here, so this screen was covering it up.
+            if let Some(spoken) = game_state.current_passenger_dialogue.as_ref() {
+                draw_wrapped_text(
+                    &format!("\"{spoken}\""),
+                    portrait_rect.x + portrait_rect.w + 18.0,
+                    route_bottom + 12.0,
+                    left_w - portrait_size - 18.0,
+                    fonts::SIZE_SM,
+                    17.0,
+                    colors::CAB_YELLOW,
+                    3,
+                );
+            }
         }
 
         let mut choice_y = inner.y + 28.0;

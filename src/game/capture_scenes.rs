@@ -8,7 +8,7 @@
 
 use super::Game;
 use crate::data::{RouteType, WeatherCondition, WeatherIntensity, WeatherType};
-use crate::engine::{RideService, WeatherService};
+use crate::engine::{PassengerStateMachine, RideService, WeatherService};
 use crate::screens::Screen;
 use crate::state::*;
 use macroquad::prelude::*;
@@ -58,6 +58,66 @@ impl Game {
                     }
                 }
                 self.change_screen(Screen::Almanac);
+            }
+            // A guideline decision with the clock running, the passenger's
+            // last line on screen, and the almanac studied enough to show its
+            // verdict. This screen had no scene, which is how the passenger's
+            // voice went missing from it unnoticed.
+            "guideline" => {
+                self.start_game();
+                self.start_shift();
+                self.spawn_passenger();
+                if let Some(passenger) = self.game_state.current_passenger.clone() {
+                    self.player_stats.mark_passenger_encountered(passenger.id);
+                    let upgrades: Vec<u32> = (0..2)
+                        .map(|step| {
+                            self.game_data
+                                .as_ref()
+                                .map(|data| data.almanac.get_upgrade_cost(step + 1))
+                                .unwrap_or(0)
+                        })
+                        .collect();
+                    for cost in upgrades {
+                        self.player_stats.lore_fragments += 99;
+                        self.player_stats
+                            .upgrade_almanac_knowledge(passenger.id, cost);
+                    }
+
+                    // Whatever they say once they are past calm.
+                    let need =
+                        PassengerStateMachine::initialize(&passenger, 0.0).map(|mut need| {
+                            need.stage = NeedStage::Critical;
+                            need
+                        });
+                    self.game_state.current_passenger_dialogue = need
+                        .as_ref()
+                        .and_then(|need| {
+                            PassengerStateMachine::get_dialogue_for_stage(&passenger, need)
+                        })
+                        .or(self.game_state.current_passenger_dialogue.take());
+                    self.game_state.current_passenger_need_state = need;
+
+                    // The guideline their own exception belongs to, so the
+                    // almanac verdict has something to say.
+                    self.game_state.active_guideline = self.game_data.as_ref().and_then(|data| {
+                        let exception_id = passenger
+                            .state_profile
+                            .as_ref()
+                            .and_then(|profile| profile.exception_id.clone())?;
+                        data.guidelines
+                            .iter()
+                            .find(|guideline| {
+                                guideline
+                                    .exceptions
+                                    .iter()
+                                    .any(|exception| exception.id == exception_id)
+                            })
+                            .cloned()
+                    });
+                    self.game_state.guideline_decision_start_time = Some(get_time() - 8.0);
+                    self.game_state.guideline_time_remaining = 22.0;
+                    self.game_state.game_phase = GamePhase::GuidelineDecision;
+                }
             }
             // The briefing with hazards on the board. Clear weather generates
             // none, so the plain `briefing` scene shows the empty case and
