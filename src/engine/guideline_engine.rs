@@ -109,7 +109,10 @@ impl GuidelineEngine {
     }
 
     /// Check if passenger matches an exception
-    fn passenger_matches_exception(passenger: &Passenger, exception: &GuidelineException) -> bool {
+    pub(crate) fn passenger_matches_exception(
+        passenger: &Passenger,
+        exception: &GuidelineException,
+    ) -> bool {
         // Check by ID
         if !exception.passenger_ids.is_empty() && exception.passenger_ids.contains(&passenger.id) {
             return true;
@@ -547,5 +550,58 @@ mod tests {
                 }
             }
         }
+    }
+
+    /// An exception gated on words nobody says is an exception that never
+    /// happens.
+    ///
+    /// `passenger_dialogue` conditions substring-match the value against the
+    /// passenger's own `dialogue` lines, so the guideline file and the
+    /// passenger file have to agree about a word -- and they are different
+    /// files with nothing between them. Twelve of the fourteen agreed. Two did
+    /// not: Sister Agnes's blessing and Death's offer to trade places were
+    /// authored in full, each with two tells, a `breakingSafer` flag and a
+    /// `requiredStage`, and neither passenger had a line containing "bless" or
+    /// "trade". Both exceptions were unreachable, which also put their rewards,
+    /// their relief and their tells out of the player's reach.
+    ///
+    /// Eligibility is checked the same way the engine checks it, so this fails
+    /// if the word goes missing or if the exception is pointed at a passenger
+    /// who never says it.
+    #[test]
+    fn every_dialogue_exception_has_someone_who_says_the_words() {
+        let passengers = load_passengers();
+        let mut checked = 0;
+        for guideline in load_guidelines() {
+            for exception in &guideline.exceptions {
+                for condition in &exception.conditions {
+                    if condition.condition_type != "passenger_dialogue" {
+                        continue;
+                    }
+                    let word = condition
+                        .value
+                        .as_str()
+                        .expect("a dialogue condition matches a string")
+                        .to_lowercase();
+                    checked += 1;
+                    let speaker = passengers.iter().find(|passenger| {
+                        super::GuidelineEngine::passenger_matches_exception(passenger, exception)
+                            && passenger
+                                .dialogue
+                                .iter()
+                                .any(|line| line.to_lowercase().contains(&word))
+                    });
+                    assert!(
+                        speaker.is_some(),
+                        "exception {:?} on guideline {} waits to hear {:?}, and no \
+                         passenger it applies to has a line containing it",
+                        exception.id,
+                        guideline.id,
+                        word
+                    );
+                }
+            }
+        }
+        assert!(checked > 0, "no dialogue conditions found to check");
     }
 }
