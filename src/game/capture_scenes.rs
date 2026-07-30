@@ -30,6 +30,46 @@ impl Game {
                 self.start_game();
                 self.start_shift();
             }
+            // On the road with a fare aboard and their need already climbing,
+            // which is the only place the passenger gauge appears. No scene had
+            // ever shown the driving screen mid-ride, so the gauge went
+            // unlooked-at.
+            "driving" => {
+                self.start_game();
+                self.start_shift();
+                self.spawn_passenger();
+                self.game_state.earnings = 96;
+                self.game_state.rides_completed = 2;
+                self.game_state.time_remaining = 298;
+                self.game_state.fuel = 71.0;
+                if let Some(passenger) = self.game_state.current_passenger.clone() {
+                    self.player_stats.mark_passenger_encountered(passenger.id);
+                    let upgrades: Vec<u32> = (0..2)
+                        .map(|step| {
+                            self.game_data
+                                .as_ref()
+                                .map(|data| data.almanac.get_upgrade_cost(step + 1))
+                                .unwrap_or(0)
+                        })
+                        .collect();
+                    for cost in upgrades {
+                        self.player_stats.lore_fragments += 99;
+                        self.player_stats
+                            .upgrade_almanac_knowledge(passenger.id, cost);
+                    }
+                    self.game_state.current_passenger_need_state =
+                        PassengerStateMachine::initialize(&passenger, 0.0).map(|mut need| {
+                            let thresholds = need.profile.thresholds.clone();
+                            need.level = thresholds.warning + 4;
+                            need.stage =
+                                PassengerNeedState::calculate_stage(need.level, &thresholds);
+                            need.stability = 1.0 - (need.level as f32 / 100.0);
+                            need
+                        });
+                }
+                self.game_state.game_phase = GamePhase::Driving;
+                self.game_state.driving_phase = Some(DrivingPhase::Pickup);
+            }
             // Mid-shift with wards in hand, so the protection readout the
             // status bar only draws when there is something to say is visible.
             "warded" => {

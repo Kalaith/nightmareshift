@@ -56,6 +56,24 @@ impl NeedStage {
         }
     }
 
+    /// How this stage reads to the driver.
+    ///
+    /// The one vocabulary for a passenger's condition. The almanac quotes need
+    /// thresholds -- "restless past 61, critical at 80" -- while the driving
+    /// screen shows stability, which is the inverse scale, so a driver was told
+    /// to watch for 61 and shown 45%. Nothing was wrong with either number; they
+    /// simply could not be compared. Naming the stage on the readout means the
+    /// studied fact and the live gauge use the same words, and the arithmetic
+    /// stops mattering.
+    pub fn label(self) -> &'static str {
+        match self {
+            Self::Calm => "settled",
+            Self::Warning => "restless",
+            Self::Critical => "close to breaking",
+            Self::Meltdown => "breaking down",
+        }
+    }
+
     /// Parse an authored stage name, or nothing if it names no stage.
     ///
     /// Returning `Option` rather than defaulting keeps the two directions

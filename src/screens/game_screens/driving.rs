@@ -12,6 +12,12 @@ use macroquad_toolkit::ui::draw_ui_text;
 
 use super::scene::{draw_bottom_taxi_scene, pulsing_warning_color};
 
+/// Right-hand columns of a route card, measured in from its right edge. The
+/// costs sit outermost; the risk tags take the band to their left and are cut to
+/// fit it, so the two cannot overlap however long a tag's description runs.
+const COST_COLUMN_W: f32 = 154.0;
+const TAG_COLUMN_W: f32 = 430.0;
+
 /// Draw the driving/route selection screen
 pub fn draw_driving(
     game_state: &GameState,
@@ -60,7 +66,14 @@ pub fn draw_driving(
         if let Some(need_state) = &game_state.current_passenger_need_state {
             let stability = crate::engine::PassengerStateMachine::get_stability_percent(need_state);
             let critical = crate::engine::PassengerStateMachine::is_critical(need_state);
-            let state_text = format!("Passenger stability: {}%", stability);
+            // Named as well as measured. The almanac sells the thresholds in
+            // need levels and this gauge reads the inverse, so without the word
+            // the two could not be compared.
+            let state_text = format!(
+                "Passenger stability: {}% - {}",
+                stability,
+                need_state.stage.label()
+            );
             let state_color = if critical {
                 colors::FUEL_CRITICAL
             } else {
@@ -349,21 +362,21 @@ pub fn draw_driving(
                 );
                 draw_small_caps(
                     &format!("Duration  {} min", time_cost),
-                    card.x + card.w - 154.0,
+                    card.x + card.w - COST_COLUMN_W,
                     card.y + 25.0,
                     fonts::SIZE_XS,
                     colors::TEXT_MUTED,
                 );
                 draw_small_caps(
                     &format!("Fuel  -{}%", fuel_cost),
-                    card.x + card.w - 154.0,
+                    card.x + card.w - COST_COLUMN_W,
                     card.y + 41.0,
                     fonts::SIZE_XS,
                     colors::TEXT_MUTED,
                 );
                 draw_small_caps(
                     &format!("Hazards  {}", risk_label),
-                    card.x + card.w - 154.0,
+                    card.x + card.w - COST_COLUMN_W,
                     card.y + 57.0,
                     fonts::SIZE_XS,
                     risk_color,
@@ -396,7 +409,19 @@ pub fn draw_driving(
                 Some(seed),
             );
 
-            let tag_x = card.x + card.w - 244.0;
+            // The risk tags and the cost column used to start 244 and 154 from
+            // the card's right edge, and a tag like "Road Construction: Detours
+            // ahead." runs about 190 pixels -- so the two ran straight through
+            // each other, and the most-used screen in the game read "Road
+            // ConstructionDETOURS-A17 MIN". Truncating by character count could
+            // not have saved it either: 28 characters is a different width for
+            // every tag.
+            //
+            // The tags now have their own band ending short of the costs, and
+            // are cut to that width rather than to a character count.
+            let cost_x = card.x + card.w - COST_COLUMN_W;
+            let tag_x = (card.x + card.w - TAG_COLUMN_W).max(card.x + 250.0);
+            let tag_w = (cost_x - tag_x - 20.0).max(60.0);
             let tag_y = card.y + 25.0;
             for (tag_idx, tag) in risk_tags.iter().enumerate() {
                 let is_visible = tag_idx < visible_count;
@@ -408,11 +433,8 @@ pub fn draw_driving(
                 } else {
                     ("???".to_string(), colors::TEXT_MUTED)
                 };
-                let label = if text.len() > 28 {
-                    format!("{}...", &text[..28])
-                } else {
-                    text
-                };
+                let label =
+                    macroquad_toolkit::ui::truncate_text_to_width(&text, tag_w, fonts::SIZE_XS);
                 draw_ui_text(
                     &label,
                     tag_x,

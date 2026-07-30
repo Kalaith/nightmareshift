@@ -54,12 +54,14 @@ fn candour_label(deception: f32) -> &'static str {
 }
 
 /// How a need stage reads as a moment to act on, rather than as a label.
+/// Each of these contains `NeedStage::label`, so the almanac and the driving
+/// readout name a passenger's condition the same way. A test holds that.
 fn stage_phrase(stage: NeedStage) -> &'static str {
     match stage {
         NeedStage::Calm => "they are still settled",
         NeedStage::Warning => "they turn restless",
         NeedStage::Critical => "they are close to breaking",
-        NeedStage::Meltdown => "it is nearly too late",
+        NeedStage::Meltdown => "they are breaking down",
     }
 }
 
@@ -462,6 +464,48 @@ mod tests {
             named += 1;
         }
         assert!(named > 0, "no passenger authors an exception any more");
+    }
+
+    /// The almanac and the driving readout name a condition the same way.
+    ///
+    /// The almanac quotes need thresholds and the readout shows stability,
+    /// which is the inverse scale, so a driver was told to watch for 61 and
+    /// shown 45%. The numbers cannot be reconciled at a glance; the words can,
+    /// and only if they are the same words. This holds the two vocabularies
+    /// together -- if a stage is ever renamed on the gauge, the almanac's phrase
+    /// has to follow.
+    #[test]
+    fn the_almanac_and_the_gauge_name_a_condition_alike() {
+        for stage in [
+            NeedStage::Calm,
+            NeedStage::Warning,
+            NeedStage::Critical,
+            NeedStage::Meltdown,
+        ] {
+            let phrase = stage_phrase(stage);
+            assert!(
+                phrase.contains(stage.label()),
+                "the almanac says {phrase:?} where the gauge says {:?}",
+                stage.label()
+            );
+        }
+    }
+
+    /// And the four are distinguishable, or naming the stage tells the driver
+    /// nothing they did not already have from the percentage.
+    #[test]
+    fn every_stage_reads_differently() {
+        use std::collections::HashSet;
+        let labels: HashSet<&str> = [
+            NeedStage::Calm,
+            NeedStage::Warning,
+            NeedStage::Critical,
+            NeedStage::Meltdown,
+        ]
+        .into_iter()
+        .map(NeedStage::label)
+        .collect();
+        assert_eq!(labels.len(), 4, "two stages read the same on the gauge");
     }
 
     /// The traits line says which of them the driver can actually call on.
