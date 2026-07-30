@@ -301,34 +301,122 @@ impl WeatherService {
         let elapsed = current_time - current.start_time;
         let duration_secs = current.duration as f64 * 60.0;
 
-        // Check if weather should change
-        if elapsed >= duration_secs {
-            let change_chance: f32 = 0.3;
-            if macroquad_toolkit::rng::chance(change_chance) {
-                return Self::generate_initial_weather(season, current_time);
-            }
+        // A front holds until its own duration is up.
+        //
+        // This is called from the frame loop, and both rolls used to happen on
+        // every call: a one-in-ten chance of an intensity change per frame, which
+        // is about four changes a second in practice -- rain flickering between
+        // light and heavy while visibility, the weather effects that price a
+        // route, passenger spawn weighting and hazard generation all jittered
+        // along with it. Worse, the intensity branch kept the old `start_time`,
+        // so a front that outlived its duration re-rolled for ever.
+        //
+        // Both rolls now happen once, when the front's time is up, and the clock
+        // restarts either way -- so `duration` means what it says.
+        if elapsed < duration_secs {
+            return current.clone();
         }
 
-        // Check for intensity change
-        if macroquad_toolkit::rng::chance(0.1) {
-            let new_intensity = Self::get_random_intensity(current.weather_type);
-            if new_intensity != current.intensity {
-                return WeatherCondition {
-                    intensity: new_intensity,
-                    effects: Self::get_weather_effects(current.weather_type, new_intensity),
-                    description: Self::get_weather_description(current.weather_type, new_intensity),
-                    visibility: Self::calculate_visibility(current.weather_type, new_intensity),
-                    ..current.clone()
-                };
-            }
+        let change_chance: f32 = 0.3;
+        if macroquad_toolkit::rng::chance(change_chance) {
+            return Self::generate_initial_weather(season, current_time);
         }
 
-        current.clone()
+        let new_intensity = Self::get_random_intensity(current.weather_type);
+        WeatherCondition {
+            intensity: new_intensity,
+            effects: Self::get_weather_effects(current.weather_type, new_intensity),
+            description: Self::get_weather_description(current.weather_type, new_intensity),
+            visibility: Self::calculate_visibility(current.weather_type, new_intensity),
+            start_time: current_time,
+            ..current.clone()
+        }
     }
 }
 
 #[cfg(test)]
 mod tests {
+
+    /// But it does change once its time is up, or the sky is fixed for the night.
+    #[test]
+    fn weather_turns_over_when_its_duration_is_up() {
+        let season = crate::data::Season::default();
+        let front = WeatherCondition {
+            weather_type: WeatherType::Rain,
+            intensity: WeatherIntensity::Moderate,
+            visibility: 60,
+            description: "Steady rain".to_string(),
+            effects: Vec::new(),
+            duration: 10,
+            start_time: 0.0,
+        };
+
+        // Well past ten minutes. Either the front turns into different weather
+        // or it shifts intensity, and either way the clock restarts.
+        let past = front.duration as f64 * 60.0 + 1.0;
+        let mut turned = 0;
+        for run in 0..200 {
+            let next = WeatherService::update_weather(&front, &season, past + run as f64);
+            if next.intensity != front.intensity || next.weather_type != front.weather_type {
+                turned += 1;
+            }
+            assert!(
+                next.start_time >= past,
+                "the clock did not restart, so this front will re-roll every frame"
+            );
+        }
+        assert!(
+            turned > 0,
+            "a front outlived its duration two hundred times and never turned over"
+        );
+    }
+
+    /// Weather does not change several times a second.
+    ///
+    /// `update_weather` is called from the frame loop and rolled a one-in-ten
+    /// chance of an intensity change on every call -- about six a second at sixty
+    /// frames. Intensity drives visibility, the weather effects that price a
+    /// route, passenger spawn weighting and hazard generation, so all of it
+    /// jittered.
+    ///
+    /// Deliberately not started from clear weather. `get_random_intensity`
+    /// returns Light unconditionally for Clear, so a test that begins there can
+    /// never observe a change and passes whatever the code does -- which is what
+    /// the first version of this test did.
+    #[test]
+    fn weather_holds_still_between_frames() {
+        let season = crate::data::Season::default();
+        let front = WeatherCondition {
+            weather_type: WeatherType::Rain,
+            intensity: WeatherIntensity::Moderate,
+            visibility: 60,
+            description: "Steady rain".to_string(),
+            effects: Vec::new(),
+            duration: 90,
+            start_time: 0.0,
+        };
+        assert_ne!(
+            front.weather_type,
+            WeatherType::Clear,
+            "clear skies cannot change intensity, so this would prove nothing"
+        );
+
+        let mut weather = front;
+        let mut changes = 0;
+        for frame in 1..=600 {
+            let next = WeatherService::update_weather(&weather, &season, frame as f64 * 0.016);
+            if next.intensity != weather.intensity {
+                changes += 1;
+            }
+            weather = next;
+        }
+
+        assert_eq!(
+            changes, 0,
+            "the sky changed intensity {changes} times inside ten seconds"
+        );
+    }
+
     use super::*;
     use crate::data::loader::{load_constants, load_passengers};
     use crate::engine::{RouteCosts, RouteService, SkillModifiers};
