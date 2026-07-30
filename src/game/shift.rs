@@ -242,11 +242,10 @@ impl Game {
         }
 
         // Check and unlock achievements, paying whatever each one is worth.
-        let unlocked = self.player_stats.check_achievements(
-            self.game_state.earnings,
+        let unlocked = self.player_stats.check_achievements(Some(FinishedShift::of(
+            &self.game_state,
             actually_successful,
-            self.game_state.rules_violated,
-        );
+        )));
         self.pay_achievement_rewards(&unlocked);
 
         // Surviving every night of a run is the game's headline result and

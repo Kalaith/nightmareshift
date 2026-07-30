@@ -45,6 +45,29 @@ where
     })
 }
 
+/// The three facts about a just-finished shift that achievements ask about.
+///
+/// Built from the state rather than passed as loose values, for the same reason
+/// `record_shift_completion` takes the shift: three scalars in a row is where a
+/// call site goes wrong, and `survived` is the only one the state cannot answer
+/// for itself.
+#[derive(Debug, Clone, Copy)]
+pub struct FinishedShift {
+    pub earnings: u32,
+    pub violations: u32,
+    pub survived: bool,
+}
+
+impl FinishedShift {
+    pub fn of(shift: &crate::state::GameState, survived: bool) -> Self {
+        Self {
+            earnings: shift.earnings,
+            violations: shift.rules_violated,
+            survived,
+        }
+    }
+}
+
 /// Persistent player statistics
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct PlayerStats {
@@ -350,12 +373,7 @@ impl PlayerStats {
     /// Evaluate every achievement condition, returning the ids that unlocked
     /// for the first time on this call so the caller can pay their reward.
     /// Already-unlocked achievements are never reported twice.
-    pub fn check_achievements(
-        &mut self,
-        shift_earnings: u32,
-        shift_survived: bool,
-        shift_violations: u32,
-    ) -> Vec<String> {
+    pub fn check_achievements(&mut self, shift: Option<FinishedShift>) -> Vec<String> {
         let mut newly_unlocked = Vec::new();
         #[cfg(not(target_arch = "wasm32"))]
         let now = {
@@ -371,14 +389,29 @@ impl PlayerStats {
             .filter(|e| e.knowledge_level >= 3)
             .count();
 
-        let conditions = [
+        // Lifetime conditions: true whenever they become true, so any caller
+        // may ask.
+        let mut conditions = vec![
             ("first_shift", self.total_shifts_completed >= 1),
             ("survivor", self.survival_bonuses >= 10),
-            ("perfect_shift", shift_survived && shift_violations == 0),
-            ("big_earner", shift_earnings >= 500),
             ("almanac_scholar", mastered >= 5),
             ("skill_collector", self.unlocked_skills.len() >= 3),
         ];
+
+        // Shift conditions only exist when a shift has just ended. They used
+        // to be three loose `u32`/`bool` parameters, and the two menu callers
+        // -- buying a skill, upgrading the almanac, both of which are here only
+        // for `skill_collector` and `almanac_scholar` -- passed
+        // `game_state.earnings` and `game_state.rules_violated` from a shift
+        // that had already finished, plus a hardcoded `false` for survived.
+        // Nothing misfired, because the real shift-end call had already run
+        // with the same numbers; but there was no way for a caller to say "no
+        // shift here" and the next earnings-based achievement would have
+        // unlocked from the skill tree.
+        if let Some(shift) = shift {
+            conditions.push(("perfect_shift", shift.survived && shift.violations == 0));
+            conditions.push(("big_earner", shift.earnings >= 500));
+        }
 
         for (id, met) in conditions {
             if met && self.unlock_achievement(id, now.clone()) {
@@ -403,6 +436,61 @@ mod tests {
         state.rides_completed = rides;
         state.rules_violated = violations;
         state
+    }
+
+    /// A check made outside a shift cannot unlock a shift achievement.
+    ///
+    /// This was three loose parameters, and the two menu callers filled them
+    /// from a `GameState` whose shift had already ended -- last night's
+    /// earnings, last night's violations, and a hardcoded `false`. Nothing
+    /// misfired then, because the shift-end call had already run with the same
+    /// numbers, but there was no way to say "no shift here" and the next
+    /// earnings-based achievement would have unlocked from the skill tree.
+    #[test]
+    fn a_menu_check_cannot_unlock_a_shift_achievement() {
+        let constants = crate::data::loader::load_constants();
+        let mut finished = GameState::new(0.0, &constants.game_constants);
+        finished.earnings = 900;
+        finished.rules_violated = 0;
+
+        let mut from_menu = PlayerStats::new();
+        from_menu.init_achievements();
+        let unlocked = from_menu.check_achievements(None);
+        assert!(
+            !unlocked.iter().any(|id| id == "big_earner"),
+            "the skill tree paid out an achievement for earning money"
+        );
+        assert!(
+            !unlocked.iter().any(|id| id == "perfect_shift"),
+            "the skill tree paid out an achievement for a clean shift"
+        );
+
+        let mut from_shift = PlayerStats::new();
+        from_shift.init_achievements();
+        let unlocked = from_shift.check_achievements(Some(FinishedShift::of(&finished, true)));
+        assert!(
+            unlocked.iter().any(|id| id == "big_earner"),
+            "a $900 shift did not earn big_earner"
+        );
+        assert!(
+            unlocked.iter().any(|id| id == "perfect_shift"),
+            "a clean surviving shift did not earn perfect_shift"
+        );
+    }
+
+    /// Lifetime achievements are askable from anywhere, which is the whole
+    /// reason the menu calls this at all -- buying a third skill has to pay out
+    /// without waiting for a shift to end.
+    #[test]
+    fn a_menu_check_still_unlocks_lifetime_achievements() {
+        let mut stats = PlayerStats::new();
+        stats.init_achievements();
+        stats.unlocked_skills = vec!["a".into(), "b".into(), "c".into()];
+        let unlocked = stats.check_achievements(None);
+        assert!(
+            unlocked.iter().any(|id| id == "skill_collector"),
+            "a third skill did not pay out from the skill tree"
+        );
     }
 
     /// A revealed story has to leave the almanac able to show it. Marking the

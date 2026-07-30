@@ -159,11 +159,8 @@ impl Game {
                 if let Some(ref data) = self.game_data {
                     if let Some(skill) = data.skills.iter().find(|s| s.id == skill_id) {
                         if self.player_stats.purchase_skill(&skill.id, skill.cost) {
-                            let unlocked = self.player_stats.check_achievements(
-                                self.game_state.earnings,
-                                false,
-                                self.game_state.rules_violated,
-                            );
+                            // No shift here: this is the skill tree.
+                            let unlocked = self.player_stats.check_achievements(None);
                             self.pay_achievement_rewards(&unlocked);
                             self.save_stats();
                         }
@@ -193,11 +190,8 @@ impl Game {
                         .player_stats
                         .upgrade_almanac_knowledge(passenger_id, cost)
                     {
-                        let unlocked = self.player_stats.check_achievements(
-                            self.game_state.earnings,
-                            false,
-                            self.game_state.rules_violated,
-                        );
+                        // No shift here: this is the almanac.
+                        let unlocked = self.player_stats.check_achievements(None);
                         self.pay_achievement_rewards(&unlocked);
                         self.save_stats();
                     }
