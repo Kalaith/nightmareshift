@@ -7,7 +7,7 @@
 //! and neither can drift from the authored rewards.
 
 use crate::data::{GameData, NeedType, Passenger, TellIntensity};
-use crate::engine::GameEngine;
+use crate::engine::{GameEngine, RideService};
 use crate::state::NeedStage;
 
 /// One revealed fact about a passenger.
@@ -75,13 +75,27 @@ fn intensity_label(intensity: TellIntensity) -> &'static str {
 ///
 /// Returns an empty list at level 0 — an unstudied passenger reveals nothing
 /// beyond what the ride request already shows.
-/// `tonight` is the shift in progress, used to say whether the relief this
-/// passenger needs is even available. Pass `None` from anywhere outside a shift.
+/// What the driver brings to a reading: the shift in progress and what they
+/// have unlocked.
+///
+/// A struct rather than more parameters. Two of these lines were facts that
+/// should have been plans -- the relief that needs its rule on tonight's board,
+/// and the traits that need the matching skill bought -- and each fix wanted a
+/// different piece of context. Growing the argument list a fourth time is how a
+/// call site starts passing the wrong thing.
+pub struct DriverContext<'a> {
+    pub shift: &'a crate::state::GameState,
+    pub stats: &'a crate::state::PlayerStats,
+}
+
+/// `driver` is the shift in progress and what the driver has unlocked, used to
+/// say whether what this passenger needs is actually available. Pass `None`
+/// from anywhere outside a shift.
 pub fn build(
     passenger: &Passenger,
     knowledge_level: u32,
     data: Option<&GameData>,
-    tonight: Option<&crate::state::GameState>,
+    driver: Option<&DriverContext>,
 ) -> Vec<DossierLine> {
     let mut lines = Vec::new();
 
@@ -102,7 +116,41 @@ pub fn build(
             ));
         }
         if !passenger.traits.is_empty() {
-            lines.push(DossierLine::new("Traits", passenger.traits.join(", "), 1));
+            // Which of these the driver can actually call on.
+            //
+            // A trait is half a mechanic: the other half is the matching
+            // `ability_unlock` skill, and without it the trait grants nothing.
+            // Listing them unqualified is the same fault the relief line had --
+            // a fact where a plan was wanted. The skill tree already counts
+            // this from the other side, telling the player how many carriers of
+            // a trait they have studied.
+            let usable: Vec<&str> = driver
+                .map(|driver| {
+                    passenger
+                        .traits
+                        .iter()
+                        .filter(|name| {
+                            driver
+                                .stats
+                                .is_skill_unlocked(&RideService::trait_skill_id(name))
+                        })
+                        .map(String::as_str)
+                        .collect()
+                })
+                .unwrap_or_default();
+            let value = match usable.as_slice() {
+                [] if driver.is_some() => format!(
+                    "{} - you are trained in none of these",
+                    passenger.traits.join(", ")
+                ),
+                [] => passenger.traits.join(", "),
+                trained => format!(
+                    "{} - you can call on {}",
+                    passenger.traits.join(", "),
+                    trained.join(" and ")
+                ),
+            };
+            lines.push(DossierLine::new("Traits", value, 1));
         }
     }
 
@@ -183,11 +231,12 @@ pub fn build(
                     // actionable only by luck. `passengers_rule_in_force` is
                     // the same lookup the obey pressure and the follow reward
                     // already use.
-                    let in_force = tonight.map(|shift| {
-                        shift
+                    let in_force = driver.map(|driver| {
+                        driver
+                            .shift
                             .current_rules
                             .iter()
-                            .chain(shift.hidden_rules.iter())
+                            .chain(driver.shift.hidden_rules.iter())
                             .any(|rule| rule.related_guideline_id == Some(guideline.id))
                     });
                     let availability = match in_force {
@@ -415,6 +464,78 @@ mod tests {
         assert!(named > 0, "no passenger authors an exception any more");
     }
 
+    /// The traits line says which of them the driver can actually call on.
+    ///
+    /// A trait is half a mechanic. The other half is the matching
+    /// `ability_unlock` skill, and without it the trait grants nothing -- so
+    /// listing them unqualified was a fact where a plan was wanted, the same
+    /// fault the relief line had.
+    #[test]
+    fn the_traits_line_says_which_ones_the_driver_is_trained_in() {
+        use crate::data::loader::load_constants;
+        use crate::engine::RideService;
+        use crate::state::{GameState, PlayerStats};
+
+        let data = GameData::load();
+        let constants = load_constants();
+        let shift = GameState::new(0.0, &constants.game_constants);
+        let passenger = load_passengers()
+            .into_iter()
+            .find(|p| !p.traits.is_empty())
+            .expect("a passenger with traits");
+        let first = passenger.traits[0].clone();
+
+        let traits_line = |stats: &PlayerStats| {
+            let driver = DriverContext {
+                shift: &shift,
+                stats,
+            };
+            build(&passenger, 1, Some(&data), Some(&driver))
+                .into_iter()
+                .find(|line| line.label == "Traits")
+                .map(|line| line.value)
+                .expect("a traits line")
+        };
+
+        let untrained = traits_line(&PlayerStats::new());
+        assert!(
+            untrained.contains("trained in none"),
+            "an untrained driver was not told so: {untrained:?}"
+        );
+
+        let mut trained_stats = PlayerStats::new();
+        trained_stats
+            .unlocked_skills
+            .push(RideService::trait_skill_id(&first));
+        let trained = traits_line(&trained_stats);
+        assert!(
+            trained.contains(&format!("call on {first}")),
+            "a trained driver was not told which trait they could use: {trained:?}"
+        );
+        assert!(
+            !trained.contains("trained in none"),
+            "a trained driver was told they had nothing: {trained:?}"
+        );
+    }
+
+    /// Outside a shift the line makes no claim about training, since there is
+    /// no driver to ask.
+    #[test]
+    fn without_a_driver_the_traits_line_only_lists() {
+        let data = GameData::load();
+        let passenger = load_passengers()
+            .into_iter()
+            .find(|p| !p.traits.is_empty())
+            .expect("a passenger with traits");
+
+        let listed = build(&passenger, 1, Some(&data), None)
+            .into_iter()
+            .find(|line| line.label == "Traits")
+            .map(|line| line.value)
+            .expect("a traits line");
+        assert_eq!(listed, passenger.traits.join(", "));
+    }
+
     /// The relief line says whether the rule is actually in force.
     ///
     /// Breaking a guideline does nothing unless the rule it belongs to was
@@ -437,8 +558,13 @@ mod tests {
             .find(|p| p.id == 1)
             .expect("Mrs. Chen");
 
+        let stats = crate::state::PlayerStats::new();
         let relief_with = |shift: &GameState| {
-            build(&chen, 3, Some(&data), Some(shift))
+            let driver = DriverContext {
+                shift,
+                stats: &stats,
+            };
+            build(&chen, 3, Some(&data), Some(&driver))
                 .into_iter()
                 .find(|line| line.label == "Relief")
                 .map(|line| line.value)
@@ -483,7 +609,12 @@ mod tests {
             .filter(|rule| rule.id == 1)
             .collect();
 
-        let said = build(&chen, 3, Some(&data), Some(&shift))
+        let stats = crate::state::PlayerStats::new();
+        let driver = DriverContext {
+            shift: &shift,
+            stats: &stats,
+        };
+        let said = build(&chen, 3, Some(&data), Some(&driver))
             .into_iter()
             .find(|line| line.label == "Relief")
             .map(|line| line.value)
