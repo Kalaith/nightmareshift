@@ -30,18 +30,27 @@
     Runs are close to reproducible but not guaranteed. Nothing calls `srand`,
     so the RNG starts from the same state every process — three pooled repeats
     once returned byte-identical cells. But the bot acts on elapsed time, so
-    frame timing decides how many rng draws happen before each decision, and
-    two runs of the same build have differed by a couple of shifts in twenty.
+    frame timing decides how many rng draws happen before each decision.
 
-    Treat a small movement as possible timing jitter and a large one as a real
-    change. If a number matters, run the cell again before acting on it.
+    HOW MANY SHIFTS: at least 60. The default was 20 for a while and 20 is too
+    few to say anything. Across repeated runs of identical builds the
+    almanac-only cell read 30, 40, 45 and 55 percent — a 25-point spread that
+    is entirely sampling noise, and wide enough to invent an improvement or
+    hide a regression. Several nights of reported numbers were not worth the
+    space they took up.
+
+    At 60 the same cell read 57 and 57 on back-to-back runs, and the four cells
+    came out ordered both times (2/57/13/82, then 0/57/23/78). Skills-only is
+    still the loosest of the four — 13 against 23 — so treat a ten-point move
+    there as nothing. It costs about three times the wall clock, which is the
+    honest price of a number you can quote.
 
 .EXAMPLE
     ./scripts/measure-progression.ps1
-    ./scripts/measure-progression.ps1 -Shifts 40
+    ./scripts/measure-progression.ps1 -Shifts 120
 #>
 param(
-    [int]$Shifts = 20,
+    [int]$Shifts = 60,
     [ValidateSet("coverage", "conservative", "learned")]
     [string]$Strategy = "learned",
     [int]$DelayMs = 0
