@@ -260,7 +260,10 @@ pub fn draw_leaderboard(player_stats: &PlayerStats, game_data: Option<&GameData>
             } else {
                 colors::BORDER_DIM
             };
-            let card_h = 82.0;
+            // Room for the progress line on a locked card that counts toward
+            // something; an unlocked one has nothing left to say.
+            let counts = !unlocked && player_stats.achievement_progress(&achievement.id).is_some();
+            let card_h = if counts { 100.0 } else { 82.0 };
             let card_rect = UiRect::new(right_inner.x, achievements_y, right_inner.w, card_h);
             draw_rectangle(
                 card_rect.x,
@@ -308,7 +311,7 @@ pub fn draw_leaderboard(player_stats: &PlayerStats, game_data: Option<&GameData>
             );
 
             // Description
-            draw_wrapped_text(
+            let description_bottom = draw_wrapped_text(
                 &achievement.description,
                 card_rect.x + 18.0,
                 card_rect.y + 48.0,
@@ -318,6 +321,25 @@ pub fn draw_leaderboard(player_stats: &PlayerStats, game_data: Option<&GameData>
                 colors::TEXT_MUTED,
                 2,
             );
+
+            // How close, for the ones that count toward something.
+            //
+            // Four of the six do, and the save has tracked all four all
+            // along -- two of the counters, `survival_bonuses` and
+            // `highest_shift_earnings`, appeared on no screen anywhere. So a
+            // card stated a goal, the save knew the answer, and the player was
+            // told only "Locked".
+            if !unlocked {
+                if let Some(progress) = player_stats.achievement_progress(&achievement.id) {
+                    draw_small_caps(
+                        &progress,
+                        card_rect.x + 18.0,
+                        description_bottom + 4.0,
+                        fonts::SIZE_XS,
+                        colors::ACCENT_GOLD,
+                    );
+                }
+            }
             achievements_y += card_h + 10.0;
             if achievements_y > right_panel.bottom() - 34.0 {
                 break;

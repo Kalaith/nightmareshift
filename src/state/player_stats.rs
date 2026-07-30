@@ -45,6 +45,19 @@ where
     })
 }
 
+/// What each countable achievement asks for.
+///
+/// Named once because they are needed twice: `check_achievements` tests them,
+/// and `achievement_progress` prints how close the driver is. Two copies of a
+/// threshold is how a card ends up promising something the condition does not
+/// grant, which this project has now been bitten by in two other places.
+pub mod achievement_targets {
+    pub const SHIFTS_SURVIVED: u32 = 10;
+    pub const SINGLE_SHIFT_EARNINGS: u32 = 500;
+    pub const PASSENGERS_MASTERED: usize = 5;
+    pub const SKILLS_UNLOCKED: usize = 3;
+}
+
 /// The three facts about a just-finished shift that achievements ask about.
 ///
 /// Built from the state rather than passed as loose values, for the same reason
@@ -351,6 +364,50 @@ impl PlayerStats {
         ]
     }
 
+    /// How many passengers the driver has taken to the top almanac level.
+    pub fn passengers_mastered(&self) -> usize {
+        self.almanac_progress
+            .values()
+            .filter(|entry| entry.knowledge_level >= 3)
+            .count()
+    }
+
+    /// How close the driver is to an achievement, in that achievement's own
+    /// terms, or `None` for one that cannot be part-done.
+    ///
+    /// Four of the six count toward something and the save has been tracking
+    /// all four all along -- `survival_bonuses` and `highest_shift_earnings`
+    /// were tracked and displayed nowhere at all. So a card said "Survivor --
+    /// Survive 10 shifts -- Locked" while the number that measures it sat in
+    /// the save unreadable. `first_shift` and `perfect_shift` are pass or fail
+    /// on a single night and have nothing to count.
+    pub fn achievement_progress(&self, achievement_id: &str) -> Option<String> {
+        use achievement_targets as target;
+        match achievement_id {
+            "survivor" => Some(format!(
+                "{} / {} shifts survived",
+                self.survival_bonuses.min(target::SHIFTS_SURVIVED),
+                target::SHIFTS_SURVIVED
+            )),
+            "big_earner" => Some(format!(
+                "best night ${} of ${}",
+                self.highest_shift_earnings,
+                target::SINGLE_SHIFT_EARNINGS
+            )),
+            "almanac_scholar" => Some(format!(
+                "{} / {} passengers mastered",
+                self.passengers_mastered().min(target::PASSENGERS_MASTERED),
+                target::PASSENGERS_MASTERED
+            )),
+            "skill_collector" => Some(format!(
+                "{} / {} skills unlocked",
+                self.unlocked_skills.len().min(target::SKILLS_UNLOCKED),
+                target::SKILLS_UNLOCKED
+            )),
+            _ => None,
+        }
+    }
+
     /// Reconcile the achievement registry with the current definitions.
     /// Safe to call every load: unlock state and dates are preserved.
     pub fn init_achievements(&mut self) {
@@ -383,19 +440,24 @@ impl PlayerStats {
         #[cfg(target_arch = "wasm32")]
         let now = "Today".to_string();
 
-        let mastered = self
-            .almanac_progress
-            .values()
-            .filter(|e| e.knowledge_level >= 3)
-            .count();
+        let mastered = self.passengers_mastered();
 
         // Lifetime conditions: true whenever they become true, so any caller
         // may ask.
         let mut conditions = vec![
             ("first_shift", self.total_shifts_completed >= 1),
-            ("survivor", self.survival_bonuses >= 10),
-            ("almanac_scholar", mastered >= 5),
-            ("skill_collector", self.unlocked_skills.len() >= 3),
+            (
+                "survivor",
+                self.survival_bonuses >= achievement_targets::SHIFTS_SURVIVED,
+            ),
+            (
+                "almanac_scholar",
+                mastered >= achievement_targets::PASSENGERS_MASTERED,
+            ),
+            (
+                "skill_collector",
+                self.unlocked_skills.len() >= achievement_targets::SKILLS_UNLOCKED,
+            ),
         ];
 
         // Shift conditions only exist when a shift has just ended. They used
@@ -410,7 +472,10 @@ impl PlayerStats {
         // unlocked from the skill tree.
         if let Some(shift) = shift {
             conditions.push(("perfect_shift", shift.survived && shift.violations == 0));
-            conditions.push(("big_earner", shift.earnings >= 500));
+            conditions.push((
+                "big_earner",
+                shift.earnings >= achievement_targets::SINGLE_SHIFT_EARNINGS,
+            ));
         }
 
         for (id, met) in conditions {
@@ -436,6 +501,107 @@ mod tests {
         state.rides_completed = rides;
         state.rules_violated = violations;
         state
+    }
+
+    /// Progress reaching its target has to be the same moment the achievement
+    /// unlocks.
+    ///
+    /// This is the drift test. The threshold a card prints and the threshold the
+    /// condition tests both come from `achievement_targets` precisely so they
+    /// cannot disagree, and this walks each countable achievement to the line
+    /// and checks it fires. A card promising "10 / 10 shifts survived" while
+    /// still reading Locked is the failure being guarded against.
+    #[test]
+    fn hitting_the_stated_target_unlocks_the_achievement() {
+        use achievement_targets as target;
+        let constants = crate::data::loader::load_constants();
+
+        let mut stats = PlayerStats::new();
+        stats.init_achievements();
+        stats.survival_bonuses = target::SHIFTS_SURVIVED;
+        assert!(stats
+            .check_achievements(None)
+            .iter()
+            .any(|id| id == "survivor"));
+
+        let mut stats = PlayerStats::new();
+        stats.init_achievements();
+        stats.unlocked_skills = (0..target::SKILLS_UNLOCKED)
+            .map(|n| n.to_string())
+            .collect();
+        assert!(stats
+            .check_achievements(None)
+            .iter()
+            .any(|id| id == "skill_collector"));
+
+        let mut stats = PlayerStats::new();
+        stats.init_achievements();
+        for passenger_id in 0..target::PASSENGERS_MASTERED as u32 {
+            stats.almanac_progress.insert(
+                passenger_id,
+                AlmanacEntry {
+                    passenger_id,
+                    encountered: true,
+                    knowledge_level: 3,
+                },
+            );
+        }
+        assert_eq!(stats.passengers_mastered(), target::PASSENGERS_MASTERED);
+        assert!(stats
+            .check_achievements(None)
+            .iter()
+            .any(|id| id == "almanac_scholar"));
+
+        let mut stats = PlayerStats::new();
+        stats.init_achievements();
+        let mut shift = GameState::new(0.0, &constants.game_constants);
+        shift.earnings = target::SINGLE_SHIFT_EARNINGS;
+        assert!(stats
+            .check_achievements(Some(FinishedShift::of(&shift, false)))
+            .iter()
+            .any(|id| id == "big_earner"));
+    }
+
+    /// Every countable achievement reports progress, and the two that are pass
+    /// or fail on a single night report none rather than a meaningless "0 / 1".
+    #[test]
+    fn only_the_countable_achievements_report_progress() {
+        let stats = PlayerStats::new();
+        for id in [
+            "survivor",
+            "big_earner",
+            "almanac_scholar",
+            "skill_collector",
+        ] {
+            assert!(
+                stats.achievement_progress(id).is_some(),
+                "{id} counts toward something but reports no progress"
+            );
+        }
+        for id in ["first_shift", "perfect_shift"] {
+            assert!(
+                stats.achievement_progress(id).is_none(),
+                "{id} cannot be part-done and should report nothing"
+            );
+        }
+    }
+
+    /// Progress never overstates itself. Surviving fifteen shifts still reads
+    /// ten of ten rather than fifteen of ten.
+    #[test]
+    fn progress_does_not_run_past_its_target() {
+        use achievement_targets as target;
+        let mut stats = PlayerStats::new();
+        stats.survival_bonuses = target::SHIFTS_SURVIVED + 5;
+        let line = stats.achievement_progress("survivor").expect("a line");
+        assert!(
+            line.starts_with(&format!(
+                "{} / {}",
+                target::SHIFTS_SURVIVED,
+                target::SHIFTS_SURVIVED
+            )),
+            "progress overshot its target: {line:?}"
+        );
     }
 
     /// A check made outside a shift cannot unlock a shift achievement.
