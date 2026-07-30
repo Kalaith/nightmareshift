@@ -94,6 +94,8 @@
         "pickup": "Driving to pickup...",
         "destination": "Driving to destination...",
         "blocked": "🚫 BLOCKED",
+        "noFuel": "Not enough fuel",
+        "noTime": "Not enough time",
         "nightWarning": "⚠️ Night driving!",
         "weatherWarning": "⚠️ {} weather!",
         "routes": {

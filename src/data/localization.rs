@@ -178,6 +178,10 @@ pub struct DrivingStrings {
     pub pickup: String,
     pub destination: String,
     pub blocked: String,
+    #[serde(rename = "noFuel")]
+    pub no_fuel: String,
+    #[serde(rename = "noTime")]
+    pub no_time: String,
     #[serde(rename = "nightWarning")]
     pub night_warning: String,
     #[serde(rename = "weatherWarning")]

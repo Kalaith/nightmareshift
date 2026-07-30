@@ -70,6 +70,13 @@ impl Game {
                 self.game_state.game_phase = GamePhase::Driving;
                 self.game_state.driving_phase = Some(DrivingPhase::Pickup);
             }
+            // Down to the dregs, so the routes the cab cannot reach say why.
+            "driving_broke" => {
+                self.begin_capture_scene("driving");
+                self.game_state.fuel = 9.0;
+                self.game_state.time_remaining = 14;
+                self.game_state.earnings = 212;
+            }
             // The same road with a hazard closing one of the routes, which
             // draws a different card entirely and had never been looked at.
             "driving_blocked" => {

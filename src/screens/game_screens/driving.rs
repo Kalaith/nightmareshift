@@ -285,8 +285,23 @@ pub fn draw_driving(
             let (time_cost, fuel_cost, risk) = (quote.time, quote.fuel, quote.risk);
             // A route you cannot pay for is a lost shift the moment you pick
             // it, so it is refused here rather than in `validate_resources`.
-            let unaffordable =
-                (game_state.fuel as u32) < quote.fuel || game_state.time_remaining < quote.time;
+            // Why a route cannot be taken, not merely that it cannot.
+            //
+            // An unaffordable card was drawn exactly like an open one -- name,
+            // costs, risk tags -- and simply did not respond to a click. A
+            // blocked route at least said BLOCKED. So the driver clicked a road
+            // that looked available, nothing happened, and nothing on screen
+            // explained it. This says which of the two ran out.
+            let short_of_fuel = (game_state.fuel as u32) < quote.fuel;
+            let short_of_time = game_state.time_remaining < quote.time;
+            let unaffordable = short_of_fuel || short_of_time;
+            let shortfall = if short_of_fuel {
+                Some(data.localization.ui.game.driving.no_fuel.as_str())
+            } else if short_of_time {
+                Some(data.localization.ui.game.driving.no_time.as_str())
+            } else {
+                None
+            };
             let selectable = !is_blocked && !unaffordable;
 
             let card = UiRect::new(left_x, route_y, left_w, route_h);
@@ -372,8 +387,25 @@ pub fn draw_driving(
                     fonts::SIZE_MD,
                     route_title_color,
                 );
-                if let Some((label, color)) = &preference_label {
-                    draw_small_caps(label, card.x + 176.0, card.y + 25.0, fonts::SIZE_XS, *color);
+                // The shortfall takes the slot the client reaction uses, since
+                // a road the cab cannot reach matters more than how the fare
+                // feels about it.
+                match (&shortfall, &preference_label) {
+                    (Some(reason), _) => draw_small_caps(
+                        reason,
+                        card.x + 176.0,
+                        card.y + 25.0,
+                        fonts::SIZE_XS,
+                        colors::FUEL_CRITICAL,
+                    ),
+                    (None, Some((label, color))) => draw_small_caps(
+                        label,
+                        card.x + 176.0,
+                        card.y + 25.0,
+                        fonts::SIZE_XS,
+                        *color,
+                    ),
+                    (None, None) => {}
                 }
                 draw_ui_text(
                     route_detail,
