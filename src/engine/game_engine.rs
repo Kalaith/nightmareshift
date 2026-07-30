@@ -380,7 +380,25 @@ impl GameEngine {
     }
 
     /// Calculate fare with all modifiers
-    pub fn calculate_fare(
+    /// How far either way the meter can land off the settled figure, and the
+    /// floor no fare falls below.
+    ///
+    /// Named because two places need them: the payout rolls inside this band and
+    /// the ride offer has to quote a range wide enough to contain wherever it
+    /// lands. A quote that excludes the roll is a quote the payout can fall
+    /// outside of.
+    pub const FARE_VARIATION: f32 = 5.0;
+    pub const MINIMUM_FARE: f32 = 5.0;
+
+    /// The fare before the meter's own wobble -- everything that is decided
+    /// rather than rolled.
+    ///
+    /// Split out because `calculate_fare` cannot be asked what a road pays: it
+    /// rolls each time it is called, so four calls are four samples rather than
+    /// four roads. Calling it per route from a draw function would have made the
+    /// number on screen flicker every frame.
+    #[allow(clippy::too_many_arguments)]
+    pub fn fare_before_variation(
         base_fare: u32,
         route: RouteType,
         passenger: &Passenger,
@@ -388,8 +406,7 @@ impl GameEngine {
         reputation: Option<&PassengerReputation>,
         constants: &ConstantsData,
         destination_fare_modifier: f32,
-    ) -> u32 {
-        // Route fare multiplier
+    ) -> f32 {
         let route_mult = match route {
             RouteType::Shortcut => constants.route_fares.shortcut,
             RouteType::Normal => constants.route_fares.normal,
@@ -397,13 +414,11 @@ impl GameEngine {
             RouteType::Police => constants.route_fares.police,
         };
 
-        // Passenger preference multiplier
         let pref_mult = passenger
             .get_route_preference(route)
             .map(|p| p.fare_modifier)
             .unwrap_or(1.0);
 
-        // Consecutive route penalty
         let streak_mult = if let Some(streak) = consecutive_streak {
             if streak.route_type == route && streak.count >= 2 {
                 1.0 - (streak.count - 1) as f32 * constants.consecutive_route.penalty_per_repeat
@@ -414,23 +429,41 @@ impl GameEngine {
             1.0
         };
 
-        // Reputation multiplier
         let rep_mult = reputation
             .map(|r| r.fare_multiplier(&constants.reputation))
             .unwrap_or(1.0);
 
-        // Calculate with all multipliers
-        let fare = base_fare as f32
+        base_fare as f32
             * route_mult
             * pref_mult
             * streak_mult
             * rep_mult
-            * destination_fare_modifier;
+            * destination_fare_modifier
+    }
 
-        // Add variation (±$5)
-        let variation = macroquad_toolkit::rng::gen_range(-5.0, 5.0);
+    pub fn calculate_fare(
+        base_fare: u32,
+        route: RouteType,
+        passenger: &Passenger,
+        consecutive_streak: Option<&RouteStreak>,
+        reputation: Option<&PassengerReputation>,
+        constants: &ConstantsData,
+        destination_fare_modifier: f32,
+    ) -> u32 {
+        let fare = Self::fare_before_variation(
+            base_fare,
+            route,
+            passenger,
+            consecutive_streak,
+            reputation,
+            constants,
+            destination_fare_modifier,
+        );
 
-        (fare + variation).max(5.0) as u32
+        let variation =
+            macroquad_toolkit::rng::gen_range(-Self::FARE_VARIATION, Self::FARE_VARIATION);
+
+        (fare + variation).max(Self::MINIMUM_FARE) as u32
     }
 }
 

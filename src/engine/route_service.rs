@@ -1,6 +1,7 @@
 //! Route cost calculation service.
 
 use crate::data::*;
+use crate::engine::GameEngine;
 use crate::state::{GameState, PlayerStats};
 use std::collections::hash_map::DefaultHasher;
 use std::collections::HashMap;
@@ -60,6 +61,64 @@ impl RouteService {
             &stats.route_mastery_map(),
             state.current_passenger.as_ref(),
             &crate::engine::SkillModifiers::from_unlocked(&data.skills, &stats.unlocked_skills),
+        )
+    }
+
+    /// What a passenger would pay on each road, smallest and largest.
+    ///
+    /// The ride offer showed `passenger.fare`, the raw authored base, while the
+    /// payout runs it through the route's multiplier, the passenger's feeling
+    /// about that route, the repeat-route penalty, the driver's standing with
+    /// them, the destination's modifier and the fare skills. Every one of those
+    /// is already known when the offer is on screen -- the destination is
+    /// printed on the same card -- so the number the driver was shown could be
+    /// most of a third under what they would actually earn.
+    ///
+    /// Both ends come from `GameEngine::calculate_fare` itself, called once per
+    /// route, so the offer cannot drift from the payout. The spread is the road
+    /// not yet chosen and nothing else.
+    pub fn fare_range(
+        passenger: &Passenger,
+        state: &GameState,
+        data: &GameData,
+        stats: &PlayerStats,
+    ) -> (u32, u32) {
+        let skill_mods =
+            crate::engine::SkillModifiers::from_unlocked(&data.skills, &stats.unlocked_skills);
+        let destination_fare_modifier = data
+            .get_location(&passenger.destination)
+            .map(|location| location.fare_modifier)
+            .unwrap_or(1.0)
+            * skill_mods.fare_mult;
+        let reputation = state.passenger_reputation.get(&passenger.id);
+
+        let (low, high) = [
+            RouteType::Normal,
+            RouteType::Shortcut,
+            RouteType::Scenic,
+            RouteType::Police,
+        ]
+        .into_iter()
+        .map(|route| {
+            GameEngine::fare_before_variation(
+                passenger.fare,
+                route,
+                passenger,
+                state.consecutive_route_streak.as_ref(),
+                reputation,
+                &data.constants,
+                destination_fare_modifier,
+            )
+        })
+        .fold((f32::MAX, 0.0_f32), |(low, high), fare| {
+            (low.min(fare), high.max(fare))
+        });
+
+        // Widened by the meter's wobble at both ends, so the payout always
+        // lands inside the range the driver was quoted.
+        (
+            (low - GameEngine::FARE_VARIATION).max(GameEngine::MINIMUM_FARE) as u32,
+            (high + GameEngine::FARE_VARIATION).max(GameEngine::MINIMUM_FARE) as u32,
         )
     }
 
@@ -330,6 +389,139 @@ impl RouteService {
         };
 
         applies_to.eq_ignore_ascii_case(route.label()) || applies_to.eq_ignore_ascii_case("all")
+    }
+}
+
+#[cfg(test)]
+mod fare_tests {
+    use super::RouteService;
+    use crate::data::loader::{load_constants, load_passengers, GameData};
+    use crate::state::{GameState, PlayerStats, RelationshipLevel};
+
+    fn offer() -> (GameData, GameState, PlayerStats, crate::data::Passenger) {
+        let data = GameData::load();
+        let constants = load_constants();
+        let state = GameState::new(0.0, &constants.game_constants);
+        let passenger = load_passengers().into_iter().next().expect("a roster");
+        (data, state, PlayerStats::new(), passenger)
+    }
+
+    /// The offer quotes a range, because the road is not chosen yet and the
+    /// four of them pay differently. A single number could only ever be right
+    /// for one road.
+    #[test]
+    fn the_four_roads_do_not_all_pay_the_same() {
+        let (data, state, stats, passenger) = offer();
+        let (low, high) = RouteService::fare_range(&passenger, &state, &data, &stats);
+        assert!(low > 0, "the lowest road pays nothing");
+        assert!(
+            high > low,
+            "every road paid {low}, so the spread the offer shows is fictional"
+        );
+    }
+
+    /// Standing with a passenger reaches the quote. A Trusted fare pays more
+    /// than a stranger, and the offer said the same number for both.
+    #[test]
+    fn standing_raises_the_quoted_fare() {
+        let (data, mut state, stats, passenger) = offer();
+        let (_, stranger_high) = RouteService::fare_range(&passenger, &state, &data, &stats);
+
+        let reputation = state.get_passenger_reputation(passenger.id);
+        reputation.relationship_level = RelationshipLevel::Trusted;
+        let (_, trusted_high) = RouteService::fare_range(&passenger, &state, &data, &stats);
+
+        assert!(
+            trusted_high > stranger_high,
+            "a trusted fare quoted {trusted_high} against a stranger's {stranger_high}"
+        );
+    }
+
+    /// And so do the fare skills, which is half of what the skill tree sells.
+    #[test]
+    fn the_fare_skills_raise_the_quote() {
+        let (data, state, stats, passenger) = offer();
+        let (_, plain) = RouteService::fare_range(&passenger, &state, &data, &stats);
+
+        let mut skilled = PlayerStats::new();
+        skilled.unlocked_skills = data
+            .skills
+            .iter()
+            .filter(|skill| skill.effect.target == "fare_multiplier")
+            .map(|skill| skill.id.clone())
+            .collect();
+        assert!(
+            !skilled.unlocked_skills.is_empty(),
+            "no fare skills authored"
+        );
+        let (_, boosted) = RouteService::fare_range(&passenger, &state, &data, &skilled);
+
+        assert!(
+            boosted > plain,
+            "the fare skills quoted {boosted} against {plain}"
+        );
+    }
+
+    /// The quote has to contain whatever the payout lands on.
+    ///
+    /// This is the test that caught the first version of `fare_range`, which
+    /// called `calculate_fare` once per road. That function rolls a wobble of up
+    /// to five dollars either way on every call, so four calls were four samples
+    /// rather than four roads -- and since the range is built during drawing, the
+    /// number on screen would have changed every frame. It failed with "Scenic
+    /// pays 34, outside the quoted 5-33".
+    ///
+    /// Repeated because the payout is random: one draw inside the range proves
+    /// nothing about the next.
+    #[test]
+    fn the_quote_contains_whatever_the_meter_lands_on() {
+        use crate::data::RouteType;
+        use crate::engine::GameEngine;
+
+        let (data, state, stats, passenger) = offer();
+        let (low, high) = RouteService::fare_range(&passenger, &state, &data, &stats);
+        let destination_fare_modifier = data
+            .get_location(&passenger.destination)
+            .map(|location| location.fare_modifier)
+            .unwrap_or(1.0);
+
+        for _ in 0..400 {
+            for route in [
+                RouteType::Normal,
+                RouteType::Shortcut,
+                RouteType::Scenic,
+                RouteType::Police,
+            ] {
+                let paid = GameEngine::calculate_fare(
+                    passenger.fare,
+                    route,
+                    &passenger,
+                    None,
+                    None,
+                    &data.constants,
+                    destination_fare_modifier,
+                );
+                assert!(
+                    paid >= low && paid <= high,
+                    "{route:?} paid {paid}, outside the quoted {low}-{high}"
+                );
+            }
+        }
+    }
+
+    /// And the quote itself does not move between frames, which is what calling
+    /// the rolling function per road would have caused.
+    #[test]
+    fn the_quote_is_the_same_every_time_it_is_asked() {
+        let (data, state, stats, passenger) = offer();
+        let first = RouteService::fare_range(&passenger, &state, &data, &stats);
+        for _ in 0..200 {
+            assert_eq!(
+                RouteService::fare_range(&passenger, &state, &data, &stats),
+                first,
+                "the quoted fare changed between frames"
+            );
+        }
     }
 }
 

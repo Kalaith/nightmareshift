@@ -136,13 +136,27 @@ pub fn draw_ride_request(
         }
         y += 14.0;
 
-        draw_ui_text(
-            &format!("${}", passenger.fare),
-            info_x,
-            y,
-            fonts::SIZE_XL,
-            colors::ACCENT_GOLD,
-        );
+        // What this fare is worth, across the four roads. A single number here
+        // was the authored base, before standing, destination and fare skills,
+        // and the driver has to decide whether to take the ride on it.
+        let fare_text = match game_data {
+            Some(data) => {
+                let (low, high) = crate::engine::RouteService::fare_range(
+                    passenger,
+                    game_state,
+                    data,
+                    player_stats,
+                );
+                if low == high {
+                    format!("${low}")
+                } else {
+                    format!("${low} - ${high}")
+                }
+            }
+            None => format!("${}", passenger.fare),
+        };
+
+        draw_ui_text(&fare_text, info_x, y, fonts::SIZE_XL, colors::ACCENT_GOLD);
         y += 42.0;
 
         // What the almanac has bought you about this fare. Studying a
