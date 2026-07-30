@@ -192,6 +192,15 @@ pub struct InventoryItem {
     /// four hundred and eighty.
     #[serde(default)]
     pub curse_fired: bool,
+    /// How much of this item's charge age has already taken.
+    ///
+    /// `apply_deterioration` works out the total wear an item's age is worth and
+    /// so has to know how much of that it has already charged. Without this it
+    /// subtracted the running total on every frame the loop ran -- one point per
+    /// frame once past twenty minutes -- and wore anything with a charge count to
+    /// nothing almost the instant the clock passed.
+    #[serde(default)]
+    pub aged_by: u32,
 }
 
 impl InventoryItem {
@@ -254,13 +263,31 @@ impl InventoryItem {
     }
 
     /// Apply deterioration based on time
+    /// Wear this item by however much its age is worth and has not yet taken.
+    ///
+    /// The formula gives a *total* -- one point per ten minutes past a ten-minute
+    /// grace period -- so charging it as a delta is only correct once. It is
+    /// charged against `aged_by` rather than recomputed onto `durability`,
+    /// because a use spends a charge too and resetting from age alone would hand
+    /// those back.
     pub fn apply_deterioration(&mut self, current_time: f64) {
-        if let (Some(durability), Some(_max)) = (self.durability.as_mut(), self.max_durability) {
-            let age_minutes = (current_time - self.acquired_at) / 60.0;
-            if age_minutes > 10.0 {
-                let deterioration = ((age_minutes - 10.0) / 10.0) as u32;
-                *durability = durability.saturating_sub(deterioration);
-            }
+        if self.max_durability.is_none() {
+            return;
+        }
+        let Some(durability) = self.durability.as_mut() else {
+            return;
+        };
+
+        let age_minutes = (current_time - self.acquired_at) / 60.0;
+        if age_minutes <= 10.0 {
+            return;
+        }
+
+        let owed = ((age_minutes - 10.0) / 10.0) as u32;
+        let unpaid = owed.saturating_sub(self.aged_by);
+        if unpaid > 0 {
+            *durability = durability.saturating_sub(unpaid);
+            self.aged_by = owed;
         }
     }
 }
@@ -320,6 +347,7 @@ impl ItemCatalog {
             cursed_properties: template.cursed_properties,
             protective_properties: template.protective_properties,
             curse_fired: false,
+            aged_by: 0,
         }
     }
 }

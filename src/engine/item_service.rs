@@ -598,6 +598,118 @@ mod tests {
         );
     }
 
+    /// Age wears an item down by the amount age is worth, not by that amount
+    /// every frame.
+    ///
+    /// `apply_deterioration` computes `(age - 10) / 10` -- the total wear since
+    /// the item was picked up -- and then *subtracts* it, from a function the
+    /// frame loop calls sixty times a second. At twenty minutes of age that is
+    /// one point per frame, so anything with a charge count is worn to nothing
+    /// and swept out of the inventory almost the instant the clock passes.
+    #[test]
+    fn age_wears_an_item_down_once_per_step() {
+        let constants = load_constants();
+        let catalog = load_item_catalog();
+
+        let mut state = GameState::new(0.0, &constants.game_constants);
+        state
+            .inventory
+            .push(catalog.create_item("Rune Stone", "test", 0.0));
+        let (start, _) = state.inventory[0]
+            .uses_left()
+            .expect("the stone counts uses");
+
+        // Twenty-one minutes on: one full ten-minute step past the grace period.
+        let aged = 21.0 * 60.0;
+        ItemService::update_items(&mut state, aged);
+        let after_one = state.inventory[0]
+            .uses_left()
+            .map(|(left, _)| left)
+            .unwrap_or(0);
+
+        for frame in 1..=20 {
+            ItemService::update_items(&mut state, aged + frame as f64 * 0.016);
+        }
+        let after_many = state.inventory[0]
+            .uses_left()
+            .map(|(left, _)| left)
+            .unwrap_or(0);
+
+        assert!(after_one < start, "age did not wear the stone at all");
+        assert_eq!(
+            after_many, after_one,
+            "the stone kept wearing every frame: {after_many} against {after_one}"
+        );
+    }
+
+    /// Wear still accumulates across steps. Fixing the per-frame repeat must not
+    /// have stopped age mattering at all.
+    #[test]
+    fn wear_accumulates_across_steps() {
+        let constants = load_constants();
+        let catalog = load_item_catalog();
+        let mut state = GameState::new(0.0, &constants.game_constants);
+        state
+            .inventory
+            .push(catalog.create_item("Rune Stone", "test", 0.0));
+        let (start, _) = state.inventory[0].uses_left().expect("counted");
+
+        ItemService::update_items(&mut state, 21.0 * 60.0);
+        let one_step = state.inventory[0].uses_left().map(|(l, _)| l).unwrap_or(0);
+        ItemService::update_items(&mut state, 31.0 * 60.0);
+        let two_steps = state.inventory[0].uses_left().map(|(l, _)| l).unwrap_or(0);
+
+        assert!(one_step < start, "the first step took nothing");
+        assert!(
+            two_steps < one_step,
+            "the second step took nothing: {two_steps} against {one_step}"
+        );
+    }
+
+    /// A charge spent by using the item is not handed back by age.
+    ///
+    /// This is why the wear is charged against a running total rather than
+    /// recomputed onto `durability` from age alone: uses and age both spend from
+    /// the same pool, and recomputing would undo the uses.
+    #[test]
+    fn age_does_not_refund_a_spent_charge() {
+        let constants = load_constants();
+        let catalog = load_item_catalog();
+        let passengers = load_passengers();
+        let uncanny = passengers
+            .iter()
+            .find(|p| p.is_supernatural)
+            .expect("a supernatural fare");
+
+        let mut state = GameState::new(0.0, &constants.game_constants);
+        state.current_passenger = Some(uncanny.clone());
+        state
+            .inventory
+            .push(catalog.create_item("Prayer Beads", "test", 0.0));
+        let (start, _) = state.inventory[0].uses_left().expect("counted");
+
+        assert!(ItemService::use_item(
+            &mut state,
+            0,
+            &constants.reputation,
+            0.0
+        ));
+        let after_use = state.inventory[0].uses_left().map(|(l, _)| l).unwrap_or(0);
+        assert_eq!(after_use, start - 1);
+
+        // Now let it age a full step and check the use is still spent.
+        ItemService::update_items(&mut state, 21.0 * 60.0);
+        let after_age = state.inventory[0].uses_left().map(|(l, _)| l).unwrap_or(0);
+        assert!(
+            after_age < after_use,
+            "age took nothing: {after_age} against {after_use}"
+        );
+        assert!(
+            after_age <= start - 2,
+            "age handed the spent charge back: {after_age} of {start}"
+        );
+    }
+
     /// Every curse names itself when it bites.
     ///
     /// Three of the four penalties took their toll in silence: fuel and the
