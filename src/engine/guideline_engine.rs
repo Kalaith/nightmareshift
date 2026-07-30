@@ -130,7 +130,7 @@ impl GuidelineEngine {
     }
 
     /// Check if exception conditions are met
-    fn check_exception_conditions(
+    pub(crate) fn check_exception_conditions(
         exception: &GuidelineException,
         weather: &WeatherCondition,
         passenger: &Passenger,
@@ -367,6 +367,7 @@ impl GuidelineEngine {
 
 #[cfg(test)]
 mod tests {
+    use crate::data::environment::WeatherCondition;
     use crate::data::loader::{load_guidelines, load_passengers};
     use crate::data::ConsequenceType;
     use std::collections::HashSet;
@@ -603,5 +604,66 @@ mod tests {
             }
         }
         assert!(checked > 0, "no dialogue conditions found to check");
+    }
+
+    /// A passenger's own relief has to be something they can actually earn.
+    ///
+    /// Sixteen passengers each name an exception in `stateProfile.exceptionId`
+    /// and author an `exceptionRelief` -- 24 to 35 points off the need that is
+    /// about to break them -- and reading them right is the only way to spend
+    /// it. That makes the exception's conditions a promise to that specific
+    /// passenger, which is a stronger claim than the conditions merely being
+    /// satisfiable by somebody.
+    ///
+    /// Jake Morrison could not keep it. He is named on `shortcut_time_critical`
+    /// by id, points his own state profile at it, and every staged line he has
+    /// begs for a faster route -- "the thirst is unbearable, take the alleys".
+    /// The exception asks for stress above zero. `stressLevel` is
+    /// `serde(default)`, nine of the sixteen omit it, and 0.0 is not a calm
+    /// passenger but an unauthored one. So the vampire racing dawn could never
+    /// have his shortcut read as the right call, could never collect the 35, and
+    /// breaking the rule for him was never the safer play it is written to be.
+    ///
+    /// This checks both condition kinds, so it also covers the two dialogue
+    /// exceptions fixed alongside it.
+    #[test]
+    fn every_passenger_can_reach_the_relief_they_are_promised() {
+        let guidelines = load_guidelines();
+        let mut checked = 0;
+        for passenger in load_passengers() {
+            let Some(profile) = &passenger.state_profile else {
+                continue;
+            };
+            let Some(wanted) = &profile.exception_id else {
+                continue;
+            };
+            let found = guidelines
+                .iter()
+                .flat_map(|guideline| &guideline.exceptions)
+                .find(|exception| &exception.id == wanted);
+            let exception = found.unwrap_or_else(|| {
+                panic!(
+                    "{} relies on exception {wanted:?}, which no guideline authors",
+                    passenger.name
+                )
+            });
+            checked += 1;
+            assert!(
+                super::GuidelineEngine::passenger_matches_exception(&passenger, exception),
+                "{} points at exception {wanted:?} and is not eligible for it",
+                passenger.name
+            );
+            assert!(
+                super::GuidelineEngine::check_exception_conditions(
+                    exception,
+                    &WeatherCondition::default(),
+                    &passenger,
+                ),
+                "{} can never satisfy exception {wanted:?}, so the relief their \
+                 state profile authors is unreachable",
+                passenger.name
+            );
+        }
+        assert!(checked > 0, "no passenger relief to check");
     }
 }
