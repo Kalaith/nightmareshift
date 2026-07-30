@@ -75,10 +75,13 @@ fn intensity_label(intensity: TellIntensity) -> &'static str {
 ///
 /// Returns an empty list at level 0 — an unstudied passenger reveals nothing
 /// beyond what the ride request already shows.
+/// `tonight` is the shift in progress, used to say whether the relief this
+/// passenger needs is even available. Pass `None` from anywhere outside a shift.
 pub fn build(
     passenger: &Passenger,
     knowledge_level: u32,
     data: Option<&GameData>,
+    tonight: Option<&crate::state::GameState>,
 ) -> Vec<DossierLine> {
     let mut lines = Vec::new();
 
@@ -170,12 +173,35 @@ pub fn build(
                     })
                     .find(|(_, exception)| exception.id == exception_id)
                 {
+                    // Whether that rule is even in force tonight.
+                    //
+                    // Breaking a guideline does nothing unless the rule it
+                    // belongs to was drawn for this shift: without it the
+                    // action is not a violation, so no exception fires and no
+                    // relief is paid. The line named the rule and stopped,
+                    // which made a studied passenger's most useful fact
+                    // actionable only by luck. `passengers_rule_in_force` is
+                    // the same lookup the obey pressure and the follow reward
+                    // already use.
+                    let in_force = tonight.map(|shift| {
+                        shift
+                            .current_rules
+                            .iter()
+                            .chain(shift.hidden_rules.iter())
+                            .any(|rule| rule.related_guideline_id == Some(guideline.id))
+                    });
+                    let availability = match in_force {
+                        Some(true) => " - that rule is in force",
+                        Some(false) => " - but that rule is not in force tonight",
+                        None => "",
+                    };
                     lines.push(DossierLine::new(
                         "Relief",
                         format!(
-                            "break \"{}\" once {}",
+                            "break \"{}\" once {}{}",
                             guideline.title,
-                            stage_phrase(GameEngine::required_stage(exception))
+                            stage_phrase(GameEngine::required_stage(exception)),
+                            availability
                         ),
                         3,
                     ));
@@ -206,9 +232,9 @@ mod tests {
     fn every_level_reveals_more_for_every_passenger() {
         let data = GameData::load();
         for passenger in load_passengers() {
-            let mut previous = build(&passenger, 0, Some(&data)).len();
+            let mut previous = build(&passenger, 0, Some(&data), None).len();
             for level in 1..=3 {
-                let count = build(&passenger, level, Some(&data)).len();
+                let count = build(&passenger, level, Some(&data), None).len();
                 assert!(
                     count > previous,
                     "{} reveals nothing new at knowledge level {level}",
@@ -278,7 +304,7 @@ mod tests {
                 // here -- and none gains it a level earlier.
                 let gained_here = passengers.iter().any(|passenger| {
                     let has = |at| {
-                        build(passenger, at, Some(&data))
+                        build(passenger, at, Some(&data), None)
                             .iter()
                             .any(|line| line.label == label)
                     };
@@ -325,11 +351,11 @@ mod tests {
                 .collect();
 
             for passenger in load_passengers() {
-                let before: HashSet<String> = build(&passenger, level - 1, Some(&data))
+                let before: HashSet<String> = build(&passenger, level - 1, Some(&data), None)
                     .into_iter()
                     .map(|line| line.label)
                     .collect();
-                for line in build(&passenger, level, Some(&data)) {
+                for line in build(&passenger, level, Some(&data), None) {
                     if before.contains(&line.label) {
                         continue;
                     }
@@ -378,7 +404,7 @@ mod tests {
                 passenger.name
             );
 
-            let lines = build(&passenger, 3, Some(&data));
+            let lines = build(&passenger, 3, Some(&data), None);
             assert!(
                 lines.iter().any(|line| line.label == "Relief"),
                 "{} can be mastered without learning what settles them",
@@ -387,6 +413,106 @@ mod tests {
             named += 1;
         }
         assert!(named > 0, "no passenger authors an exception any more");
+    }
+
+    /// The relief line says whether the rule is actually in force.
+    ///
+    /// Breaking a guideline does nothing unless the rule it belongs to was
+    /// drawn for the shift: the action is not a violation, so no exception
+    /// fires and no relief is paid. Naming the rule without saying whether it
+    /// is on the board tonight made a studied passenger's most useful fact
+    /// actionable only by luck.
+    #[test]
+    fn the_relief_line_says_whether_the_rule_is_on_the_board() {
+        use crate::data::loader::{load_constants, load_rules};
+        use crate::state::GameState;
+
+        let data = GameData::load();
+        let constants = load_constants();
+        let rules = load_rules();
+
+        // Mrs. Chen's exception belongs to guideline 1001, which rule 1 owns.
+        let chen = load_passengers()
+            .into_iter()
+            .find(|p| p.id == 1)
+            .expect("Mrs. Chen");
+
+        let relief_with = |shift: &GameState| {
+            build(&chen, 3, Some(&data), Some(shift))
+                .into_iter()
+                .find(|line| line.label == "Relief")
+                .map(|line| line.value)
+                .expect("a relief line")
+        };
+
+        let mut holding = GameState::new(0.0, &constants.game_constants);
+        holding.current_rules = rules.iter().filter(|rule| rule.id == 1).cloned().collect();
+        assert_eq!(holding.current_rules.len(), 1, "rule 1 not found");
+        let said = relief_with(&holding);
+        assert!(
+            said.contains("in force") && !said.contains("not in force"),
+            "her rule was on the board and the line did not say so: {said:?}"
+        );
+
+        let mut without = GameState::new(0.0, &constants.game_constants);
+        without.current_rules = rules.iter().filter(|rule| rule.id != 1).cloned().collect();
+        let said = relief_with(&without);
+        assert!(
+            said.contains("not in force"),
+            "her rule was absent and the line still offered it: {said:?}"
+        );
+    }
+
+    /// A hidden rule counts. It is on the board even though the player cannot
+    /// read it, so breaking the guideline it owns does pay relief.
+    #[test]
+    fn a_hidden_rule_still_counts_as_in_force() {
+        use crate::data::loader::{load_constants, load_rules};
+        use crate::state::GameState;
+
+        let data = GameData::load();
+        let constants = load_constants();
+        let chen = load_passengers()
+            .into_iter()
+            .find(|p| p.id == 1)
+            .expect("Mrs. Chen");
+
+        let mut shift = GameState::new(0.0, &constants.game_constants);
+        shift.hidden_rules = load_rules()
+            .into_iter()
+            .filter(|rule| rule.id == 1)
+            .collect();
+
+        let said = build(&chen, 3, Some(&data), Some(&shift))
+            .into_iter()
+            .find(|line| line.label == "Relief")
+            .map(|line| line.value)
+            .expect("a relief line");
+        assert!(
+            !said.contains("not in force"),
+            "a hidden rule was treated as absent: {said:?}"
+        );
+    }
+
+    /// Outside a shift there is no board to check, so the line names the rule
+    /// and says nothing either way.
+    #[test]
+    fn without_a_shift_the_relief_line_makes_no_claim() {
+        let data = GameData::load();
+        let chen = load_passengers()
+            .into_iter()
+            .find(|p| p.id == 1)
+            .expect("Mrs. Chen");
+
+        let said = build(&chen, 3, Some(&data), None)
+            .into_iter()
+            .find(|line| line.label == "Relief")
+            .map(|line| line.value)
+            .expect("a relief line");
+        assert!(
+            !said.contains("in force"),
+            "a claim about tonight was made with no shift to check: {said:?}"
+        );
     }
 
     /// The stage the almanac quotes must be the stage the engine gates on.
@@ -416,7 +542,7 @@ mod tests {
             };
 
             let expected = stage_phrase(GameEngine::required_stage(exception));
-            let relief = build(&passenger, 3, Some(&data))
+            let relief = build(&passenger, 3, Some(&data), None)
                 .into_iter()
                 .find(|line| line.label == "Relief")
                 .expect("a relief line");
@@ -448,7 +574,7 @@ mod tests {
             };
             let thresholds = &profile.thresholds;
 
-            let line = build(&passenger, 1, None)
+            let line = build(&passenger, 1, None, None)
                 .into_iter()
                 .find(|l| l.label == "Need")
                 .unwrap_or_else(|| panic!("{} shows no need line at Lv.1", passenger.name));
@@ -499,7 +625,7 @@ mod tests {
             let Some(profile) = &passenger.state_profile else {
                 continue;
             };
-            let line = build(&passenger, 1, None)
+            let line = build(&passenger, 1, None, None)
                 .into_iter()
                 .find(|l| l.label == "Need")
                 .expect("a need line");
@@ -520,7 +646,7 @@ mod tests {
     #[test]
     fn the_listed_tells_are_the_ones_that_can_surface() {
         for passenger in load_passengers() {
-            let listed: Vec<String> = build(&passenger, 2, None)
+            let listed: Vec<String> = build(&passenger, 2, None, None)
                 .into_iter()
                 .filter(|l| l.label == "Tell")
                 .map(|l| l.value)
@@ -551,7 +677,11 @@ mod tests {
     #[test]
     fn unstudied_passengers_reveal_nothing() {
         for passenger in load_passengers() {
-            assert!(build(&passenger, 0, None).is_empty(), "{}", passenger.name);
+            assert!(
+                build(&passenger, 0, None, None).is_empty(),
+                "{}",
+                passenger.name
+            );
         }
     }
 

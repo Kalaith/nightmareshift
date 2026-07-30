@@ -150,7 +150,7 @@ pub fn draw_ride_request(
         let btn_h = 48.0;
         let dossier_limit = panel.bottom() - spacing::PADDING_MD - btn_h - 16.0;
         let knowledge = player_stats.get_almanac_entry(passenger.id).knowledge_level;
-        let lines = dossier::build(passenger, knowledge, game_data);
+        let lines = dossier::build(passenger, knowledge, game_data, Some(game_state));
         if !lines.is_empty() {
             draw_small_caps(
                 &format!("Almanac Lv.{}", knowledge),
