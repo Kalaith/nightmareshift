@@ -75,16 +75,24 @@ impl ProtectionService {
             .as_ref()
             .map(|properties| properties.protection_strength)
             .unwrap_or(1);
-        let mut consumed = false;
-
-        if let Some(properties) = inventory[index].protective_properties.as_mut() {
-            match properties.uses_remaining {
-                Some(uses) if uses > 1 => properties.uses_remaining = Some(uses - 1),
-                // A ward with no authored use count is spent on first use
-                // rather than warding forever.
-                _ => consumed = true,
+        // Absorbing spends from the same pool using it does.
+        //
+        // This used to decrement `protectiveProperties.usesRemaining` while
+        // `use_item` decremented `durability`, so the two ran independently: a
+        // ward could absorb its way through one count and be used through the
+        // other, and the charge readout in the inventory -- which reads
+        // `durability` -- went on claiming a full ward after three absorptions.
+        // `create_item` now seeds the one pool from whichever counter the item
+        // authors.
+        let consumed = match inventory[index].durability {
+            Some(charges) if charges > 1 => {
+                inventory[index].durability = Some(charges - 1);
+                false
             }
-        }
+            // A ward with no authored count at all is spent on first use rather
+            // than warding forever.
+            _ => true,
+        };
 
         if consumed {
             inventory.remove(index);
@@ -100,6 +108,61 @@ impl ProtectionService {
 
 #[cfg(test)]
 mod tests {
+
+    /// A protective item has one pool of charges, not two.
+    ///
+    /// `durability` pays for using an item and `protectiveProperties.usesRemaining`
+    /// pays for absorbing an encounter, and on the seven items that author both
+    /// they are the same number written twice. Tracked separately they drift: a
+    /// ward can absorb three times and still report a full count, then be used
+    /// four times, giving eight charges out of an authored four.
+    #[test]
+    fn absorbing_and_using_draw_on_the_same_charges() {
+        let catalog = load_item_catalog();
+        let mut beads = catalog.create_item("Prayer Beads", "Sister Agnes", 0.0);
+        let (before, _) = beads.uses_left().expect("the beads count charges");
+        assert!(before > 1, "pick an item with more than one charge");
+
+        let mut inventory = vec![beads.clone()];
+        ProtectionService::consume_ward(
+            &mut inventory,
+            crate::data::ProtectionType::RuleForgiveness,
+            None,
+        )
+        .expect("the beads ward against rule violations");
+
+        beads = inventory.pop().expect("the beads survived one absorption");
+        let (after, _) = beads.uses_left().expect("still counting");
+        assert_eq!(
+            after,
+            before - 1,
+            "absorbing spent a different pool from the one the inventory shows"
+        );
+    }
+
+    /// And a ward that authors only the absorption count still has that many
+    /// charges to spend, rather than being thrown away on its first use.
+    #[test]
+    fn a_ward_keeps_the_charges_it_authors() {
+        let catalog = load_item_catalog();
+        let medallion = catalog.create_item("Blessed Medallion", "Sister Agnes", 0.0);
+        let authored = medallion
+            .protective_properties
+            .as_ref()
+            .and_then(|properties| properties.uses_remaining)
+            .expect("the medallion authors ward charges");
+        assert!(authored > 1, "pick a ward with more than one charge");
+
+        let (left, most) = medallion
+            .uses_left()
+            .expect("a ward with authored charges counts them");
+        assert_eq!(
+            (left, most),
+            (authored, authored),
+            "the medallion reports {left} of {most} against {authored} authored"
+        );
+    }
+
     use super::*;
     use crate::data::loader::load_item_catalog;
 

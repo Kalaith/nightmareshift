@@ -331,6 +331,13 @@ impl ItemCatalog {
     /// Create an inventory item from the catalog.
     pub fn create_item(&self, name: &str, source: &str, current_time: f64) -> InventoryItem {
         let template = self.get(name);
+        let charges = template.max_durability.or_else(|| {
+            template
+                .protective_properties
+                .as_ref()
+                .and_then(|properties| properties.uses_remaining)
+        });
+
         InventoryItem {
             id: format!("{}_{}", name.replace(' ', "_"), current_time as u64),
             name: name.to_string(),
@@ -339,8 +346,18 @@ impl ItemCatalog {
             rarity: template.rarity,
             description: template.description,
             effects: template.effects,
-            durability: template.max_durability,
-            max_durability: template.max_durability,
+            // One pool of charges, whichever counter the data authors it in.
+            //
+            // A protective item carries two: `maxDurability` pays for using it
+            // and `protectiveProperties.usesRemaining` pays for absorbing an
+            // encounter. On the seven items that author both they are the same
+            // number written twice, and tracked separately they drift -- a ward
+            // could absorb three times, still report a full count, and then be
+            // used four more, giving eight charges out of an authored four.
+            // Three others author only the absorption count, and reading just
+            // `maxDurability` left them with no charges at all.
+            durability: charges,
+            max_durability: charges,
             acquired_at: current_time,
             can_use: template.can_use,
             can_trade: template.can_trade,

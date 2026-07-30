@@ -760,20 +760,18 @@ mod tests {
         assert!(checked > 0, "no cursed items in the catalogue");
     }
 
-    /// A ward that authors no active-use count is still spent when it is used.
+    /// A ward is spent over exactly the charges it authors -- no more, and no
+    /// fewer.
     ///
-    /// `use_item` removes a consumable and otherwise decrements `durability`.
-    /// Three protective items -- the Blessed Medallion, the Crystal Pendant and
-    /// the Soul Protection Ward -- author ward charges but no `maxDurability`,
-    /// so the decrement branch found `None`, did nothing, and left the item in
-    /// hand. Each grants its effect again on every click: unlimited supernatural
-    /// protection from one medallion.
-    ///
-    /// `ProtectionService::consume_ward` already states the rule for the passive
-    /// side -- "a ward with no authored use count is spent on first use rather
-    /// than warding forever" -- and this is the same rule on the active side.
+    /// The Blessed Medallion authors five absorption charges and no
+    /// `maxDurability`. Before, `use_item` found no durability, did nothing and
+    /// handed the item back, so one medallion was unlimited supernatural
+    /// protection. My first fix for that spent it outright on the first use,
+    /// which traded unlimited for one and threw away four authored charges. It
+    /// gets all five now, because both spending paths draw on one pool seeded
+    /// from whichever counter the item authors.
     #[test]
-    fn a_ward_with_no_use_count_is_spent_when_used() {
+    fn a_ward_is_spent_over_exactly_the_charges_it_authors() {
         let constants = load_constants();
         let catalog = load_item_catalog();
         let uncanny = load_passengers()
@@ -781,15 +779,30 @@ mod tests {
             .find(|p| p.is_supernatural)
             .expect("a supernatural fare");
 
+        let medallion = catalog.create_item("Blessed Medallion", "test", 0.0);
+        let authored = medallion
+            .protective_properties
+            .as_ref()
+            .and_then(|properties| properties.uses_remaining)
+            .expect("the medallion authors ward charges");
+        assert!(authored > 1, "pick a ward with more than one charge");
+
         let mut state = GameState::new(0.0, &constants.game_constants);
         state.current_passenger = Some(uncanny);
-        state
-            .inventory
-            .push(catalog.create_item("Blessed Medallion", "test", 0.0));
-        assert!(
-            state.inventory[0].max_durability.is_none(),
-            "pick an item with no authored durability for this test"
-        );
+        state.inventory.push(medallion);
+
+        for spent in 1..authored {
+            assert!(ItemService::use_item(
+                &mut state,
+                0,
+                &constants.reputation,
+                0.0
+            ));
+            assert!(
+                !state.inventory.is_empty(),
+                "the medallion was gone after {spent} of {authored} charges"
+            );
+        }
 
         assert!(ItemService::use_item(
             &mut state,
@@ -797,11 +810,9 @@ mod tests {
             &constants.reputation,
             0.0
         ));
-        let after_one = state.supernatural_protection;
-        assert!(after_one > 0, "the medallion granted nothing");
         assert!(
             state.inventory.is_empty(),
-            "the medallion survived being used and can be used again for ever"
+            "the medallion outlasted all {authored} of its charges"
         );
     }
 
