@@ -447,10 +447,21 @@ impl Game {
                 self.spawn_passenger();
                 if let Some(data) = &self.game_data {
                     let now = get_time();
-                    for name in ["Old Locket", "Crystal Pendant", "Crumpled Note"] {
+                    // A cursed one, a plain one, and two that count their
+                    // uses -- one fresh and one down to its last charge, so both
+                    // states of the uses readout are in the capture.
+                    for name in [
+                        "Old Locket",
+                        "Crystal Pendant",
+                        "Crumpled Note",
+                        "Prayer Beads",
+                    ] {
                         let item = data.items.create_item(name, "Mrs. Chen", now);
                         self.game_state.inventory.push(item);
                     }
+                    let mut spent = data.items.create_item("Rune Stone", "Sister Agnes", now);
+                    spent.durability = Some(1);
+                    self.game_state.inventory.push(spent);
                 }
                 self.show_inventory = true;
             }

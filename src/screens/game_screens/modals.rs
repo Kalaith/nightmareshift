@@ -120,6 +120,22 @@ pub fn draw_inventory_modal(game_state: &GameState, game_data: Option<&GameData>
                     colors::TEXT_MUTED,
                 );
 
+                // Charges left, for the items that count them.
+                if let Some((left, most)) = item.uses_left() {
+                    let colour = if left <= 1 {
+                        colors::ACCENT_WARNING
+                    } else {
+                        colors::TEXT_MUTED
+                    };
+                    draw_ui_text(
+                        &format!("{left} of {most} uses"),
+                        inner.x + inner.w * 0.62,
+                        y + 35.0,
+                        fonts::SIZE_XS,
+                        colour,
+                    );
+                }
+
                 // Source
                 // "from {}"
                 let source_text = data

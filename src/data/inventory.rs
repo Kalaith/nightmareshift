@@ -185,6 +185,27 @@ pub struct InventoryItem {
 }
 
 impl InventoryItem {
+    /// How many uses are left, when the item counts them.
+    ///
+    /// Eleven items author a `maxDurability` and `use_item` spends one each
+    /// time, removing the item on its last use. Nothing displayed it, so a
+    /// driver holding a three-use ward could not tell a full one from its final
+    /// charge, and it vanished from the inventory without warning. An item you
+    /// cannot plan around is not much of an item.
+    /// Only for an item the driver can actually use. The four cursed items
+    /// carry a `maxDurability` in the sixties to the hundreds, which is a decay
+    /// clock rather than a charge count -- "100 of 100 uses" on a locket nobody
+    /// can use is worse than saying nothing.
+    pub fn uses_left(&self) -> Option<(u32, u32)> {
+        if !self.can_use {
+            return None;
+        }
+        match (self.durability, self.max_durability) {
+            (Some(left), Some(most)) if most > 0 => Some((left, most)),
+            _ => None,
+        }
+    }
+
     /// Check if this item is cursed
     pub fn is_cursed(&self) -> bool {
         self.item_type == ItemType::Cursed || self.cursed_properties.is_some()

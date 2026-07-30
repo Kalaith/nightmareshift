@@ -532,6 +532,86 @@ mod tests {
         assert!(authored > 0, "no passenger offers a trade reward any more");
     }
 
+    /// An item that counts its uses reports them, and spending one lowers the
+    /// count the inventory shows.
+    ///
+    /// Eleven items author a `maxDurability` and `use_item` spends one per use,
+    /// removing the item on its last. Nothing displayed it, so a three-use ward
+    /// looked identical to one on its final charge and then vanished without
+    /// warning.
+    #[test]
+    fn a_counted_item_reports_and_spends_its_uses() {
+        let constants = load_constants();
+        let catalog = load_item_catalog();
+        let passengers = load_passengers();
+        let uncanny = passengers
+            .iter()
+            .find(|p| p.is_supernatural)
+            .expect("a supernatural fare");
+
+        // Prayer Beads: four uses, usable, and no condition on the effect.
+        let mut state = GameState::new(0.0, &constants.game_constants);
+        state.current_passenger = Some(uncanny.clone());
+        state
+            .inventory
+            .push(catalog.create_item("Prayer Beads", "test", 0.0));
+
+        let (before, most) = state.inventory[0]
+            .uses_left()
+            .expect("the beads count their uses");
+        assert_eq!(before, most, "a fresh item did not start full");
+        assert!(
+            most > 1,
+            "pick an item with more than one use to test spending"
+        );
+
+        assert!(ItemService::use_item(
+            &mut state,
+            0,
+            &constants.reputation,
+            0.0
+        ));
+        let (after, _) = state.inventory[0]
+            .uses_left()
+            .expect("the beads are still in hand");
+        assert_eq!(after, before - 1, "spending a use did not lower the count");
+    }
+
+    /// An item with no durability authored reports none, rather than "0 of 0".
+    #[test]
+    fn an_uncounted_item_reports_no_uses() {
+        let catalog = load_item_catalog();
+        let mut names: Vec<String> = catalog.names();
+        names.sort();
+        let uncounted = names
+            .iter()
+            .map(|name| catalog.create_item(name, "test", 0.0))
+            .find(|item| item.max_durability.is_none())
+            .expect("an item without durability");
+        assert!(uncounted.uses_left().is_none());
+    }
+
+    /// And nor does an item the driver cannot use, whatever durability it
+    /// carries. The cursed items author sixty to a hundred, which is a decay
+    /// clock rather than a charge count, and reporting it as uses on a locket
+    /// nobody can use is worse than saying nothing.
+    #[test]
+    fn an_unusable_item_reports_no_uses() {
+        let catalog = load_item_catalog();
+        let mut names: Vec<String> = catalog.names();
+        names.sort();
+        let unusable = names
+            .iter()
+            .map(|name| catalog.create_item(name, "test", 0.0))
+            .find(|item| !item.can_use && item.max_durability.is_some())
+            .expect("an unusable item that still carries a durability");
+        assert!(
+            unusable.uses_left().is_none(),
+            "{} reported uses it has no way to spend",
+            unusable.name
+        );
+    }
+
     /// The Crystal Pendant's charge is conditional, and the condition has to
     /// bite. It grants rule immunity authored `"supernatural_encounter"`, so
     /// offering it to an ordinary fare should do nothing -- and should not
