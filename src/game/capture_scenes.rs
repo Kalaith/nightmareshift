@@ -30,6 +30,19 @@ impl Game {
                 self.start_game();
                 self.start_shift();
             }
+            // Mid-shift with wards in hand, so the protection readout the
+            // status bar only draws when there is something to say is visible.
+            "warded" => {
+                self.start_game();
+                self.start_shift();
+                self.spawn_passenger();
+                self.game_state.earnings = 164;
+                self.game_state.rides_completed = 3;
+                self.game_state.time_remaining = 251;
+                self.game_state.fuel = 58.0;
+                self.game_state.rule_immunity_charges = 2;
+                self.game_state.supernatural_protection = 1;
+            }
             // The almanac with the roster at a spread of knowledge levels and
             // lore in hand, so the upgrade prices and what each next level
             // reveals are both visible in the capture.

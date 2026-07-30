@@ -34,7 +34,10 @@ impl StatusBar {
             let rules_btn_x = inv_btn_x - 96.0;
             let btn_y = 17.0;
             let stats_right = rules_btn_x - padding;
-            let stat_slot_w = ((stats_right - padding) / 5.0).max(74.0);
+            // Six slots rather than five: the sixth carries the protection
+            // charges, which are the only thing a player gets from spending an
+            // item that nothing on screen acknowledged.
+            let stat_slot_w = ((stats_right - padding) / 6.0).max(74.0);
             let stat_x = |idx: usize| padding + stat_slot_w * idx as f32;
             let divider_x = |idx: usize| padding + stat_slot_w * idx as f32 - 10.0;
 
@@ -135,6 +138,33 @@ impl StatusBar {
                 y,
                 colors::ACCENT_SKY,
             );
+
+            // Wards in hand.
+            //
+            // `rule_immunity_charges` and `supernatural_protection` are what
+            // using a ward buys, they are spent silently by
+            // `resolve_cab_rule_action` and the supernatural encounter, and no
+            // screen showed either. So a player used the Blessed Medallion,
+            // watched nothing change, and had no way to know they were now
+            // carrying a life. The two are summed under one label on purpose:
+            // what matters here is whether anything is standing between the
+            // driver and the next bad moment, and the dialogue already names
+            // which ward fired when one does.
+            //
+            // Drawn only when there is something to say, so the bar does not
+            // carry a permanent zero.
+            let wards = state.wards_in_hand();
+            if wards > 0 {
+                draw_divider(divider_x(5), 18.0, 38.0);
+                draw_stat_block(
+                    "P",
+                    &wards.to_string(),
+                    "Wards",
+                    stat_x(5),
+                    y,
+                    colors::FUEL_GOOD,
+                );
+            }
 
             if draw_glass_button(
                 UiRect::new(rules_btn_x, btn_y, 86.0, btn_h),

@@ -598,6 +598,20 @@ impl GameState {
         self.player_trust = (self.player_trust + delta).clamp(0.0, 1.0);
     }
 
+    /// How many things stand between the driver and the next bad moment.
+    ///
+    /// Sums the two charges an item can buy: `rule_immunity_charges`, spent
+    /// when a rule is broken, and `supernatural_protection`, spent when
+    /// something pulls alongside. Both were spent silently and shown nowhere,
+    /// so using a ward changed no number the player could see.
+    ///
+    /// Summed rather than listed because the question the status bar answers is
+    /// whether anything is protecting you, and the dialogue already names which
+    /// ward fired when one does.
+    pub fn wards_in_hand(&self) -> u32 {
+        self.rule_immunity_charges + self.supernatural_protection
+    }
+
     /// Fold any trust the current passenger's escalation moved into the
     /// driver's standing.
     ///
@@ -676,6 +690,40 @@ mod trust_tests {
         state.current_passenger_need_state = PassengerNeedState::from_passenger(&passenger, 0.0);
         state.current_passenger = Some(passenger);
         state
+    }
+
+    /// Both kinds of charge count, because the bar answers "is anything
+    /// protecting me" rather than "which ward do I hold".
+    #[test]
+    fn both_kinds_of_ward_count_toward_the_readout() {
+        let constants = load_constants();
+        let mut state = GameState::new(0.0, &constants.game_constants);
+        assert_eq!(state.wards_in_hand(), 0);
+
+        state.rule_immunity_charges = 2;
+        assert_eq!(state.wards_in_hand(), 2);
+
+        state.supernatural_protection = 1;
+        assert_eq!(
+            state.wards_in_hand(),
+            3,
+            "supernatural protection was left out of the readout"
+        );
+    }
+
+    /// Spending one is visible in the readout, which is the whole point --
+    /// both charges are decremented silently by the systems that consume them.
+    #[test]
+    fn spending_a_ward_lowers_the_readout() {
+        let constants = load_constants();
+        let mut state = GameState::new(0.0, &constants.game_constants);
+        state.rule_immunity_charges = 1;
+        state.supernatural_protection = 1;
+        let before = state.wards_in_hand();
+
+        state.rule_immunity_charges -= 1;
+
+        assert_eq!(state.wards_in_hand(), before - 1);
     }
 
     /// Settling folds the banked trust in and leaves nothing behind, so
