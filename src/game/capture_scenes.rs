@@ -70,6 +70,44 @@ impl Game {
                 self.game_state.game_phase = GamePhase::Driving;
                 self.game_state.driving_phase = Some(DrivingPhase::Pickup);
             }
+            // The same road with a hazard closing one of the routes, which
+            // draws a different card entirely and had never been looked at.
+            "driving_blocked" => {
+                self.begin_capture_scene("driving");
+                macroquad_toolkit::rng::srand(20260801);
+                let blocking = self.game_data.as_ref().map(|_| {
+                    let heavy = WeatherCondition {
+                        weather_type: WeatherType::Thunderstorm,
+                        intensity: WeatherIntensity::Heavy,
+                        visibility: 25,
+                        description: "Rain coming off the river in sheets".to_string(),
+                        effects: Vec::new(),
+                        duration: 90,
+                        start_time: 0.0,
+                    };
+                    let mut found = Vec::new();
+                    for _ in 0..256 {
+                        let generated = WeatherService::generate_hazards(
+                            &heavy,
+                            &self.game_state.time_of_day,
+                            &self.game_state.season,
+                            0.0,
+                        );
+                        if generated
+                            .iter()
+                            .any(|hazard| hazard.effects.route_blocked.is_some())
+                        {
+                            found = generated;
+                            break;
+                        }
+                    }
+                    (heavy, found)
+                });
+                if let Some((weather, hazards)) = blocking {
+                    self.game_state.current_weather = weather;
+                    self.game_state.environmental_hazards = hazards;
+                }
+            }
             // Mid-shift with wards in hand, so the protection readout the
             // status bar only draws when there is something to say is visible.
             "warded" => {

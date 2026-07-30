@@ -312,11 +312,33 @@ pub fn draw_driving(
             };
 
             if is_blocked {
+                // Say which route is shut.
+                //
+                // This branch drew the word BLOCKED and the hazard's reason and
+                // nothing else -- no number, no route name -- so a night with two
+                // roads closed showed two identical cards reading "BLOCKED" and
+                // left the driver to work out which two. The key and the name
+                // stay put, in the same places the open cards use, and BLOCKED
+                // moves to where an open card carries its client reaction.
                 draw_ui_text(
-                    &data.localization.ui.game.driving.blocked,
-                    card.x + 18.0,
-                    card.y + 26.0,
+                    key,
+                    card.x + 16.0,
+                    card.y + 25.0,
                     fonts::SIZE_MD,
+                    colors::TEXT_MUTED,
+                );
+                draw_small_caps(
+                    name,
+                    card.x + 54.0,
+                    card.y + 25.0,
+                    fonts::SIZE_MD,
+                    colors::TEXT_MUTED,
+                );
+                draw_small_caps(
+                    &data.localization.ui.game.driving.blocked,
+                    card.x + 176.0,
+                    card.y + 25.0,
+                    fonts::SIZE_XS,
                     colors::FUEL_CRITICAL,
                 );
                 if let Some(hazard) = game_state
@@ -326,9 +348,9 @@ pub fn draw_driving(
                 {
                     draw_wrapped_text(
                         &hazard.description,
-                        card.x + 18.0,
-                        card.y + 48.0,
-                        card.w - 36.0,
+                        card.x + 54.0,
+                        card.y + 45.0,
+                        card.w - 90.0,
                         fonts::SIZE_XS,
                         16.0,
                         colors::ACCENT_WARNING,
@@ -391,6 +413,14 @@ pub fn draw_driving(
                         pulsing_warning_color(),
                     );
                 }
+            }
+
+            // No tags on a shut road. They are advice about a leg the driver
+            // might choose, and three of them beside a closure is noise that
+            // also has to be kept clear of the hazard's reason.
+            if is_blocked {
+                route_y += route_h + 8.0;
+                continue;
             }
 
             use crate::engine::RouteService;
