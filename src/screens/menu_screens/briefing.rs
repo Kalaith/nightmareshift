@@ -153,7 +153,11 @@ fn draw_briefing_taxi_scene(rect: UiRect) {
 }
 
 /// Draw the briefing screen
-pub fn draw_briefing(game_state: &GameState, game_data: Option<&GameData>) -> UiAction {
+pub fn draw_briefing(
+    game_state: &GameState,
+    game_data: Option<&GameData>,
+    player_stats: &crate::state::PlayerStats,
+) -> UiAction {
     draw_noir_city_background();
 
     if let Some(data) = game_data {
@@ -418,6 +422,14 @@ pub fn draw_briefing(game_state: &GameState, game_data: Option<&GameData>) -> Ui
             ) + 14.0;
         }
 
+        // What this driver's own kit does to a hazard, so the forecast is
+        // theirs rather than the hazard's.
+        let hazard_mult = crate::engine::SkillModifiers::from_unlocked(
+            &data.skills,
+            &player_stats.unlocked_skills,
+        )
+        .hazard_mult;
+
         if !game_state.environmental_hazards.is_empty() {
             draw_small_caps(
                 "Active Hazards",
@@ -432,7 +444,7 @@ pub fn draw_briefing(game_state: &GameState, game_data: Option<&GameData>) -> Ui
                 // road work on Downtown Bridge" -- so prefixing it printed
                 // the place twice. What it never said was what the hazard
                 // costs, which is the only reason to read this list.
-                let text = match hazard.toll() {
+                let text = match hazard.toll(hazard_mult) {
                     Some(toll) => format!("{} ({})", hazard.description, toll),
                     None => hazard.description.clone(),
                 };

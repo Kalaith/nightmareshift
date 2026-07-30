@@ -242,7 +242,18 @@ impl EnvironmentalHazard {
     /// blocking hazard on the route card it disables, which is too late to be
     /// a plan. Every number here already reaches route pricing; none of it
     /// reached the player before they chose.
-    pub fn toll(&self) -> Option<String> {
+    /// `hazard_mult` is the driver's own hazard resistance, from the skill
+    /// tree. Route pricing scales the hazard-inflicted portion of a leg by it,
+    /// so a forecast quoting the raw authored numbers overstates what a driver
+    /// with Reinforced Chassis will actually pay -- and understates the skill
+    /// they bought. The route cards on the driving screen have always shown the
+    /// softened figure; this makes the briefing agree with them.
+    ///
+    /// A forecast rather than a quote: each component is scaled and rounded on
+    /// its own, where route pricing sums first and rounds once, so the two can
+    /// differ by a unit.
+    pub fn toll(&self, hazard_mult: f32) -> Option<String> {
+        let scale = |value: u32| (value as f32 * hazard_mult).round() as u32;
         let mut parts: Vec<String> = Vec::new();
 
         if let Some(blocked) = self
@@ -254,13 +265,28 @@ impl EnvironmentalHazard {
             let names: Vec<&str> = blocked.iter().map(|route| route.label()).collect();
             parts.push(format!("closes {}", names.join(" and ")));
         }
-        if let Some(fuel) = self.effects.fuel_increase.filter(|value| *value > 0) {
+        if let Some(fuel) = self
+            .effects
+            .fuel_increase
+            .map(scale)
+            .filter(|value| *value > 0)
+        {
             parts.push(format!("+{fuel} fuel"));
         }
-        if let Some(time) = self.effects.time_delay.filter(|value| *value > 0) {
+        if let Some(time) = self
+            .effects
+            .time_delay
+            .map(scale)
+            .filter(|value| *value > 0)
+        {
             parts.push(format!("+{time} min"));
         }
-        if let Some(risk) = self.effects.risk_increase.filter(|value| *value > 0) {
+        if let Some(risk) = self
+            .effects
+            .risk_increase
+            .map(scale)
+            .filter(|value| *value > 0)
+        {
             parts.push(format!("+{risk} risk"));
         }
 
@@ -304,7 +330,7 @@ mod tests {
             route_blocked: Some(vec![RouteType::Shortcut]),
             ..HazardEffects::default()
         });
-        let toll = blocked.toll().expect("a closure costs something");
+        let toll = blocked.toll(1.0).expect("a closure costs something");
         assert!(
             toll.contains("Shortcut"),
             "{toll:?} does not name the route"
@@ -321,17 +347,64 @@ mod tests {
             risk_increase: Some(2),
             ..HazardEffects::default()
         });
-        let toll = costly.toll().expect("surcharges cost something");
+        let toll = costly.toll(1.0).expect("surcharges cost something");
         for expected in ["4", "7", "2"] {
             assert!(toll.contains(expected), "{toll:?} is missing {expected}");
         }
+    }
+
+    /// A driver with hazard resistance is quoted the softer figure, because
+    /// that is the one route pricing will charge them.
+    #[test]
+    fn hazard_resistance_softens_the_forecast() {
+        let costly = hazard(HazardEffects {
+            fuel_increase: Some(8),
+            time_delay: Some(10),
+            risk_increase: Some(2),
+            ..HazardEffects::default()
+        });
+
+        let unskilled = costly.toll(1.0).expect("a toll");
+        let skilled = costly.toll(0.5).expect("a toll");
+        assert_ne!(
+            unskilled, skilled,
+            "hazard resistance changed nothing about the forecast"
+        );
+        assert!(unskilled.contains("10 min") && skilled.contains("5 min"));
+        assert!(unskilled.contains("8 fuel") && skilled.contains("4 fuel"));
+    }
+
+    /// Resistance strong enough to erase a surcharge stops quoting it, rather
+    /// than printing "+0 min".
+    #[test]
+    fn a_surcharge_reduced_to_nothing_is_not_quoted() {
+        let slight = hazard(HazardEffects {
+            time_delay: Some(1),
+            ..HazardEffects::default()
+        });
+        assert!(slight.toll(1.0).is_some());
+        assert!(
+            slight.toll(0.1).is_none(),
+            "a surcharge rounded away was still quoted"
+        );
+    }
+
+    /// A closure is not a surcharge and resistance does not open the road.
+    #[test]
+    fn resistance_does_not_reopen_a_closed_route() {
+        let blocked = hazard(HazardEffects {
+            route_blocked: Some(vec![RouteType::Shortcut]),
+            ..HazardEffects::default()
+        });
+        let toll = blocked.toll(0.1).expect("a closure still costs something");
+        assert!(toll.contains("Shortcut"));
     }
 
     /// A hazard with nothing behind it says nothing, rather than printing an
     /// empty pair of brackets after its description.
     #[test]
     fn a_toothless_hazard_has_no_toll() {
-        assert!(hazard(HazardEffects::default()).toll().is_none());
+        assert!(hazard(HazardEffects::default()).toll(1.0).is_none());
         let zeroed = hazard(HazardEffects {
             route_blocked: Some(Vec::new()),
             fuel_increase: Some(0),
@@ -339,7 +412,7 @@ mod tests {
             risk_increase: Some(0),
             ..HazardEffects::default()
         });
-        assert!(zeroed.toll().is_none(), "zeroes were reported as costs");
+        assert!(zeroed.toll(1.0).is_none(), "zeroes were reported as costs");
     }
 
     /// The display label and the persisted save key are separate tables that

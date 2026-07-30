@@ -23,9 +23,11 @@ impl Game {
                 self.game_data.as_ref(),
                 self.delete_armed_until.is_some(),
             ),
-            Screen::Briefing => {
-                menu_screens::draw_briefing(&self.game_state, self.game_data.as_ref())
-            }
+            Screen::Briefing => menu_screens::draw_briefing(
+                &self.game_state,
+                self.game_data.as_ref(),
+                &self.player_stats,
+            ),
             Screen::Game => self.draw_game_phase(),
             Screen::GameOver => {
                 menu_screens::draw_game_over(&self.game_state, self.game_data.as_ref())
