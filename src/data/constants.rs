@@ -83,6 +83,22 @@ pub struct FuelConstants {
     pub cost_per_percent: f32,
 }
 
+impl FuelConstants {
+    /// What topping up `amount` percent costs a driver whose refuel discount
+    /// is `cost_mult`.
+    ///
+    /// One formula, because there were two. The waiting screen priced a top-up
+    /// without the discount from Negotiator and Haggler while `refuel_full`
+    /// charged with it, so the button quoted more than the pump took. Worse,
+    /// the screen decided whether the button was even usable from its own
+    /// inflated figure -- so a driver holding $40 against a real price of $35
+    /// was refused a refuel they could afford, by the very skill they had
+    /// bought to make it cheaper.
+    pub fn refuel_cost(&self, amount: f32, cost_mult: f32) -> u32 {
+        (amount.max(0.0) * self.cost_per_percent * cost_mult) as u32
+    }
+}
+
 /// Timing constants
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TimingConstants {
@@ -256,6 +272,49 @@ fn default_medium_fuel() -> u32 {
 #[cfg(test)]
 mod tests {
     use crate::data::loader::load_constants;
+
+    /// A refuel discount has to reach the price the driver is quoted.
+    ///
+    /// The waiting screen priced a top-up without it while the pump charged
+    /// with it, so the button said one number and took another.
+    #[test]
+    fn a_refuel_discount_lowers_the_price() {
+        let fuel = load_constants().fuel;
+        let full = fuel.refuel_cost(50.0, 1.0);
+        let discounted = fuel.refuel_cost(50.0, 0.7);
+        assert!(full > 0, "a fifty percent top-up costs nothing");
+        assert!(
+            discounted < full,
+            "the discount changed nothing: {discounted} against {full}"
+        );
+    }
+
+    /// And the discount must be able to bring a price within reach, because the
+    /// screen decides whether the refuel button works from this figure. Quoting
+    /// the undiscounted price refused a driver a refuel they could afford --
+    /// locked out by the skill they bought to make it cheaper.
+    #[test]
+    fn a_discount_can_bring_a_refuel_within_reach() {
+        let fuel = load_constants().fuel;
+        let purse = fuel.refuel_cost(50.0, 0.7);
+        assert!(
+            fuel.refuel_cost(50.0, 1.0) > purse,
+            "no discount steep enough to matter, so this cannot be tested"
+        );
+        assert!(
+            fuel.refuel_cost(50.0, 0.7) <= purse,
+            "a driver holding exactly the discounted price is still refused"
+        );
+    }
+
+    /// Nothing to add, nothing to pay. A full tank must not be billed for a
+    /// negative top-up.
+    #[test]
+    fn a_full_tank_costs_nothing_to_fill() {
+        let fuel = load_constants().fuel;
+        assert_eq!(fuel.refuel_cost(0.0, 1.0), 0);
+        assert_eq!(fuel.refuel_cost(-10.0, 1.0), 0);
+    }
 
     /// Fuel thresholds must descend, or the gauge colours and the status text
     /// disagree about what "low" means. They used to be duplicated as Rust

@@ -70,6 +70,31 @@ impl Game {
                 self.game_state.game_phase = GamePhase::Driving;
                 self.game_state.driving_phase = Some(DrivingPhase::Pickup);
             }
+            // Between rides with the tank down and the discount skills bought,
+            // so the refuel prices on the buttons are the discounted ones.
+            "refuelling" => {
+                self.start_game();
+                self.start_shift();
+                self.game_state.fuel = 34.0;
+                self.game_state.earnings = 128;
+                self.game_state.rides_completed = 3;
+                self.game_state.time_remaining = 205;
+                self.player_stats.bank_balance += 5000;
+                let discounts: Vec<(String, u32)> = self
+                    .game_data
+                    .as_ref()
+                    .map(|data| {
+                        data.skills
+                            .iter()
+                            .filter(|skill| skill.effect.target == "refuel_discount")
+                            .map(|skill| (skill.id.clone(), skill.cost))
+                            .collect()
+                    })
+                    .unwrap_or_default();
+                for (id, cost) in discounts {
+                    self.player_stats.purchase_skill(&id, cost);
+                }
+            }
             // Down to the dregs, so the routes the cab cannot reach say why.
             "driving_broke" => {
                 self.begin_capture_scene("driving");

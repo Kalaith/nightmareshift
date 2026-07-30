@@ -13,7 +13,11 @@ use macroquad_toolkit::ui::{draw_ui_text, format_clock};
 use super::scene::{draw_bottom_taxi_scene, draw_metric_tile};
 
 /// Draw the waiting for passenger screen
-pub fn draw_waiting(game_state: &GameState, game_data: Option<&GameData>) -> UiAction {
+pub fn draw_waiting(
+    game_state: &GameState,
+    game_data: Option<&GameData>,
+    player_stats: &crate::state::PlayerStats,
+) -> UiAction {
     draw_cockpit_background();
 
     let scene_h = (screen_height() * 0.28).clamp(220.0, 310.0);
@@ -117,8 +121,16 @@ pub fn draw_waiting(game_state: &GameState, game_data: Option<&GameData>) -> UiA
             let btn_w = (left_w - 16.0) / 2.0;
             let btn_h = 44.0;
 
+            // The driver's own discount, so the price on the button is the
+            // price at the pump.
+            let refuel_mult = crate::engine::SkillModifiers::from_unlocked(
+                &data.skills,
+                &player_stats.unlocked_skills,
+            )
+            .refuel_cost_mult;
+
             let fuel_needed = game_state.max_fuel - fuel_pct;
-            let full_cost = (fuel_needed * data.constants.fuel.cost_per_percent) as u32;
+            let full_cost = data.constants.fuel.refuel_cost(fuel_needed, refuel_mult);
             let full_label = data
                 .localization
                 .ui
@@ -138,7 +150,7 @@ pub fn draw_waiting(game_state: &GameState, game_data: Option<&GameData>) -> UiA
             }
 
             let partial_amount = 25.0_f32.min(fuel_needed);
-            let partial_cost = (partial_amount * data.constants.fuel.cost_per_percent) as u32;
+            let partial_cost = data.constants.fuel.refuel_cost(partial_amount, refuel_mult);
             let partial_label = data
                 .localization
                 .ui

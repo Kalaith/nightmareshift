@@ -188,7 +188,7 @@ impl Game {
                 SkillModifiers::from_unlocked(&data.skills, &self.player_stats.unlocked_skills)
                     .refuel_cost_mult;
             let fuel_needed = self.game_state.max_fuel - self.game_state.fuel;
-            let cost = (fuel_needed * data.constants.fuel.cost_per_percent * refuel_mult) as u32;
+            let cost = data.constants.fuel.refuel_cost(fuel_needed, refuel_mult);
 
             if self.game_state.earnings >= cost {
                 self.game_state.fuel = self.game_state.max_fuel;
@@ -205,7 +205,7 @@ impl Game {
                     .refuel_cost_mult;
             let fuel_needed = self.game_state.max_fuel - self.game_state.fuel;
             let amount = 25.0_f32.min(fuel_needed);
-            let cost = (amount * data.constants.fuel.cost_per_percent * refuel_mult) as u32;
+            let cost = data.constants.fuel.refuel_cost(amount, refuel_mult);
 
             if self.game_state.earnings >= cost {
                 self.game_state.fuel =
