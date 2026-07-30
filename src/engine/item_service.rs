@@ -250,7 +250,23 @@ impl ItemService {
                 .current_passenger
                 .as_ref()
                 .is_some_and(|passenger| passenger.is_supernatural),
+            "passenger_present" => state.current_passenger.is_some(),
             _ => true,
+        }
+    }
+
+    /// Why an item would not answer, in the driver's own terms.
+    ///
+    /// The one refusal line was written for the Crystal Pendant, which stays
+    /// cold because the fare is ordinary. Told to a driver holding flowers at
+    /// an empty rank it explains nothing, so each condition says its own piece
+    /// and an unrecognised one keeps the original wording.
+    fn refusal(condition: &str, item_name: &str) -> String {
+        match condition {
+            "passenger_present" => {
+                format!("The back seat is empty. The {item_name} needs someone to be for.")
+            }
+            _ => format!("The {item_name} stays cold. Nothing here answers to it."),
         }
     }
 
@@ -283,8 +299,14 @@ impl ItemService {
             .filter(|effect| Self::condition_met(effect, state))
             .collect();
         if applicable.is_empty() && !item.effects.is_empty() {
+            let reason = item
+                .effects
+                .iter()
+                .find_map(|effect| effect.condition.as_deref())
+                .map(|condition| Self::refusal(condition, &item.name))
+                .unwrap_or_else(|| Self::refusal("", &item.name));
             state.current_dialogue = Some(CurrentDialogue {
-                text: format!("The {} stays cold. Nothing here answers to it.", item.name),
+                text: reason,
                 speaker: DialogueSpeaker::Narrator,
                 timestamp: current_time,
             });
@@ -1013,7 +1035,7 @@ mod tests {
     /// authored gate silently absent -- visible only here.
     #[test]
     fn every_authored_condition_is_recognised() {
-        const KNOWN: [&str; 1] = ["supernatural_encounter"];
+        const KNOWN: [&str; 2] = ["supernatural_encounter", "passenger_present"];
         let catalog = load_item_catalog();
         let mut names: Vec<String> = catalog.names();
         names.sort();
@@ -1153,5 +1175,68 @@ mod tests {
                 skill.id
             );
         }
+    }
+
+    /// A gift with nobody to give it to must not be thrown away.
+    ///
+    /// The inventory opens on any game screen, including the wait at the rank
+    /// between fares, and `reputation_modifier` is the one effect that needs
+    /// somebody in the back seat -- it adjusts the current passenger's opinion
+    /// of the driver. With the cab empty it found no passenger, adjusted
+    /// nothing, and the consumable was removed regardless. The withered flowers
+    /// and the faded photograph are both common, both first-night items, and
+    /// both could be destroyed for nothing by a curious click.
+    ///
+    /// `use_item` already refuses to spend an item whose conditions are unmet
+    /// and says why. These two effects simply never declared a condition, so
+    /// they now author `passenger_present` and take that existing path.
+    #[test]
+    fn a_gift_is_not_spent_on_an_empty_back_seat() {
+        let constants = load_constants();
+        let catalog = load_item_catalog();
+        let mut checked = 0;
+
+        for name in catalog.names() {
+            let item = catalog.create_item(&name, "test", 0.0);
+            let needs_company = item
+                .effects
+                .iter()
+                .any(|effect| matches!(effect.effect_type, ItemEffectType::ReputationModifier));
+            if !item.can_use || !needs_company {
+                continue;
+            }
+            checked += 1;
+
+            let mut empty_cab = GameState::new(0.0, &constants.game_constants);
+            empty_cab.inventory.push(item.clone());
+            assert!(
+                !ItemService::use_item(&mut empty_cab, 0, &constants.reputation, 0.0),
+                "the {name} was used with nobody in the cab"
+            );
+            assert_eq!(
+                empty_cab.inventory.len(),
+                1,
+                "the {name} was destroyed with nobody to give it to"
+            );
+            let told = empty_cab
+                .current_dialogue
+                .as_ref()
+                .map(|dialogue| dialogue.text.clone())
+                .unwrap_or_default();
+            assert!(
+                told.contains("back seat"),
+                "the {name} refused with {told:?}, which does not say the cab is empty"
+            );
+
+            let mut with_fare = GameState::new(0.0, &constants.game_constants);
+            with_fare.current_passenger = load_passengers().into_iter().next();
+            with_fare.inventory.push(item);
+            assert!(
+                ItemService::use_item(&mut with_fare, 0, &constants.reputation, 0.0),
+                "the {name} did nothing even with a passenger aboard"
+            );
+        }
+
+        assert!(checked > 0, "no reputation items found to check");
     }
 }

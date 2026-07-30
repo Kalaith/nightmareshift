@@ -23,7 +23,8 @@
     "effects": [
       {
         "type": "reputation_modifier",
-        "value": 2
+        "value": 2,
+        "condition": "passenger_present"
       }
     ]
   },
@@ -36,7 +37,8 @@
     "effects": [
       {
         "type": "reputation_modifier",
-        "value": 1
+        "value": 1,
+        "condition": "passenger_present"
       }
     ]
   },
