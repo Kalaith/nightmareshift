@@ -1,7 +1,7 @@
 //! Passenger state machine for need level progression.
 
 use crate::data::*;
-use crate::engine::RuleEvaluationResult;
+use crate::engine::{GuidelineEngine, RuleEvaluationResult};
 use crate::state::*;
 
 /// Triggered tell with context
@@ -274,13 +274,28 @@ impl PassengerStateMachine {
     /// `guidelines` to find the one that owns that exception. The guideline
     /// decision only triggers on tells that carry a `related_guideline`, so
     /// this is what connects a rising need to the decision it should provoke.
+    /// `player_trust` decides whether the driver actually catches each of these.
+    ///
+    /// Every tell raised here used to be recorded `player_noticed: false`,
+    /// unconditionally. The guideline screen labels such a tell "uncertain" and
+    /// the playtest bot filters it out entirely, so the tells a passenger gives
+    /// off as they come apart -- the ones `tellIntensities` authors per stage,
+    /// and the whole point of watching someone fray -- could never be noticed by
+    /// anybody. The detection roll reached only the condition-based tells from
+    /// `analyze_passenger`.
+    ///
+    /// It also left the trust loop unable to pay: trust rises as a passenger
+    /// escalates, and better trust improves detection, but the tells escalation
+    /// raised were exempt from detection altogether.
     pub fn merge_detected_tells(
         existing: &mut Vec<DetectedTell>,
         triggered: Vec<TriggeredTell>,
-        passenger_id: u32,
+        passenger: &Passenger,
+        player_trust: f32,
         current_time: f64,
         guidelines: &[Guideline],
     ) {
+        let passenger_id = passenger.id;
         for trigger in triggered {
             let related_guideline = trigger.related_guideline_id.or_else(|| {
                 let exception_id = trigger.exception_id.as_deref()?;
@@ -289,11 +304,12 @@ impl PassengerStateMachine {
                     .find(|g| g.exceptions.iter().any(|e| e.id == exception_id))
                     .map(|g| g.id)
             });
+            let noticed = GuidelineEngine::notices_tell(&trigger.tell, passenger, player_trust);
             existing.push(DetectedTell {
                 tell: trigger.tell,
                 passenger_id,
                 detection_time: current_time,
-                player_noticed: false,
+                player_noticed: noticed,
                 related_guideline,
                 exception_id: trigger.exception_id,
             });
@@ -329,6 +345,121 @@ impl PassengerStateMachine {
 mod tests {
     use super::*;
     use crate::data::loader::load_passengers;
+
+    /// A tell raised by escalation can be noticed.
+    ///
+    /// Every one of them was recorded `player_noticed: false`, unconditionally.
+    /// The guideline screen labels such a tell "uncertain" and the playtest bot
+    /// filters it out, so the tells a passenger gives off as they come apart --
+    /// the ones `tellIntensities` authors per stage -- could never be noticed by
+    /// anybody, and the detection roll reached only the condition-based tells.
+    ///
+    /// Rolled many times because it is a probability: one merge proves nothing.
+    #[test]
+    fn an_escalation_tell_can_be_noticed() {
+        use crate::data::loader::load_guidelines;
+
+        let guidelines = load_guidelines();
+        let passengers = load_passengers();
+
+        let mut noticed_any = false;
+        for passenger in &passengers {
+            let Some(mut need) = PassengerStateMachine::initialize(passenger, 0.0) else {
+                continue;
+            };
+            for _ in 0..200 {
+                let triggered =
+                    PassengerStateMachine::apply_stress_delta(&mut need, passenger, 100, 0.0);
+                let mut detected = Vec::new();
+                PassengerStateMachine::merge_detected_tells(
+                    &mut detected,
+                    triggered,
+                    passenger,
+                    1.0,
+                    0.0,
+                    &guidelines,
+                );
+                if detected.iter().any(|tell| tell.player_noticed) {
+                    noticed_any = true;
+                    break;
+                }
+                need = PassengerStateMachine::initialize(passenger, 0.0).expect("a profile");
+            }
+            if noticed_any {
+                break;
+            }
+        }
+        assert!(
+            noticed_any,
+            "no escalation tell was ever noticed, at full trust, across the whole roster"
+        );
+    }
+
+    /// And a driver nobody trusts notices fewer of them, which is the loop the
+    /// trust impact exists to feed: standing rises as a passenger frays, and
+    /// better standing catches more of what they give off.
+    ///
+    /// Counted across the whole roster and every stage, because a single
+    /// passenger pushed straight to meltdown crosses only one stage and may have
+    /// no tell of the matching intensity for it. My first attempt did exactly
+    /// that and read "caught 0 against 0" -- which was no tells raised, not no
+    /// tells noticed. The `raised` assertion below is there so the comparison
+    /// can never be vacuous in that way again.
+    #[test]
+    fn trust_changes_how_many_escalation_tells_are_caught() {
+        use crate::data::loader::load_guidelines;
+
+        let guidelines = load_guidelines();
+        let passengers = load_passengers();
+
+        let sweep = |trust: f32| {
+            let mut raised = 0usize;
+            let mut noticed = 0usize;
+            for _ in 0..60 {
+                for passenger in &passengers {
+                    let Some(mut need) = PassengerStateMachine::initialize(passenger, 0.0) else {
+                        continue;
+                    };
+                    for stage in [NeedStage::Warning, NeedStage::Critical, NeedStage::Meltdown] {
+                        let thresholds = need.profile.thresholds.clone();
+                        let target = match stage {
+                            NeedStage::Warning => thresholds.warning,
+                            NeedStage::Critical => thresholds.critical,
+                            _ => thresholds.meltdown,
+                        };
+                        let step = target as i32 - need.level as i32;
+                        let triggered = PassengerStateMachine::apply_stress_delta(
+                            &mut need, passenger, step, 0.0,
+                        );
+                        let mut detected = Vec::new();
+                        PassengerStateMachine::merge_detected_tells(
+                            &mut detected,
+                            triggered,
+                            passenger,
+                            trust,
+                            0.0,
+                            &guidelines,
+                        );
+                        raised += detected.len();
+                        noticed += detected.iter().filter(|tell| tell.player_noticed).count();
+                    }
+                }
+            }
+            (raised, noticed)
+        };
+
+        let (raised_low, noticed_low) = sweep(0.0);
+        let (raised_high, noticed_high) = sweep(1.0);
+
+        assert!(
+            raised_low > 0 && raised_high > 0,
+            "no escalation tells were raised at all, so this compares nothing"
+        );
+        assert!(
+            noticed_high > noticed_low,
+            "trust caught {noticed_high} of {raised_high} against {noticed_low} of {raised_low}"
+        );
+    }
 
     /// A passenger past calm always has something to say.
     ///

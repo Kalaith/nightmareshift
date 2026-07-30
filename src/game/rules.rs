@@ -186,7 +186,8 @@ impl Game {
             PassengerStateMachine::merge_detected_tells(
                 &mut self.game_state.detected_tells,
                 triggered,
-                passenger.id,
+                &passenger,
+                self.game_state.player_trust,
                 current_time,
                 &self.game_state.current_guidelines,
             );
@@ -437,7 +438,8 @@ impl Game {
                 PassengerStateMachine::merge_detected_tells(
                     &mut self.game_state.detected_tells,
                     triggered,
-                    passenger.id,
+                    &passenger,
+                    self.game_state.player_trust,
                     current_time,
                     &self.game_state.current_guidelines,
                 );
@@ -481,7 +483,8 @@ impl Game {
         PassengerStateMachine::merge_detected_tells(
             &mut self.game_state.detected_tells,
             triggered,
-            passenger.id,
+            passenger,
+            self.game_state.player_trust,
             current_time,
             &self.game_state.current_guidelines,
         );

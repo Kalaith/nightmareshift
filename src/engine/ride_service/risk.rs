@@ -95,7 +95,8 @@ impl RideService {
             PassengerStateMachine::merge_detected_tells(
                 &mut state.detected_tells,
                 triggered,
-                passenger.id,
+                &passenger,
+                state.player_trust,
                 current_time,
                 &state.current_guidelines,
             );

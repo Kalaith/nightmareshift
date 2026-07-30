@@ -187,6 +187,16 @@ impl GuidelineEngine {
     /// and Death's Taxi Driver — 0.6 and 0.7 deception — are genuinely hard
     /// to read, while Tommy Sullivan hides nothing, and that reading anyone
     /// gets easier as the night earns their trust.
+    /// Whether the driver catches this tell.
+    ///
+    /// Public because the state machine needs it too: a tell raised by a
+    /// passenger escalating deserves the same roll as one raised by a condition
+    /// being met, and for a long time it was exempt and recorded as never
+    /// noticed.
+    pub fn notices_tell(tell: &PassengerTell, passenger: &Passenger, player_trust: f32) -> bool {
+        Self::calculate_detection_probability(tell, passenger, player_trust)
+    }
+
     fn calculate_detection_probability(
         tell: &PassengerTell,
         passenger: &Passenger,
