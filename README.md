@@ -36,11 +36,8 @@ Playable horror-shift loop with passenger tells, route choices, rules, fuel
 pressure, earnings, and upgrades, over a five-night run whose quota and
 difficulty rise each night.
 
-## Practical Future Improvements
-
-- Move passenger rules and alert behavior into a data-driven policy layer with fixtures for wrong-rule and near-miss cases.
-- Add scenario replays for full-shift survival paths across different upgrade and route choices.
-- Separate meta-screen state from active shift state so pause, upgrades, and results cannot leak into route simulation.
+Open work — audio, settings, the seeded-RNG seam, packaging and everything
+between here and a commercial release — is tracked in `TODO.md`.
 
 ## Verifying A Deploy
 
