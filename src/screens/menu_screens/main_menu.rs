@@ -256,6 +256,19 @@ pub fn draw_main_menu(
             }
         }
 
+        // Degraded-content warnings: a content file that failed to parse
+        // fell back empty, and until this line the only witness was stderr,
+        // which the web build has no way to show.
+        for (idx, warning) in data.load_errors.iter().take(3).enumerate() {
+            draw_ui_text(
+                warning,
+                title_x,
+                screen_height() - 38.0 - idx as f32 * 18.0,
+                fonts::SIZE_XS,
+                colors::FUEL_CRITICAL,
+            );
+        }
+
         // Locale and data version, somewhere a player can actually read
         // them — the loading screen shows for two frames.
         let meta_text = format!(

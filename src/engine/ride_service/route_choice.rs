@@ -658,7 +658,7 @@ mod tests {
     use crate::data::loader::{load_constants, load_passengers, GameData};
 
     fn driving_state(fuel: f32, time: u32) -> (GameState, GameData, PlayerStats) {
-        let data = GameData::load();
+        let data = GameData::load().expect("embedded game data parses");
         let constants = load_constants();
         let mut state = GameState::new(0.0, &constants.game_constants);
         state.current_passenger = load_passengers().into_iter().next();

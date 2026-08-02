@@ -50,6 +50,10 @@ pub struct Game {
     /// `player_stats`; persisting any of that would hand the player a save
     /// they did not earn, so saving is suppressed for the whole run.
     capture_mode: bool,
+    /// Why `game_data` is `None`, when it is. Shown on the loading screen,
+    /// which refuses to advance — a structural data failure used to be a
+    /// panic, which on the web build is a silent black canvas.
+    data_error: Option<String>,
 }
 
 impl Game {
@@ -57,23 +61,35 @@ impl Game {
     pub fn new() -> Self {
         let current_time = get_time();
 
-        // Load game data first (embedded at compile time, always succeeds)
-        let game_data = GameData::load();
+        // The data is embedded at compile time, so a failure here is a
+        // build defect — but the window still deserves to say so rather
+        // than panic to a black canvas.
+        let (game_data, data_error) = match GameData::load() {
+            Ok(data) => (Some(data), None),
+            Err(error) => {
+                eprintln!("Game data failed to load: {error}");
+                (None, Some(error))
+            }
+        };
 
         // Try to load saved player stats
         let mut player_stats = Persistence::load().unwrap_or_else(|_| PlayerStats::new());
         player_stats.init_achievements();
         let playtest_bot = PlaytestBot::from_launch_args();
-        if let Some(bot) = &playtest_bot {
-            bot.apply_test_unlocks(&mut player_stats, &game_data);
+        if let (Some(bot), Some(data)) = (&playtest_bot, &game_data) {
+            bot.apply_test_unlocks(&mut player_stats, data);
         }
 
         // Create game state using constants from loaded data
-        let game_state = GameState::new(current_time, &game_data.constants.game_constants);
+        let constants = game_data
+            .as_ref()
+            .map(|data| data.constants.game_constants.clone())
+            .unwrap_or_default();
+        let game_state = GameState::new(current_time, &constants);
 
         Self {
             screen: Screen::Loading,
-            game_data: Some(game_data),
+            game_data,
             game_state,
             player_stats,
             show_rules: false,
@@ -91,6 +107,7 @@ impl Game {
             almanac_selected: None,
             delete_armed_until: None,
             capture_mode: false,
+            data_error,
         }
     }
 
@@ -425,7 +442,9 @@ impl Game {
 
         if self.screen == Screen::Loading {
             self.loading_frames += 1;
-            if self.loading_frames >= 2 {
+            // With no data there is nothing to advance to; the loading
+            // screen holds and shows the error instead.
+            if self.loading_frames >= 2 && self.game_data.is_some() {
                 self.change_screen(Screen::MainMenu);
             }
         }

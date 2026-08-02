@@ -10,7 +10,10 @@ fn default_nights_per_run() -> u32 {
 }
 
 /// Core game constants
-#[derive(Debug, Clone, Serialize, Deserialize)]
+// `Default` exists solely so a `GameState` can be constructed when the
+// data failed to load — the loading screen then refuses to advance, so a
+// zeroed shift is never actually played.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct GameConstants {
     #[serde(rename = "INITIAL_FUEL")]
     pub initial_fuel: u32,

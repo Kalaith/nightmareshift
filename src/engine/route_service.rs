@@ -399,7 +399,7 @@ mod fare_tests {
     use crate::state::{GameState, PlayerStats, RelationshipLevel};
 
     fn offer() -> (GameData, GameState, PlayerStats, crate::data::Passenger) {
-        let data = GameData::load();
+        let data = GameData::load().expect("embedded game data parses");
         let constants = load_constants();
         let state = GameState::new(0.0, &constants.game_constants);
         let passenger = load_passengers().into_iter().next().expect("a roster");

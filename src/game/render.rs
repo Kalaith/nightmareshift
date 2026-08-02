@@ -39,7 +39,9 @@ impl Game {
         clear_background(Color::from_hex(0x1a1a2e));
 
         let action = match self.screen {
-            Screen::Loading => menu_screens::draw_loading(self.game_data.as_ref()),
+            Screen::Loading => {
+                menu_screens::draw_loading(self.game_data.as_ref(), self.data_error.as_deref())
+            }
             Screen::MainMenu => menu_screens::draw_main_menu(
                 &self.player_stats,
                 self.game_data.as_ref(),

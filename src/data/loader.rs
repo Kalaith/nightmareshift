@@ -16,25 +16,50 @@ pub struct GameData {
     pub item_pools: ItemPools,
     pub items: ItemCatalog,
     pub rewards: RewardData,
+    /// Content files that failed to parse and fell back empty. The night
+    /// can still run without them — thinner — and the menu says so, since
+    /// a stderr line reaches nobody on the web build.
+    pub load_errors: Vec<String>,
 }
 
 impl GameData {
-    /// Load all game data from embedded JSON files
-    pub fn load() -> Self {
-        Self {
+    /// Load all game data from embedded JSON files.
+    ///
+    /// Errs only when the game cannot run at all: `constants.json` and the
+    /// localization file are structural, and there is nothing sensible to
+    /// fall back on. Content files that fail fall back empty and are
+    /// reported in `load_errors` instead — a missing roster is a broken
+    /// night, not a broken program.
+    pub fn load() -> Result<Self, String> {
+        let mut data = Self {
             passengers: load_passengers(),
             rules: load_rules(),
             locations: load_locations(),
-            constants: load_constants(),
+            constants: try_load_constants()?,
             skills: load_skill_tree(),
             almanac: load_almanac(),
             guidelines: load_guidelines(),
-            localization: load_localization(),
+            localization: try_load_localization()?,
             events: load_events(),
             item_pools: load_item_pools(),
             items: load_item_catalog(),
             rewards: load_rewards(),
+            load_errors: Vec::new(),
+        };
+        for (file, empty) in [
+            ("passengerData.json", data.passengers.is_empty()),
+            ("shiftRulesData.json", data.rules.is_empty()),
+            ("locationData.json", data.locations.is_empty()),
+            ("skillTreeData.json", data.skills.is_empty()),
+            ("guidelineData.json", data.guidelines.is_empty()),
+            ("eventData.json", data.events.is_empty()),
+        ] {
+            if empty {
+                data.load_errors
+                    .push(format!("{file} failed to load; its content is missing"));
+            }
         }
+        Ok(data)
     }
 
     /// Find a location by name
@@ -70,11 +95,20 @@ pub fn load_locations() -> Vec<Location> {
     })
 }
 
-/// Load constants from embedded JSON
-pub fn load_constants() -> ConstantsData {
+/// Load constants, or say exactly which part of the file is wrong.
+pub fn try_load_constants() -> Result<ConstantsData, String> {
     let json = include_str!("../../assets/constants.json");
-    serde_json::from_str(json)
-        .expect("Failed to parse constants.json - this is a development error")
+    serde_json::from_str(json).map_err(|e| format!("constants.json: {e}"))
+}
+
+/// Load constants from embedded JSON.
+///
+/// Panics on a parse failure, which is the right behavior for the tests
+/// that call it — the production path is `GameData::load`, which carries
+/// the error to a screen instead.
+#[cfg(test)]
+pub fn load_constants() -> ConstantsData {
+    try_load_constants().expect("constants.json parses")
 }
 
 /// Load skill tree from embedded JSON (JSON is an array directly)
@@ -160,12 +194,19 @@ pub fn load_rewards() -> RewardData {
 /// bar fields and nothing else did, so the fix depended on each caller
 /// remembering. Cleaning them out of the text once, here, means no caller can
 /// forget — and the emoji stay in the JSON for a font that can draw them.
-pub fn load_localization() -> Localization {
+pub fn try_load_localization() -> Result<Localization, String> {
     let json = include_str!("../../assets/localization/en.json");
-    let mut value: serde_json::Value = serde_json::from_str(json)
-        .expect("Failed to parse localization/en.json - this is critical");
+    let mut value: serde_json::Value =
+        serde_json::from_str(json).map_err(|e| format!("localization/en.json: {e}"))?;
     strip_undrawable_glyphs(&mut value);
-    serde_json::from_value(value).expect("localization/en.json does not match Localization")
+    serde_json::from_value(value).map_err(|e| format!("localization/en.json shape: {e}"))
+}
+
+/// Panicking wrapper for the tests; production goes through
+/// `GameData::load`, which shows the error instead.
+#[cfg(test)]
+pub fn load_localization() -> Localization {
+    try_load_localization().expect("localization/en.json parses")
 }
 
 /// Remove characters the bundled font cannot draw from every string.

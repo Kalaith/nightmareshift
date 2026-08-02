@@ -228,7 +228,7 @@ mod tests {
     /// to actually put the choice on the screen, and neither half alone may.
     #[test]
     fn the_ability_choice_needs_the_almanac_and_the_skill_together() {
-        let data = GameData::load();
+        let data = GameData::load().expect("embedded game data parses");
         let constants = load_constants();
         let mut state = GameState::new(0.0, &constants.game_constants);
 

@@ -5,7 +5,7 @@ use crate::data::loader::load_passengers;
 /// fragments to reach it buys nothing.
 #[test]
 fn every_level_reveals_more_for_every_passenger() {
-    let data = GameData::load();
+    let data = GameData::load().expect("embedded game data parses");
     for passenger in load_passengers() {
         let mut previous = build(&passenger, 0, Some(&data), None).len();
         for level in 1..=3 {
@@ -56,7 +56,7 @@ fn every_promised_reward_is_delivered_at_that_level() {
     // backstory on the almanac card.
     const ELSEWHERE: [&str; 2] = ["Route Preferences", "Backstory"];
 
-    let data = GameData::load();
+    let data = GameData::load().expect("embedded game data parses");
     let passengers = load_passengers();
     let almanac = load_almanac();
 
@@ -113,7 +113,7 @@ fn every_delivered_line_is_promised() {
         ("Candour", "Candour"),
     ];
 
-    let data = GameData::load();
+    let data = GameData::load().expect("embedded game data parses");
     let almanac = load_almanac();
 
     for level in 1..=3u32 {
@@ -161,7 +161,7 @@ fn every_delivered_line_is_promised() {
 /// there was nowhere in the game that would have shown it.
 #[test]
 fn mastering_a_passenger_names_what_settles_them() {
-    let data = GameData::load();
+    let data = GameData::load().expect("embedded game data parses");
     let mut named = 0;
     for passenger in load_passengers() {
         let Some(profile) = &passenger.state_profile else {
@@ -244,7 +244,7 @@ fn the_traits_line_says_which_ones_the_driver_is_trained_in() {
     use crate::engine::RideService;
     use crate::state::{GameState, PlayerStats};
 
-    let data = GameData::load();
+    let data = GameData::load().expect("embedded game data parses");
     let constants = load_constants();
     let shift = GameState::new(0.0, &constants.game_constants);
     let passenger = load_passengers()
@@ -290,7 +290,7 @@ fn the_traits_line_says_which_ones_the_driver_is_trained_in() {
 /// no driver to ask.
 #[test]
 fn without_a_driver_the_traits_line_only_lists() {
-    let data = GameData::load();
+    let data = GameData::load().expect("embedded game data parses");
     let passenger = load_passengers()
         .into_iter()
         .find(|p| !p.traits.is_empty())
@@ -316,7 +316,7 @@ fn the_relief_line_says_whether_the_rule_is_on_the_board() {
     use crate::data::loader::{load_constants, load_rules};
     use crate::state::GameState;
 
-    let data = GameData::load();
+    let data = GameData::load().expect("embedded game data parses");
     let constants = load_constants();
     let rules = load_rules();
 
@@ -364,7 +364,7 @@ fn a_hidden_rule_still_counts_as_in_force() {
     use crate::data::loader::{load_constants, load_rules};
     use crate::state::GameState;
 
-    let data = GameData::load();
+    let data = GameData::load().expect("embedded game data parses");
     let constants = load_constants();
     let chen = load_passengers()
         .into_iter()
@@ -397,7 +397,7 @@ fn a_hidden_rule_still_counts_as_in_force() {
 /// and says nothing either way.
 #[test]
 fn without_a_shift_the_relief_line_makes_no_claim() {
-    let data = GameData::load();
+    let data = GameData::load().expect("embedded game data parses");
     let chen = load_passengers()
         .into_iter()
         .find(|p| p.id == 1)
@@ -422,7 +422,7 @@ fn without_a_shift_the_relief_line_makes_no_claim() {
 /// worse than an almanac that stays quiet.
 #[test]
 fn the_quoted_relief_stage_is_the_one_the_engine_gates_on() {
-    let data = GameData::load();
+    let data = GameData::load().expect("embedded game data parses");
     for passenger in load_passengers() {
         let Some(exception_id) = passenger
             .state_profile

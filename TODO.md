@@ -53,9 +53,7 @@
 
 ## Code health
 
-- Decompose the five files over the 800-line hard limit: `engine/item_service.rs` (1242), `state/game_state.rs` (1062), `engine/game_engine.rs` (940), `screens/game_screens/dossier.rs` (888), `engine/passenger_state_machine.rs` (810).
 - Separate meta-screen state from shift state — `show_rules`, `show_inventory` and `show_pause_menu` still sit on the `Game` struct beside simulation state, so pause, upgrades and results can leak into route simulation.
-- Replace the two `expect()` panics in `loader.rs` and the `unwrap()` in `ride_service` with graceful fallbacks, and surface data-load errors in-game rather than only on stderr.
 
 ## Packaging & release
 
