@@ -47,6 +47,8 @@ impl Game {
                 self.game_data.as_ref(),
                 self.delete_armed_until.is_some(),
                 self.save_notice.as_deref(),
+                Self::daily_seed(),
+                &mut self.seed_entry,
             ),
             Screen::Briefing => menu_screens::draw_briefing(
                 &self.game_state,

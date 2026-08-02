@@ -12,12 +12,18 @@ use macroquad_toolkit::ui::draw_ui_text;
 
 use super::widgets::draw_menu_command;
 
-/// Draw the main menu
+/// Draw the main menu.
+///
+/// `seed_entry` is the seed modal's in-progress digits, owned by `Game` so
+/// the text survives across frames; `Some` means the modal is open and this
+/// screen is consuming the keyboard.
 pub fn draw_main_menu(
     player_stats: &PlayerStats,
     game_data: Option<&GameData>,
     delete_armed: bool,
     save_notice: Option<&str>,
+    daily_seed: u64,
+    seed_entry: &mut Option<String>,
 ) -> UiAction {
     draw_noir_city_background();
 
@@ -51,6 +57,80 @@ pub fn draw_main_menu(
         fonts::SIZE_MD,
         colors::CAB_YELLOW,
     );
+
+    // The seed-entry modal owns the frame while it is open: a dimmed
+    // backdrop replaces the command list (so nothing is clicked through
+    // it) and the keyboard types the seed — digits build it, Enter deals
+    // that night, Escape walks away. The Space shortcut to Start is
+    // suppressed in the dispatcher while this is `Some`.
+    if let Some(digits) = seed_entry.as_mut() {
+        draw_rectangle(
+            0.0,
+            0.0,
+            screen_width(),
+            screen_height(),
+            Color::new(0.0, 0.0, 0.0, 0.72),
+        );
+        let panel = UiRect::centered_x(screen_width(), screen_height() * 0.32, 460.0_f32, 190.0);
+        draw_glass_panel(panel, colors::ACCENT_SKY);
+        let inner = panel.inset(20.0);
+        draw_small_caps(
+            "Seeded Run",
+            inner.x,
+            inner.y + 14.0,
+            fonts::SIZE_SM,
+            colors::ACCENT_SKY,
+        );
+        draw_ui_text(
+            "Type a night number. The same number deals the same night.",
+            inner.x,
+            inner.y + 44.0,
+            fonts::SIZE_XS,
+            colors::TEXT_SECONDARY,
+        );
+
+        while let Some(ch) = get_char_pressed() {
+            // u64::MAX is twenty digits; stopping at nineteen keeps every
+            // enterable number parseable without a range check.
+            if ch.is_ascii_digit() && digits.len() < 19 {
+                digits.push(ch);
+            }
+        }
+        if is_key_pressed(KeyCode::Backspace) {
+            digits.pop();
+        }
+
+        let shown = if digits.is_empty() {
+            "_".to_string()
+        } else {
+            digits.clone()
+        };
+        draw_ui_text(
+            &shown,
+            inner.x,
+            inner.y + 84.0,
+            fonts::SIZE_XL,
+            colors::TEXT_PRIMARY,
+        );
+        draw_ui_text(
+            "ENTER to drive it - ESC to cancel",
+            inner.x,
+            inner.y + 122.0,
+            fonts::SIZE_XS,
+            colors::TEXT_MUTED,
+        );
+
+        if is_key_pressed(KeyCode::Enter) || is_key_pressed(KeyCode::KpEnter) {
+            if let Ok(seed) = digits.parse::<u64>() {
+                *seed_entry = None;
+                return UiAction::StartSeededRun(seed);
+            }
+        }
+        if is_key_pressed(KeyCode::Escape) {
+            *seed_entry = None;
+        }
+        return UiAction::None;
+    }
 
     if let Some(data) = game_data {
         let stats = data
@@ -129,7 +209,7 @@ pub fn draw_main_menu(
         let menu_w = (screen_width() * 0.36).clamp(230.0, 380.0);
         let menu_h = (62.0 * menu_scale).clamp(38.0, 62.0);
         let gap = (12.0 * menu_scale).clamp(6.0, 12.0);
-        let menu_items = if Persistence::save_exists() { 5.0 } else { 4.0 };
+        let menu_items = if Persistence::save_exists() { 7.0 } else { 6.0 };
         let total_menu_h = menu_h * menu_items + gap * (menu_items - 1.0);
         let right_margin = 46.0 * menu_scale;
         let taxi_right = screen_width() * 0.36;
@@ -164,6 +244,30 @@ pub fn draw_main_menu(
             return UiAction::StartGame;
         }
 
+        // The determinism seam, opened to the player: one shared night a
+        // day, or any night by number. Both re-arm the run stream the same
+        // way `--seed` does, and the briefing badge names the seed.
+        if draw_menu_command(
+            UiRect::new(menu_x, menu_y + (menu_h + gap), menu_w, menu_h),
+            "wheel",
+            "Daily Shift",
+            &format!("Night #{daily_seed} - dealt to everyone"),
+            colors::ACCENT_SKY,
+            menu_scale,
+        ) {
+            return UiAction::StartDailyRun;
+        }
+        if draw_menu_command(
+            UiRect::new(menu_x, menu_y + (menu_h + gap) * 2.0, menu_w, menu_h),
+            "wheel",
+            "Seeded Run",
+            "Replay a night by number",
+            colors::TEXT_SECONDARY,
+            menu_scale,
+        ) {
+            return UiAction::OpenSeedEntry;
+        }
+
         let skill_btn_text = data
             .localization
             .ui
@@ -176,7 +280,7 @@ pub fn draw_main_menu(
             .map(|(_, detail)| detail.trim_end_matches(')').to_string())
             .unwrap_or_else(|| format!("${} Available", player_stats.bank_balance));
         if draw_menu_command(
-            UiRect::new(menu_x, menu_y + (menu_h + gap), menu_w, menu_h),
+            UiRect::new(menu_x, menu_y + (menu_h + gap) * 3.0, menu_w, menu_h),
             "tree",
             "Skill Tree",
             &skill_detail,
@@ -198,7 +302,7 @@ pub fn draw_main_menu(
             .map(|(_, detail)| detail.trim_end_matches(')').to_string())
             .unwrap_or_else(|| format!("{} Lore Fragments", player_stats.lore_fragments));
         if draw_menu_command(
-            UiRect::new(menu_x, menu_y + (menu_h + gap) * 2.0, menu_w, menu_h),
+            UiRect::new(menu_x, menu_y + (menu_h + gap) * 4.0, menu_w, menu_h),
             "book",
             "Almanac",
             &almanac_detail,
@@ -220,7 +324,7 @@ pub fn draw_main_menu(
             .trim()
             .to_string();
         if draw_menu_command(
-            UiRect::new(menu_x, menu_y + (menu_h + gap) * 3.0, menu_w, menu_h),
+            UiRect::new(menu_x, menu_y + (menu_h + gap) * 5.0, menu_w, menu_h),
             "trophy",
             &leaderboard_btn_text,
             "Best Runs",
@@ -246,7 +350,7 @@ pub fn draw_main_menu(
                 ("Delete Save", "Reset Progress", colors::ACCENT_DANGER)
             };
             if draw_menu_command(
-                UiRect::new(menu_x, menu_y + (menu_h + gap) * 4.0, menu_w, menu_h),
+                UiRect::new(menu_x, menu_y + (menu_h + gap) * 6.0, menu_w, menu_h),
                 "delete",
                 label,
                 detail,

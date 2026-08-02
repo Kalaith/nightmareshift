@@ -12,10 +12,31 @@ impl Game {
     pub fn handle_ui_action(&mut self, action: UiAction) {
         match action {
             UiAction::StartGame => {
-                if self.screen == Screen::MainMenu {
+                // With the seed modal open, Space is typing, not starting.
+                if self.screen == Screen::MainMenu && self.seed_entry.is_none() {
+                    // A plain start is a fresh deal: whatever seed the menu
+                    // chose for a previous run does not carry over.
+                    self.menu_seed = None;
                     self.start_game();
                 } else if self.screen == Screen::Briefing {
                     self.start_shift();
+                }
+            }
+            UiAction::OpenSeedEntry => {
+                if self.screen == Screen::MainMenu {
+                    self.seed_entry = Some(String::new());
+                }
+            }
+            UiAction::StartDailyRun => {
+                if self.screen == Screen::MainMenu {
+                    self.menu_seed = Some(Self::daily_seed());
+                    self.start_game();
+                }
+            }
+            UiAction::StartSeededRun(seed) => {
+                if self.screen == Screen::MainMenu {
+                    self.menu_seed = Some(seed);
+                    self.start_game();
                 }
             }
             UiAction::AcceptRide => {

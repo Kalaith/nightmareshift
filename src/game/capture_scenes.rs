@@ -19,6 +19,11 @@ impl Game {
         self.capture_mode = true;
         match scene {
             "briefing" => self.start_game(),
+            // The main menu with the seed modal open mid-entry, so the
+            // daily/seeded commands and the entry panel can be looked at.
+            "seed_entry" => {
+                self.seed_entry = Some("20670".to_string());
+            }
             // The skill tree with currency in hand, so the purchase buttons
             // and the lore exchange are both live in the capture.
             "skill_tree" => {

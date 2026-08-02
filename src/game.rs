@@ -77,9 +77,15 @@ pub struct Game {
     save_notice: Option<String>,
     /// A fixed seed from `--seed N` / `NIGHTMARE_SHIFT_SEED`, applied at
     /// every run start so the whole campaign replays draw-for-draw. The
-    /// developer half of seeded runs; the daily-challenge UI can feed the
-    /// same field later.
+    /// developer half of seeded runs; the menu's daily and seeded starts
+    /// override it through `menu_seed`.
     run_seed: Option<u64>,
+    /// The seed the menu chose for the next run — the Daily Shift or a
+    /// typed one. Overrides the launch seed while set; a plain Start
+    /// clears it, so one seeded run does not silently haunt the next.
+    menu_seed: Option<u64>,
+    /// The seed-entry modal's in-progress digits, when it is open.
+    seed_entry: Option<String>,
 }
 
 /// The launch-time seed, if one was asked for. Native only: the web build
@@ -171,12 +177,22 @@ impl Game {
             data_error,
             save_notice,
             run_seed: seed_from_launch(),
+            menu_seed: None,
+            seed_entry: None,
         }
     }
 
-    /// The active fixed seed, for the briefing to display.
+    /// The active fixed seed — the menu's choice first, then the launch
+    /// argument. Read at run start and by the briefing badge.
     pub(crate) fn run_seed(&self) -> Option<u64> {
-        self.run_seed
+        self.menu_seed.or(self.run_seed)
+    }
+
+    /// Today's shared seed: the day count since the Unix epoch, the same
+    /// number for every player until midnight UTC. `miniquad::date::now`
+    /// ticks on both native and web builds.
+    pub(crate) fn daily_seed() -> u64 {
+        (macroquad::miniquad::date::now() / 86_400.0).floor() as u64
     }
 
     /// Save player stats

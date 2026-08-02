@@ -28,6 +28,12 @@ pub enum UiAction {
     TogglePauseMenu, // ESC pause menu
     UseItem(usize),
     PerformRuleAction(String),
+    /// Open the seed-entry modal on the main menu.
+    OpenSeedEntry,
+    /// Begin a run on today's shared daily seed.
+    StartDailyRun,
+    /// Begin a run on a player-entered seed.
+    StartSeededRun(u64),
     // Meta-progression screens
     OpenSkillTree,
     OpenAlmanac,
