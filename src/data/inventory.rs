@@ -137,8 +137,6 @@ pub struct CursedProperties {
 pub enum ProtectionType {
     SupernaturalImmunity,
     RuleForgiveness,
-    SafePassage,
-    LuckyEncounters,
 }
 
 /// Properties of a protective item

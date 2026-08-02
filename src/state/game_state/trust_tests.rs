@@ -32,6 +32,38 @@ fn both_kinds_of_ward_count_toward_the_readout() {
     );
 }
 
+/// A carried ward counts too — `ProtectionService::consume_ward` spends
+/// from the item itself, so a driver holding a Blessed Medallion is
+/// protected even with both counters at zero, and the readout must say so.
+#[test]
+fn a_carried_ward_counts_toward_the_readout() {
+    let constants = load_constants();
+    let catalog = crate::data::loader::load_item_catalog();
+    let mut state = GameState::new(0.0, &constants.game_constants);
+    assert_eq!(state.wards_in_hand(), 0);
+
+    let medallion = catalog.create_item("Blessed Medallion", "Sister Agnes", 0.0);
+    let charges = medallion.durability.unwrap_or(1).max(1);
+    state.inventory.push(medallion);
+    assert_eq!(
+        state.wards_in_hand(),
+        charges,
+        "a carried ward's charges were left out of the readout"
+    );
+
+    let absorbed = crate::engine::ProtectionService::consume_ward(
+        &mut state.inventory,
+        crate::data::ProtectionType::SupernaturalImmunity,
+        None,
+    );
+    assert!(absorbed.is_some(), "the medallion should absorb");
+    assert_eq!(
+        state.wards_in_hand(),
+        charges - 1,
+        "absorbing must spend a visible charge"
+    );
+}
+
 /// Spending one is visible in the readout, which is the whole point --
 /// both charges are decremented silently by the systems that consume them.
 #[test]

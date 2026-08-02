@@ -56,7 +56,6 @@ pub enum EventConsequence {
     Time(u32),
     Risk(i32),
     Stress(i32),
-    None,
 }
 
 /// A choice within a mid-ride event

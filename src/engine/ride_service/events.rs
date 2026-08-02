@@ -137,7 +137,6 @@ impl RideService {
                     EventConsequence::Stress(amount) => {
                         Self::apply_event_stress(state, amount);
                     }
-                    EventConsequence::None => {}
                 }
             }
         }

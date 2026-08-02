@@ -211,9 +211,10 @@ mod tests {
     }
 
     /// Only the protection types a system actually spends may be authored.
-    /// `SafePassage` and `LuckyEncounters` exist in the schema but nothing
-    /// consumes them, so an item authored with one would ward against
-    /// nothing while looking protective on the inventory screen.
+    /// `SafePassage` and `LuckyEncounters` once sat in the schema with no
+    /// consumer — an item authored with one warded against nothing while
+    /// looking protective. They are deleted now; this stays as the tripwire
+    /// for any future variant added without a system that spends it.
     #[test]
     fn no_item_authors_an_unspent_protection_type() {
         const SPENT: [ProtectionType; 2] = [

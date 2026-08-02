@@ -11,9 +11,7 @@ Code and data that exist but never reach the player. Verified against the source
 - The false-tell system is doubly dead: its gate requires `rides_completed > 20` but a 480-minute/100-fuel shift caps out around 12–13 rides, and even if it opened, the merge dedupe rejects the cloned tell it tries to insert (`guideline_engine.rs:86-103`, `343-365`).
 - ~150 authored `Consequence.description` strings in `shiftRulesData.json`/`guidelineData.json` ("You resisted the passenger's pull…") never reach a screen — the shown message is built from the guideline title instead.
 - Passenger reputation is applied (fare multiplier, risk modifier) but never shown on any screen and never persisted — it dies at run end. `negative_choices` and `last_encounter` are write-only outside tests.
-- `GameState.pending_route_dialogue` is declared, initialised and reset but never written or read (`game_state.rs:460`). `PlayerStats.total_play_time` is accumulated and persisted but no screen shows it.
-- The status bar under-reports wards: `wards_in_hand()` counts only rule-immunity/supernatural-protection charges, not carried items with `protectiveProperties` that `ProtectionService` actually spends — a driver holding a Blessed Medallion reads "0 wards".
-- Never-constructed variants: `ProtectionType::SafePassage`/`LuckyEncounters` (no item may author them — a test enforces it) and `EventConsequence::None` (matched, never produced).
+- `PlayerStats.total_play_time` is accumulated and persisted but no screen shows it.
 
 ### Dead data (authored JSON → nothing)
 

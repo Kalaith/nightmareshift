@@ -457,7 +457,6 @@ pub struct GameState {
 
     // UI state
     pub current_dialogue: Option<CurrentDialogue>,
-    pub pending_route_dialogue: Option<String>,
     pub last_ride_completion: Option<RideCompletion>,
     pub game_over_reason: Option<String>,
 
@@ -515,7 +514,6 @@ impl GameState {
             pending_trade: None,
             trade_outcome: None,
             current_dialogue: None,
-            pending_route_dialogue: None,
             last_ride_completion: None,
             game_over_reason: None,
             active_guideline: None,
@@ -560,7 +558,6 @@ impl GameState {
         self.pending_trade = None;
         self.trade_outcome = None;
         self.current_dialogue = None;
-        self.pending_route_dialogue = None;
         self.last_ride_completion = None;
         self.game_over_reason = None;
         self.active_guideline = None;
@@ -618,16 +615,26 @@ impl GameState {
 
     /// How many things stand between the driver and the next bad moment.
     ///
-    /// Sums the two charges an item can buy: `rule_immunity_charges`, spent
+    /// Sums the two charges an item can buy — `rule_immunity_charges`, spent
     /// when a rule is broken, and `supernatural_protection`, spent when
-    /// something pulls alongside. Both were spent silently and shown nowhere,
-    /// so using a ward changed no number the player could see.
+    /// something pulls alongside — plus the remaining charges on every
+    /// carried item with `protectiveProperties`, which is the pool
+    /// `ProtectionService::consume_ward` actually spends from. Counting only
+    /// the counters left a driver holding a Blessed Medallion reading "0
+    /// wards".
     ///
     /// Summed rather than listed because the question the status bar answers is
     /// whether anything is protecting you, and the dialogue already names which
     /// ward fired when one does.
     pub fn wards_in_hand(&self) -> u32 {
-        self.rule_immunity_charges + self.supernatural_protection
+        let carried: u32 = self
+            .inventory
+            .iter()
+            .filter(|item| item.protective_properties.is_some())
+            // No authored count still absorbs once before the ward is spent.
+            .map(|item| item.durability.unwrap_or(1).max(1))
+            .sum();
+        self.rule_immunity_charges + self.supernatural_protection + carried
     }
 
     /// Fold any trust the current passenger's escalation moved into the
