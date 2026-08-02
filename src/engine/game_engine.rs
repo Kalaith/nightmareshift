@@ -88,6 +88,7 @@ pub struct GameEngine;
 impl GameEngine {
     /// Generate shift rules based on player experience
     pub fn generate_shift_rules(
+        rng: &mut macroquad_toolkit::rng::SeededRng,
         experience: u32,
         all_rules: &[Rule],
         constants: &ConstantsData,
@@ -104,13 +105,19 @@ impl GameEngine {
         let mut selected_rules: Vec<Rule> = Vec::new();
 
         // Select 2-3 basic rules
-        let num_basic = 2 + macroquad_toolkit::rng::gen_range(0, 2);
-        Self::draw_compatible_rules(&pool_of(RuleType::Basic), num_basic, &mut selected_rules);
+        let num_basic = 2 + rng.range_i32(0, 2) as u32;
+        Self::draw_compatible_rules(
+            rng,
+            &pool_of(RuleType::Basic),
+            num_basic,
+            &mut selected_rules,
+        );
 
         // Add conditional rules based on difficulty
         if difficulty_level >= 1 {
-            let num_conditional = 1 + macroquad_toolkit::rng::gen_range(0, 2);
+            let num_conditional = 1 + rng.range_i32(0, 2) as u32;
             Self::draw_compatible_rules(
+                rng,
                 &pool_of(RuleType::Conditional),
                 num_conditional,
                 &mut selected_rules,
@@ -124,8 +131,13 @@ impl GameEngine {
         // `reveal_hidden_chance`, and the "Hidden Rule Violated!" ending.
         // Both are expert-tier content, so they join from difficulty 2.
         if difficulty_level >= 2 {
-            Self::draw_compatible_rules(&pool_of(RuleType::Conflicting), 1, &mut selected_rules);
-            Self::draw_compatible_rules(&pool_of(RuleType::Hidden), 1, &mut selected_rules);
+            Self::draw_compatible_rules(
+                rng,
+                &pool_of(RuleType::Conflicting),
+                1,
+                &mut selected_rules,
+            );
+            Self::draw_compatible_rules(rng, &pool_of(RuleType::Hidden), 1, &mut selected_rules);
         }
 
         // Separate visible and hidden rules
@@ -156,9 +168,14 @@ impl GameEngine {
     /// tonight" — a night that cannot be driven cleanly no matter what the
     /// player does. Fewer rules is the right failure here: a shift short one
     /// rule is playable, a self-contradictory one is not.
-    fn draw_compatible_rules(pool: &[&Rule], count: u32, selected: &mut Vec<Rule>) {
+    fn draw_compatible_rules(
+        rng: &mut macroquad_toolkit::rng::SeededRng,
+        pool: &[&Rule],
+        count: u32,
+        selected: &mut Vec<Rule>,
+    ) {
         let mut shuffled: Vec<&Rule> = pool.to_vec();
-        macroquad_toolkit::rng::shuffle(&mut shuffled);
+        rng.shuffle(&mut shuffled);
 
         let mut taken = 0;
         for rule in shuffled {
@@ -321,8 +338,11 @@ impl GameEngine {
     /// nothing, or the rule would out itself the first time and the Glimpse
     /// skill -- which buys exactly that knowledge -- would have nothing left
     /// to sell.
-    pub fn hidden_violation_lands(constants: &ConstantsData) -> bool {
-        macroquad_toolkit::rng::chance(constants.probabilities.hidden_rule_violation)
+    pub fn hidden_violation_lands(
+        rng: &mut macroquad_toolkit::rng::SeededRng,
+        constants: &ConstantsData,
+    ) -> bool {
+        rng.chance(constants.probabilities.hidden_rule_violation)
     }
 
     /// The rule in force tonight that this passenger's exception belongs to.
@@ -442,6 +462,7 @@ impl GameEngine {
     }
 
     pub fn calculate_fare(
+        rng: &mut macroquad_toolkit::rng::SeededRng,
         base_fare: u32,
         route: RouteType,
         passenger: &Passenger,
@@ -460,8 +481,7 @@ impl GameEngine {
             destination_fare_modifier,
         );
 
-        let variation =
-            macroquad_toolkit::rng::gen_range(-Self::FARE_VARIATION, Self::FARE_VARIATION);
+        let variation = rng.range_f32(-Self::FARE_VARIATION, Self::FARE_VARIATION);
 
         (fare + variation).max(Self::MINIMUM_FARE) as u32
     }

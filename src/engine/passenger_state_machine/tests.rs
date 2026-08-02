@@ -1,6 +1,12 @@
 use super::*;
 use crate::data::loader::load_passengers;
 
+/// A fixed-seed stream for tests: deterministic, and a fresh one per call
+/// so no test's draws depend on another's.
+fn test_rng() -> macroquad_toolkit::rng::SeededRng {
+    macroquad_toolkit::rng::SeededRng::new(0x7E57)
+}
+
 /// A tell raised by escalation can be noticed.
 ///
 /// Every one of them was recorded `player_noticed: false`, unconditionally.
@@ -27,6 +33,7 @@ fn an_escalation_tell_can_be_noticed() {
                 PassengerStateMachine::apply_stress_delta(&mut need, passenger, 100, 0.0);
             let mut detected = Vec::new();
             PassengerStateMachine::merge_detected_tells(
+                &mut test_rng(),
                 &mut detected,
                 triggered,
                 passenger,
@@ -87,6 +94,7 @@ fn trust_changes_how_many_escalation_tells_are_caught() {
                         PassengerStateMachine::apply_stress_delta(&mut need, passenger, step, 0.0);
                     let mut detected = Vec::new();
                     PassengerStateMachine::merge_detected_tells(
+                        &mut test_rng(),
                         &mut detected,
                         triggered,
                         passenger,
@@ -129,7 +137,8 @@ fn every_escalated_stage_gives_the_passenger_a_line() {
         for stage in [NeedStage::Warning, NeedStage::Critical, NeedStage::Meltdown] {
             need.stage = stage;
             assert!(
-                PassengerStateMachine::get_dialogue_for_stage(&passenger, &need).is_some(),
+                PassengerStateMachine::get_dialogue_for_stage(&mut test_rng(), &passenger, &need)
+                    .is_some(),
                 "{} says nothing at {:?}",
                 passenger.name,
                 stage
@@ -148,7 +157,8 @@ fn a_calm_passenger_has_no_escalation_line() {
         };
         need.stage = NeedStage::Calm;
         assert!(
-            PassengerStateMachine::get_dialogue_for_stage(&passenger, &need).is_none(),
+            PassengerStateMachine::get_dialogue_for_stage(&mut test_rng(), &passenger, &need)
+                .is_none(),
             "{} has an escalation line while still calm",
             passenger.name
         );

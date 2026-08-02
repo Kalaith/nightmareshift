@@ -149,9 +149,11 @@ fn a_conjured_tell_points_at_a_dormant_breaking_safer_exception() {
         .map(|e| e.id.clone())
         .collect();
     let mut conjured = 0;
+    let mut conjure_rng = macroquad_toolkit::rng::SeededRng::new(0xBA17);
     for passenger in load_passengers() {
         for _ in 0..10 {
             let Some(tell) = super::GuidelineEngine::conjure_false_tell(
+                &mut conjure_rng,
                 &passenger,
                 &weather,
                 &guidelines,
@@ -226,12 +228,15 @@ fn false_tells_wait_for_a_seasoned_accurate_driver() {
 
     let mut state = GameState::new(0.0, &constants.game_constants);
     let mut stats = PlayerStats::new();
+    let mut gate_rng = macroquad_toolkit::rng::SeededRng::new(0x6A7E);
     stats.total_rides_completed = 100;
 
     // Two decisions is not a record, however good it looks.
     state.decision_history = vec![decision(true), decision(true)];
     assert!(!super::GuidelineEngine::should_introduce_false_tells(
-        &state, &stats
+        &mut gate_rng,
+        &state.decision_history,
+        &stats
     ));
 
     // A seasoned driver misreading tonight is not worth deceiving.
@@ -242,19 +247,28 @@ fn false_tells_wait_for_a_seasoned_accurate_driver() {
         decision(false),
     ];
     assert!(!super::GuidelineEngine::should_introduce_false_tells(
-        &state, &stats
+        &mut gate_rng,
+        &state.decision_history,
+        &stats
     ));
 
     // A rookie reading perfectly has not earned the lies yet.
     state.decision_history = vec![decision(true), decision(true), decision(true)];
     let rookie = PlayerStats::new();
     assert!(!super::GuidelineEngine::should_introduce_false_tells(
-        &state, &rookie
+        &mut gate_rng,
+        &state.decision_history,
+        &rookie
     ));
 
     // Seasoned and sharp: the gate is a coin toss, so flip until it lands.
-    let opened =
-        (0..300).any(|_| super::GuidelineEngine::should_introduce_false_tells(&state, &stats));
+    let opened = (0..300).any(|_| {
+        super::GuidelineEngine::should_introduce_false_tells(
+            &mut gate_rng,
+            &state.decision_history,
+            &stats,
+        )
+    });
     assert!(
         opened,
         "the gate never opened for a seasoned, accurate driver"

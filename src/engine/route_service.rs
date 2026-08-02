@@ -289,13 +289,18 @@ impl RouteService {
         }
     }
 
-    /// Generate 3 risk tags for a route context
+    /// Generate 3 risk tags for a route context.
+    ///
+    /// Ordered by a caller-supplied seed rather than any random stream: the
+    /// one caller is the driving screen, which rebuilds these every frame —
+    /// a draw here would either flicker the tags or, worse, bleed frame-rate
+    /// into the gameplay stream.
     pub fn generate_risk_tags(
         route: RouteType,
         weather: Option<&WeatherCondition>,
         time_of_day: Option<&TimeOfDay>,
         _passenger: Option<&Passenger>,
-        seed: Option<u64>,
+        seed: u64,
     ) -> Vec<RiskTag> {
         let mut potential_risks = Vec::new();
 
@@ -356,16 +361,12 @@ impl RouteService {
             }
         }
 
-        if let Some(seed) = seed {
-            potential_risks.sort_by_key(|risk| {
-                let mut hasher = DefaultHasher::new();
-                seed.hash(&mut hasher);
-                risk.hash(&mut hasher);
-                hasher.finish()
-            });
-        } else {
-            macroquad_toolkit::rng::shuffle(&mut potential_risks);
-        }
+        potential_risks.sort_by_key(|risk| {
+            let mut hasher = DefaultHasher::new();
+            seed.hash(&mut hasher);
+            risk.hash(&mut hasher);
+            hasher.finish()
+        });
 
         // Ensure unique
         let mut selected = Vec::new();
@@ -493,6 +494,7 @@ mod fare_tests {
                 RouteType::Police,
             ] {
                 let paid = GameEngine::calculate_fare(
+                    &mut macroquad_toolkit::rng::SeededRng::new(0xFA5E),
                     passenger.fare,
                     route,
                     &passenger,

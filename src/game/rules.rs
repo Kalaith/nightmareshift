@@ -1,5 +1,4 @@
 use macroquad::prelude::get_time;
-use macroquad_toolkit::rng;
 
 use super::Game;
 use crate::data::{
@@ -59,10 +58,11 @@ impl Game {
         );
 
         if hidden.violation || hidden.rule.is_some() {
-            let lands = self
-                .game_data
-                .as_ref()
-                .is_some_and(|data| GameEngine::hidden_violation_lands(&data.constants));
+            let lands = if let Some(data) = self.game_data.as_ref() {
+                GameEngine::hidden_violation_lands(&mut self.game_state.rng, &data.constants)
+            } else {
+                false
+            };
             if !hidden.violation || lands {
                 self.resolve_cab_rule_action(hidden, true, &action_key, current_time);
                 return;
@@ -220,6 +220,7 @@ impl Game {
             );
             self.game_state.current_passenger_need_state = Some(need_state);
             PassengerStateMachine::merge_detected_tells(
+                &mut self.game_state.rng,
                 &mut self.game_state.detected_tells,
                 triggered,
                 &passenger,
@@ -254,7 +255,7 @@ impl Game {
             death_note: None,
         };
         for consequence in consequences {
-            if rng::rand() > consequence.probability.clamp(0.0, 1.0) {
+            if self.game_state.rng.next_f32() > consequence.probability.clamp(0.0, 1.0) {
                 continue;
             }
 
@@ -513,6 +514,7 @@ impl Game {
                 );
                 self.game_state.current_passenger_need_state = Some(need);
                 PassengerStateMachine::merge_detected_tells(
+                    &mut self.game_state.rng,
                     &mut self.game_state.detected_tells,
                     triggered,
                     &passenger,
@@ -558,6 +560,7 @@ impl Game {
             PassengerStateMachine::apply_stress_delta(&mut need, passenger, -relief, current_time);
         self.game_state.current_passenger_need_state = Some(need);
         PassengerStateMachine::merge_detected_tells(
+            &mut self.game_state.rng,
             &mut self.game_state.detected_tells,
             triggered,
             passenger,
@@ -618,7 +621,8 @@ impl Game {
             for consequence in &result.consequences {
                 match consequence.consequence_type {
                     ConsequenceType::Death => {
-                        if rng::rand() < consequence.probability.clamp(0.0, 1.0) {
+                        if self.game_state.rng.next_f32() < consequence.probability.clamp(0.0, 1.0)
+                        {
                             self.end_shift(false);
                             // The authored death line joins the verdict —
                             // written for this screen, shown for the first

@@ -159,7 +159,9 @@ impl RideService {
                 &state.current_guidelines,
             );
 
-            if hidden_violation.violation && GameEngine::hidden_violation_lands(constants) {
+            if hidden_violation.violation
+                && GameEngine::hidden_violation_lands(&mut state.rng, constants)
+            {
                 return Self::resolve_rule_violation(state, hidden_violation, true);
             }
         }
@@ -180,7 +182,9 @@ impl RideService {
             &state.current_weather,
             &state.time_of_day,
         );
-        if hidden_weather_violation.violation && GameEngine::hidden_violation_lands(constants) {
+        if hidden_weather_violation.violation
+            && GameEngine::hidden_violation_lands(&mut state.rng, constants)
+        {
             return Self::resolve_rule_violation(state, hidden_weather_violation, true);
         }
 
@@ -275,6 +279,7 @@ impl RideService {
             );
             state.current_passenger_need_state = Some(need_state);
             PassengerStateMachine::merge_detected_tells(
+                &mut state.rng,
                 &mut state.detected_tells,
                 triggered,
                 &passenger,
@@ -425,14 +430,18 @@ impl RideService {
             // passenger is doing, so it outranks both the route reaction and
             // the generic stage line.
             let spoken_tell = PassengerStateMachine::spoken_tell(&triggered_tells);
-            let route_dialogue = Self::route_reaction_dialogue(&passenger, route);
-            let stage_dialogue =
-                PassengerStateMachine::get_dialogue_for_stage(&passenger, &need_state);
+            let route_dialogue = Self::route_reaction_dialogue(&mut state.rng, &passenger, route);
+            let stage_dialogue = PassengerStateMachine::get_dialogue_for_stage(
+                &mut state.rng,
+                &passenger,
+                &need_state,
+            );
             let dialogue = spoken_tell.or(route_dialogue).or(stage_dialogue);
 
             state.current_passenger_need_state = Some(need_state);
 
             PassengerStateMachine::merge_detected_tells(
+                &mut state.rng,
                 &mut state.detected_tells,
                 triggered_tells,
                 &passenger,
@@ -452,7 +461,11 @@ impl RideService {
         }
     }
 
-    fn route_reaction_dialogue(passenger: &Passenger, route: RouteType) -> Option<String> {
+    fn route_reaction_dialogue(
+        rng: &mut macroquad_toolkit::rng::SeededRng,
+        passenger: &Passenger,
+        route: RouteType,
+    ) -> Option<String> {
         let preference = passenger.get_route_preference(route)?;
         if preference.preference == PreferenceLevel::Neutral {
             return None;
@@ -460,7 +473,7 @@ impl RideService {
 
         let line = preference.special_dialogue.as_ref()?;
         let trigger_chance = preference.trigger_chance.unwrap_or(1.0).clamp(0.0, 1.0);
-        if macroquad_toolkit::rng::gen_range(0.0, 1.0) <= trigger_chance {
+        if rng.next_f32() <= trigger_chance {
             Some(line.clone())
         } else {
             None
@@ -533,6 +546,7 @@ impl RideService {
             );
             state.current_passenger_need_state = Some(need_state);
             PassengerStateMachine::merge_detected_tells(
+                &mut state.rng,
                 &mut state.detected_tells,
                 triggered,
                 &passenger,
@@ -630,9 +644,18 @@ impl RideService {
                     .count();
 
                 if ride_legs <= 1 {
-                    // First leg -> Mid-Ride Event
-                    state.current_event =
-                        Some(Self::generate_mid_ride_event(state, data, stats, route));
+                    // First leg -> Mid-Ride Event. The generator reads the
+                    // whole state, so the stream is copied out and written
+                    // back — SeededRng is Copy, and the draws must count.
+                    let mut rng_for_event = state.rng;
+                    state.current_event = Some(Self::generate_mid_ride_event(
+                        &mut rng_for_event,
+                        state,
+                        data,
+                        stats,
+                        route,
+                    ));
+                    state.rng = rng_for_event;
                     state.game_phase = GamePhase::Interaction;
                     RouteOutcome::Success
                 } else {

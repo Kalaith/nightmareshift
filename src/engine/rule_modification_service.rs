@@ -55,7 +55,7 @@ impl RuleModificationService {
         if state.current_rules.is_empty() {
             return None;
         }
-        let index = macroquad_toolkit::rng::gen_range(0, state.current_rules.len());
+        let index = state.rng.below(state.current_rules.len());
         let removed = state.current_rules.remove(index);
         state.curse_danger_bonus += 2;
         Some(RuleChange {

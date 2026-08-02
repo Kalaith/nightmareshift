@@ -225,12 +225,18 @@ impl Game {
                             need.stage = NeedStage::Critical;
                             need
                         });
+                    let mut scene_rng = self.game_state.rng;
                     self.game_state.current_passenger_dialogue = need
                         .as_ref()
                         .and_then(|need| {
-                            PassengerStateMachine::get_dialogue_for_stage(&passenger, need)
+                            PassengerStateMachine::get_dialogue_for_stage(
+                                &mut scene_rng,
+                                &passenger,
+                                need,
+                            )
                         })
                         .or(self.game_state.current_passenger_dialogue.take());
+                    self.game_state.rng = scene_rng;
                     self.game_state.current_passenger_need_state = need;
 
                     // The guideline their own exception belongs to, so the
@@ -342,14 +348,17 @@ impl Game {
                         self.player_stats.purchase_skill(&id, cost);
                     }
 
+                    let mut scene_rng = self.game_state.rng;
                     let event = self.game_data.as_ref().map(|data| {
                         RideService::generate_mid_ride_event(
+                            &mut scene_rng,
                             &self.game_state,
                             data,
                             &self.player_stats,
                             RouteType::Normal,
                         )
                     });
+                    self.game_state.rng = scene_rng;
                     self.game_state.current_event = event;
                     self.game_state.game_phase = GamePhase::Interaction;
                 }

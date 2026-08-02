@@ -1,6 +1,12 @@
 use super::*;
 use crate::data::loader::{load_constants, load_rules};
 
+/// A fixed-seed stream for tests: deterministic, and a fresh one per call
+/// so no test's draws depend on another's.
+fn test_rng() -> macroquad_toolkit::rng::SeededRng {
+    macroquad_toolkit::rng::SeededRng::new(0x7E57)
+}
+
 /// A generated shift must never contain two rules that contradict each
 /// other. Run many times because selection is random — a single draw
 /// passing proves nothing.
@@ -10,7 +16,8 @@ fn generated_shifts_never_contradict_themselves() {
     let constants = load_constants();
     for _ in 0..500 {
         for experience in [0, 10, 20, 30, 40] {
-            let shift = GameEngine::generate_shift_rules(experience, &rules, &constants);
+            let shift =
+                GameEngine::generate_shift_rules(&mut test_rng(), experience, &rules, &constants);
             let all: Vec<&Rule> = shift
                 .visible_rules
                 .iter()
@@ -72,7 +79,7 @@ fn every_generated_rule_type_is_reachable() {
     let constants = load_constants();
     let mut seen: Vec<RuleType> = Vec::new();
     for _ in 0..500 {
-        let shift = GameEngine::generate_shift_rules(40, &rules, &constants);
+        let shift = GameEngine::generate_shift_rules(&mut test_rng(), 40, &rules, &constants);
         for rule in shift.visible_rules.iter().chain(shift.hidden_rules.iter()) {
             if !seen.contains(&rule.rule_type) {
                 seen.push(rule.rule_type);
@@ -101,7 +108,7 @@ fn hidden_rules_actually_appear() {
     let constants = load_constants();
     let with_hidden = (0..500)
         .filter(|_| {
-            !GameEngine::generate_shift_rules(40, &rules, &constants)
+            !GameEngine::generate_shift_rules(&mut test_rng(), 40, &rules, &constants)
                 .hidden_rules
                 .is_empty()
         })
@@ -140,6 +147,7 @@ fn the_fare_multiplier_is_exactly_what_the_tree_authors() {
     let fare_of = |unlocked: &[String]| {
         let mods = SkillModifiers::from_unlocked(&skills, unlocked);
         GameEngine::calculate_fare(
+            &mut test_rng(),
             passenger.fare,
             RouteType::Normal,
             &passenger,
@@ -238,6 +246,44 @@ fn only_the_passengers_own_rule_grants_an_exception() {
     );
 }
 
+/// The seam the whole determinism thread exists for: the same seed must
+/// build the same night. Rules, weather, and hazards all draw from one
+/// stream, so two runs from equal states cannot diverge — and a replay or
+/// a mid-run save that restores the stream picks up exactly where the
+/// original left off.
+#[test]
+fn the_same_seed_builds_the_same_night() {
+    use crate::engine::WeatherService;
+    let rules = crate::data::loader::load_rules();
+    let constants = load_constants();
+
+    let build = |seed: u64| {
+        let mut rng = macroquad_toolkit::rng::SeededRng::new(seed);
+        let shift = GameEngine::generate_shift_rules(&mut rng, 40, &rules, &constants);
+        let season = WeatherService::get_current_season(10);
+        let weather = WeatherService::generate_initial_weather(&mut rng, &season, 0.0);
+        let time_of_day = WeatherService::time_of_day_after(0);
+        let hazards =
+            WeatherService::generate_hazards(&mut rng, &weather, &time_of_day, &season, 0.0);
+        (
+            shift
+                .visible_rules
+                .iter()
+                .chain(shift.hidden_rules.iter())
+                .map(|rule| rule.id)
+                .collect::<Vec<_>>(),
+            format!("{:?} {:?}", weather.weather_type, weather.intensity),
+            hazards
+                .iter()
+                .map(|hazard| hazard.id.clone())
+                .collect::<Vec<_>>(),
+        )
+    };
+
+    assert_eq!(build(42), build(42), "one seed produced two nights");
+    assert_eq!(build(7), build(7));
+}
+
 /// A hidden-rule violation lands about as often as it is authored to.
 ///
 /// Averaged over many rolls because a probability cannot be checked with
@@ -250,8 +296,9 @@ fn a_hidden_violation_lands_about_as_often_as_authored() {
     let authored = constants.probabilities.hidden_rule_violation;
 
     const ROLLS: u32 = 4000;
+    let mut lands_rng = test_rng();
     let landed = (0..ROLLS)
-        .filter(|_| GameEngine::hidden_violation_lands(&constants))
+        .filter(|_| GameEngine::hidden_violation_lands(&mut lands_rng, &constants))
         .count() as f32;
     let observed = landed / ROLLS as f32;
 
@@ -459,7 +506,7 @@ fn shifts_still_produce_rules() {
     let rules = load_rules();
     let constants = load_constants();
     for _ in 0..200 {
-        let shift = GameEngine::generate_shift_rules(30, &rules, &constants);
+        let shift = GameEngine::generate_shift_rules(&mut test_rng(), 30, &rules, &constants);
         assert!(
             !shift.visible_rules.is_empty() || !shift.hidden_rules.is_empty(),
             "generated a shift with no rules at all"

@@ -81,6 +81,7 @@ impl PassengerService {
 
     /// Select passenger with weather and time awareness
     pub fn select_weather_aware_passenger(
+        rng: &mut macroquad_toolkit::rng::SeededRng,
         passengers: &[Passenger],
         used_passengers: &[u32],
         context: &PassengerSelectionContext,
@@ -93,16 +94,18 @@ impl PassengerService {
         if available.is_empty() {
             // Reset pool if all used
             return Self::select_weather_aware_from_pool(
+                rng,
                 &passengers.iter().collect::<Vec<_>>(),
                 context,
             );
         }
 
-        Self::select_weather_aware_from_pool(&available, context)
+        Self::select_weather_aware_from_pool(rng, &available, context)
     }
 
     /// Internal selection with all environmental factors
     fn select_weather_aware_from_pool(
+        rng: &mut macroquad_toolkit::rng::SeededRng,
         passengers: &[&Passenger],
         context: &PassengerSelectionContext,
     ) -> Option<Passenger> {
@@ -134,7 +137,7 @@ impl PassengerService {
             return passengers.first().map(|p| (*p).clone());
         }
 
-        let mut random = macroquad_toolkit::rng::rand() * total_weight;
+        let mut random = rng.next_f32() * total_weight;
         for (passenger, weight) in weighted {
             random -= weight;
             if random <= 0.0 {
@@ -261,6 +264,7 @@ impl PassengerService {
 
     /// Check if backstory should unlock
     pub fn check_backstory_unlock(
+        rng: &mut macroquad_toolkit::rng::SeededRng,
         passenger_id: u32,
         player_stats: &PlayerStats,
         constants: &ConstantsData,
@@ -277,7 +281,7 @@ impl PassengerService {
             constants.game_constants.backstory_unlock_repeat
         };
 
-        macroquad_toolkit::rng::rand() < chance
+        rng.next_f32() < chance
     }
 }
 

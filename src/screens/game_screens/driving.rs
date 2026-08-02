@@ -485,7 +485,7 @@ pub fn draw_driving(
                 Some(&game_state.current_weather),
                 Some(&game_state.time_of_day),
                 game_state.current_passenger.as_ref(), // Pass passenger for context
-                Some(seed),
+                seed,
             );
 
             // The risk tags and the cost column used to start 244 and 154 from

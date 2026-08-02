@@ -42,14 +42,12 @@ impl RideService {
 
         // The worse encounter is checked first so a high-risk leg cannot be
         // downgraded into the milder one by ordering.
-        if risk >= risk_constants.high_risk
-            && macroquad_toolkit::rng::chance(probabilities.high_risk_encounter)
-        {
+        if risk >= risk_constants.high_risk && state.rng.chance(probabilities.high_risk_encounter) {
             return Some(Self::high_risk_encounter(state));
         }
 
         if risk >= risk_constants.supernatural_threshold
-            && macroquad_toolkit::rng::chance(probabilities.supernatural_encounter)
+            && state.rng.chance(probabilities.supernatural_encounter)
         {
             return Some(Self::supernatural_encounter(state, current_time));
         }
@@ -93,6 +91,7 @@ impl RideService {
                 PassengerStateMachine::apply_stress_delta(&mut need, &passenger, 12, current_time);
             state.current_passenger_need_state = Some(need);
             PassengerStateMachine::merge_detected_tells(
+                &mut state.rng,
                 &mut state.detected_tells,
                 triggered,
                 &passenger,

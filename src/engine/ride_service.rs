@@ -42,7 +42,9 @@ impl RideService {
         // as — roll it, and on a hit draw only from the kin pool.
         let kin = PassengerService::kin_of(&state.used_passengers, &data.passengers);
         if !kin.is_empty()
-            && macroquad_toolkit::rng::chance(data.constants.probabilities.related_passenger_spawn)
+            && state
+                .rng
+                .chance(data.constants.probabilities.related_passenger_spawn)
         {
             let kin_pool: Vec<Passenger> = data
                 .passengers
@@ -50,9 +52,12 @@ impl RideService {
                 .filter(|p| kin.contains(&p.id))
                 .cloned()
                 .collect();
-            if let Some(passenger) =
-                PassengerService::select_weather_aware_passenger(&kin_pool, &[], &context)
-            {
+            if let Some(passenger) = PassengerService::select_weather_aware_passenger(
+                &mut state.rng,
+                &kin_pool,
+                &[],
+                &context,
+            ) {
                 // Name the connection, or the mechanic is invisible machinery.
                 let link = Self::name_the_link(&passenger, &state.used_passengers, data);
                 let presented = Self::present_passenger(state, passenger, current_time);
@@ -68,6 +73,7 @@ impl RideService {
         }
 
         match PassengerService::select_weather_aware_passenger(
+            &mut state.rng,
             &data.passengers,
             &state.used_passengers,
             &context,
@@ -105,6 +111,7 @@ impl RideService {
         // Roll which authored exceptions are in play for this fare, once,
         // here — everything that asks afterwards must get one answer.
         state.live_exceptions = crate::engine::GuidelineEngine::roll_exception_liveness(
+            &mut state.rng,
             &passenger,
             &state.current_guidelines,
         );
@@ -179,19 +186,22 @@ impl RideService {
         if let Some(ref passenger) = state.current_passenger.clone() {
             // Calculate fare. The destination's fareModifier and the player's
             // fare-boosting skills (Silver Tongue) both scale the payout.
-            let reputation = state.passenger_reputation.get(&passenger.id);
+            // Cloned so the fare call can also borrow the state's rng.
+            let reputation = state.passenger_reputation.get(&passenger.id).cloned();
             let skill_mods = SkillModifiers::from_unlocked(&data.skills, &stats.unlocked_skills);
             let destination_fare_modifier = data
                 .get_location(&passenger.destination)
                 .map(|l| l.fare_modifier)
                 .unwrap_or(1.0)
                 * skill_mods.fare_mult;
+            let streak = state.consecutive_route_streak.clone();
             let fare = GameEngine::calculate_fare(
+                &mut state.rng,
                 passenger.fare,
                 route,
                 passenger,
-                state.consecutive_route_streak.as_ref(),
-                reputation,
+                streak.as_ref(),
+                reputation.as_ref(),
                 &data.constants,
                 destination_fare_modifier,
             );
@@ -210,13 +220,17 @@ impl RideService {
             }
 
             // Check backstory unlock
-            let backstory_unlocked =
-                if PassengerService::check_backstory_unlock(passenger.id, stats, &data.constants) {
-                    stats.unlock_backstory(passenger.id);
-                    Some((passenger.name.clone(), passenger.backstory_details.clone()))
-                } else {
-                    None
-                };
+            let backstory_unlocked = if PassengerService::check_backstory_unlock(
+                &mut state.rng,
+                passenger.id,
+                stats,
+                &data.constants,
+            ) {
+                stats.unlock_backstory(passenger.id);
+                Some((passenger.name.clone(), passenger.backstory_details.clone()))
+            } else {
+                None
+            };
 
             // Record encounter
             stats.record_passenger_encounter(passenger.id);

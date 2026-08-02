@@ -255,6 +255,7 @@ impl PassengerStateMachine {
 
     /// Get stage-specific dialogue
     pub fn get_dialogue_for_stage(
+        rng: &mut macroquad_toolkit::rng::SeededRng,
         _passenger: &Passenger,
         state: &PassengerNeedState,
     ) -> Option<String> {
@@ -265,7 +266,7 @@ impl PassengerStateMachine {
             .dialogue_by_stage
             .as_ref()
             .and_then(|map| map.get(stage_key))
-            .and_then(|lines| macroquad_toolkit::rng::choose(lines).cloned())
+            .and_then(|lines| rng.choose(lines).cloned())
     }
 
     /// Merge triggered tells into detected tells list.
@@ -288,6 +289,7 @@ impl PassengerStateMachine {
     /// escalates, and better trust improves detection, but the tells escalation
     /// raised were exempt from detection altogether.
     pub fn merge_detected_tells(
+        rng: &mut macroquad_toolkit::rng::SeededRng,
         existing: &mut Vec<DetectedTell>,
         triggered: Vec<TriggeredTell>,
         passenger: &Passenger,
@@ -304,7 +306,8 @@ impl PassengerStateMachine {
                     .find(|g| g.exceptions.iter().any(|e| e.id == exception_id))
                     .map(|g| g.id)
             });
-            let noticed = GuidelineEngine::notices_tell(&trigger.tell, passenger, player_trust);
+            let noticed =
+                GuidelineEngine::notices_tell(rng, &trigger.tell, passenger, player_trust);
             existing.push(DetectedTell {
                 tell: trigger.tell,
                 passenger_id,

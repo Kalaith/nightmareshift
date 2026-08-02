@@ -19,7 +19,7 @@
 
 ## Determinism & testing
 
-- Thread a state-owned `SeededRng` through the ~35 gameplay call sites while leaving visual effects on macroquad's global generator. Seeded/daily runs, mid-run save/resume, and full-shift scenario replays all depend on this seam; `srand`-only was rejected as a misleading half-measure since `effects.rs` draws from the global stream every frame.
+- Build seeded/daily-run modes on the now-complete determinism seam: every gameplay draw goes through the serializable `GameState.rng` (visual effects stay global by design; `the_same_seed_builds_the_same_night` holds the property). What remains is product surface — a seed entry/daily-challenge UI, and wiring a fixed seed into `start_game`.
 - Wire the playtest bot into CI as a runtime smoke gate — it already exits 2 when stuck.
 - Use the bot's almanac sweep as a balance harness to validate the fuel/fare/upgrade economy before tuning.
 

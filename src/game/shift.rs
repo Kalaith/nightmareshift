@@ -68,8 +68,12 @@ impl Game {
             let difficulty_step = data.constants.game_constants.difficulty_increase_per_night;
             let effective_diff = (base_diff + (night - 1) * difficulty_step).min(max_diff);
             let synthetic_xp = effective_diff * data.constants.scoring.experience_per_level;
-            let shift_rules =
-                GameEngine::generate_shift_rules(synthetic_xp, &data.rules, &data.constants);
+            let shift_rules = GameEngine::generate_shift_rules(
+                &mut self.game_state.rng,
+                synthetic_xp,
+                &data.rules,
+                &data.constants,
+            );
             self.game_state.current_rules = shift_rules.visible_rules;
             self.game_state.hidden_rules = shift_rules.hidden_rules;
             self.game_state.difficulty_level = shift_rules.difficulty_level;

@@ -16,6 +16,7 @@ impl RideService {
     /// `pub(crate)` so the screenshot harness can seed a real event rather
     /// than hand-building one that could drift from what the game produces.
     pub(crate) fn generate_mid_ride_event(
+        rng: &mut macroquad_toolkit::rng::SeededRng,
         state: &GameState,
         data: &GameData,
         stats: &PlayerStats,
@@ -27,7 +28,7 @@ impl RideService {
             .filter(|e| e.eligible_for(route))
             .collect();
 
-        let (title, description, mut choices) = match Self::pick_weighted_event(&eligible) {
+        let (title, description, mut choices) = match Self::pick_weighted_event(rng, &eligible) {
             Some(tpl) => (
                 tpl.title.clone(),
                 tpl.description.clone(),
@@ -57,7 +58,7 @@ impl RideService {
             }
         }
 
-        macroquad_toolkit::rng::shuffle(&mut choices);
+        rng.shuffle(&mut choices);
 
         MidRideEvent {
             title,
@@ -73,15 +74,18 @@ impl RideService {
     }
 
     /// Pick one event weighted by its `weight` field.
-    fn pick_weighted_event<'a>(events: &[&'a EventTemplate]) -> Option<&'a EventTemplate> {
+    fn pick_weighted_event<'a>(
+        rng: &mut macroquad_toolkit::rng::SeededRng,
+        events: &[&'a EventTemplate],
+    ) -> Option<&'a EventTemplate> {
         if events.is_empty() {
             return None;
         }
         let total: f32 = events.iter().map(|e| e.weight.max(0.0)).sum();
         if total <= 0.0 {
-            return macroquad_toolkit::rng::choose(events).copied();
+            return rng.choose(events).copied();
         }
-        let mut roll = macroquad_toolkit::rng::rand() * total;
+        let mut roll = rng.next_f32() * total;
         for e in events {
             roll -= e.weight.max(0.0);
             if roll <= 0.0 {
@@ -161,6 +165,7 @@ impl RideService {
                 PassengerStateMachine::apply_stress_delta(&mut need, &passenger, amount, now);
             state.current_passenger_need_state = Some(need);
             PassengerStateMachine::merge_detected_tells(
+                &mut state.rng,
                 &mut state.detected_tells,
                 triggered,
                 &passenger,
@@ -243,10 +248,16 @@ mod tests {
 
         let offers_ability = |stats: &PlayerStats| {
             (0..40).any(|_| {
-                RideService::generate_mid_ride_event(&state, &data, stats, RouteType::Normal)
-                    .choices
-                    .iter()
-                    .any(|choice| choice.required_trait.as_deref() == Some(trait_name.as_str()))
+                RideService::generate_mid_ride_event(
+                    &mut macroquad_toolkit::rng::SeededRng::new(0xE7),
+                    &state,
+                    &data,
+                    stats,
+                    RouteType::Normal,
+                )
+                .choices
+                .iter()
+                .any(|choice| choice.required_trait.as_deref() == Some(trait_name.as_str()))
             })
         };
 

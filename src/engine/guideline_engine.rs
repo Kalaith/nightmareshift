@@ -29,6 +29,7 @@ impl GuidelineEngine {
     /// on the state, because the tell system, the decision judge, and the
     /// bot must all see the same answer.
     pub fn roll_exception_liveness(
+        rng: &mut macroquad_toolkit::rng::SeededRng,
         passenger: &Passenger,
         guidelines: &[Guideline],
     ) -> HashSet<String> {
@@ -38,7 +39,7 @@ impl GuidelineEngine {
                 if !Self::passenger_matches_exception(passenger, exception) {
                     continue;
                 }
-                if macroquad_toolkit::rng::rand() < exception.probability.clamp(0.0, 1.0) {
+                if rng.next_f32() < exception.probability.clamp(0.0, 1.0) {
                     live.insert(exception.id.clone());
                 }
             }
@@ -48,6 +49,7 @@ impl GuidelineEngine {
 
     /// Analyze passenger for active tells based on guidelines
     pub fn analyze_passenger(
+        rng: &mut macroquad_toolkit::rng::SeededRng,
         passenger: &Passenger,
         weather: &WeatherCondition,
         player_trust: f32,
@@ -78,7 +80,7 @@ impl GuidelineEngine {
                 // Add detected tells
                 for tell in &exception.tells {
                     let player_noticed =
-                        Self::calculate_detection_probability(tell, passenger, player_trust);
+                        Self::calculate_detection_probability(rng, tell, passenger, player_trust);
                     detected.push(DetectedTell {
                         tell: tell.clone(),
                         passenger_id: passenger.id,
@@ -107,7 +109,9 @@ impl GuidelineEngine {
                 let guidelines = state.current_guidelines.clone();
 
                 let live_exceptions = state.live_exceptions.clone();
+                let decision_history = state.decision_history.clone();
                 let mut new_tells = Self::analyze_passenger(
+                    &mut state.rng,
                     &passenger,
                     &weather,
                     player_trust,
@@ -118,8 +122,11 @@ impl GuidelineEngine {
 
                 // Introduce a false tell for experienced players — at most
                 // one per decision, or the panel fills with fiction.
-                if !state.false_tell_planted && Self::should_introduce_false_tells(state, stats) {
+                if !state.false_tell_planted
+                    && Self::should_introduce_false_tells(&mut state.rng, &decision_history, stats)
+                {
                     if let Some(false_tell) = Self::conjure_false_tell(
+                        &mut state.rng,
                         &passenger,
                         &weather,
                         &guidelines,
@@ -154,6 +161,7 @@ impl GuidelineEngine {
     /// exactly like the real thing, and acting on it walks into "Breaking X
     /// was dangerous".
     fn conjure_false_tell(
+        rng: &mut macroquad_toolkit::rng::SeededRng,
         passenger: &Passenger,
         weather: &WeatherCondition,
         guidelines: &[Guideline],
@@ -188,7 +196,7 @@ impl GuidelineEngine {
         if candidates.is_empty() {
             return None;
         }
-        let pick = macroquad_toolkit::rng::gen_range(0u32, candidates.len() as u32) as usize;
+        let pick = rng.below(candidates.len());
         let (guideline, exception, tell) = candidates[pick];
         Some(DetectedTell {
             tell: tell.clone(),
@@ -289,11 +297,17 @@ impl GuidelineEngine {
     /// passenger escalating deserves the same roll as one raised by a condition
     /// being met, and for a long time it was exempt and recorded as never
     /// noticed.
-    pub fn notices_tell(tell: &PassengerTell, passenger: &Passenger, player_trust: f32) -> bool {
-        Self::calculate_detection_probability(tell, passenger, player_trust)
+    pub fn notices_tell(
+        rng: &mut macroquad_toolkit::rng::SeededRng,
+        tell: &PassengerTell,
+        passenger: &Passenger,
+        player_trust: f32,
+    ) -> bool {
+        Self::calculate_detection_probability(rng, tell, passenger, player_trust)
     }
 
     fn calculate_detection_probability(
+        rng: &mut macroquad_toolkit::rng::SeededRng,
         tell: &PassengerTell,
         passenger: &Passenger,
         player_trust: f32,
@@ -326,7 +340,7 @@ impl GuidelineEngine {
 
         let final_prob =
             base_prob * intensity_mult * candour * guarded * (0.5 + player_trust * 0.5);
-        macroquad_toolkit::rng::rand() < final_prob
+        rng.next_f32() < final_prob
     }
 
     /// Evaluate a guideline choice
@@ -459,24 +473,24 @@ impl GuidelineEngine {
     /// decision record — the driver worth deceiving is the one currently
     /// reading passengers well, and three decisions is the least a ratio
     /// can be trusted on.
-    pub fn should_introduce_false_tells(state: &GameState, stats: &PlayerStats) -> bool {
-        let decisions = state.decision_history.len();
+    pub fn should_introduce_false_tells(
+        rng: &mut macroquad_toolkit::rng::SeededRng,
+        decision_history: &[GuidelineDecision],
+        stats: &PlayerStats,
+    ) -> bool {
+        let decisions = decision_history.len();
         if decisions < 3 {
             return false;
         }
-        let correct = state
-            .decision_history
-            .iter()
-            .filter(|d| d.was_correct)
-            .count();
+        let correct = decision_history.iter().filter(|d| d.was_correct).count();
         let accuracy = correct as f32 / decisions as f32;
 
         let seasoned_rides = stats.total_rides_completed;
         if seasoned_rides > 35 && accuracy > 0.6 {
-            return macroquad_toolkit::rng::rand() < 0.5;
+            return rng.next_f32() < 0.5;
         }
         if seasoned_rides > 20 && accuracy > 0.7 {
-            return macroquad_toolkit::rng::rand() < 0.3;
+            return rng.next_f32() < 0.3;
         }
 
         false
