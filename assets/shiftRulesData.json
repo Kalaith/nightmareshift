@@ -413,6 +413,7 @@
         "visible": true,
         "actionKey": "drive_dark",
         "actionType": "forbidden",
+        "relatedGuidelineId": 1004,
         "defaultOutcome": "Your lights hold the roadside shapes at the edge of the beam.",
         "exceptions": [],
         "followConsequences": [
@@ -459,6 +460,7 @@
         "visible": true,
         "actionKey": "drive_dark",
         "actionType": "forbidden",
+        "relatedGuidelineId": 1012,
         "defaultOutcome": "Light is the only fare the far road accepts.",
         "exceptions": [],
         "followConsequences": [
@@ -505,6 +507,7 @@
         "visible": true,
         "actionKey": "use_ac",
         "actionType": "forbidden",
+        "relatedGuidelineId": 1002,
         "defaultOutcome": "The unnatural chill is a truce; disturbing it ends the truce.",
         "exceptions": [],
         "followConsequences": [
@@ -551,6 +554,7 @@
         "visible": true,
         "actionKey": "use_ac",
         "actionType": "forbidden",
+        "relatedGuidelineId": 1013,
         "defaultOutcome": "The dead keep the temperature they died in; matching it keeps the peace.",
         "exceptions": [],
         "followConsequences": [
@@ -597,6 +601,7 @@
         "visible": true,
         "actionKey": "use_wipers",
         "actionType": "forbidden",
+        "relatedGuidelineId": 1005,
         "defaultOutcome": "Ignoring the smears on the windshield denies them your attention.",
         "exceptions": [],
         "followConsequences": [
@@ -643,6 +648,7 @@
         "visible": true,
         "actionKey": "use_wipers",
         "actionType": "forbidden",
+        "relatedGuidelineId": 1008,
         "defaultOutcome": "The film on the glass is a veil; lifting it works both ways.",
         "exceptions": [],
         "followConsequences": [

@@ -103,9 +103,12 @@ impl Game {
                 }
             }
             UiAction::EndShift => {
+                // No cashing out on The Last Fare — the night ends when Death
+                // reaches his door, one way or the other.
                 if self.screen == Screen::Game
                     && self.game_state.game_phase == GamePhase::Waiting
                     && self.game_state.earnings >= self.game_state.minimum_earnings
+                    && !self.game_state.last_fare_night
                 {
                     self.end_shift(true);
                 }

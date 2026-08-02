@@ -304,5 +304,95 @@
             "target": "refuel_discount",
             "value": 0.15
         }
+    },
+    {
+        "id": "stereo_1",
+        "name": "Velvet Stereo",
+        "description": "A warm, clean sound system. Playing music soothes a restless passenger, once per ride.",
+        "cost": 450,
+        "icon": "🎵",
+        "category": "comfort",
+        "prerequisites": [],
+        "effect": {
+            "type": "stat_boost",
+            "target": "soothe_music",
+            "value": 8
+        }
+    },
+    {
+        "id": "stereo_2",
+        "name": "Private Concert",
+        "description": "Speakers tuned for the back seat. Music soothes considerably more (stacks).",
+        "cost": 1000,
+        "icon": "🎶",
+        "category": "comfort",
+        "prerequisites": [
+            "stereo_1"
+        ],
+        "effect": {
+            "type": "stat_boost",
+            "target": "soothe_music",
+            "value": 8
+        }
+    },
+    {
+        "id": "climate_1",
+        "name": "Climate Rebuild",
+        "description": "Vents that answer gently. The AC or a cracked window soothes a restless passenger, once per ride.",
+        "cost": 500,
+        "icon": "❄️",
+        "category": "comfort",
+        "prerequisites": [],
+        "effect": {
+            "type": "stat_boost",
+            "target": "soothe_climate",
+            "value": 8
+        }
+    },
+    {
+        "id": "climate_2",
+        "name": "Breath of the City",
+        "description": "The cab holds whatever air its rider needs. Climate soothing is considerably stronger (stacks).",
+        "cost": 1100,
+        "icon": "🌬️",
+        "category": "comfort",
+        "prerequisites": [
+            "climate_1"
+        ],
+        "effect": {
+            "type": "stat_boost",
+            "target": "soothe_climate",
+            "value": 8
+        }
+    },
+    {
+        "id": "upholstery_1",
+        "name": "Velour Bench",
+        "description": "A seat that forgives. Meeting their eyes or pulling over calmly soothes a restless passenger, once per ride.",
+        "cost": 400,
+        "icon": "🛋️",
+        "category": "comfort",
+        "prerequisites": [],
+        "effect": {
+            "type": "stat_boost",
+            "target": "soothe_presence",
+            "value": 6
+        }
+    },
+    {
+        "id": "upholstery_2",
+        "name": "Homeward Cab",
+        "description": "The cab feels like somewhere they were once safe. Presence soothing is considerably stronger (stacks).",
+        "cost": 900,
+        "icon": "🕯️",
+        "category": "comfort",
+        "prerequisites": [
+            "upholstery_1"
+        ],
+        "effect": {
+            "type": "stat_boost",
+            "target": "soothe_presence",
+            "value": 8
+        }
     }
 ]

@@ -139,6 +139,7 @@ impl PlaytestBot {
                     passenger_id: passenger.id,
                     encountered: true,
                     knowledge_level: self.almanac_level,
+                    ..AlmanacEntry::default()
                 },
             );
 

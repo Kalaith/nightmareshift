@@ -261,6 +261,11 @@ fn one_u32() -> u32 {
     1
 }
 
+/// The roster id of Death's Taxi Driver, the reaper who collects failed
+/// drivers — and, once every soul on the roster is mastered, the run's
+/// final fare. The endgame gates on this id, so it is named once here.
+pub const DEATH_PASSENGER_ID: u32 = 16;
+
 /// A supernatural passenger in the game
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Passenger {

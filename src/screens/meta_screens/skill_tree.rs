@@ -16,6 +16,8 @@ fn skill_category_label(category: &str, data: &GameData) -> String {
         "survival" => loc_cats.survival.clone(),
         "occult" => loc_cats.occult.clone(),
         "efficiency" => loc_cats.efficiency.clone(),
+        // Hardcoded like the other ~145 strings pending localization (TODO.md).
+        "comfort" => "Comfort".to_string(),
         _ => category.to_string(),
     }
 }
@@ -36,6 +38,13 @@ fn draw_skill_category_mark(category: &str, x: f32, y: f32, color: Color) {
             draw_circle_lines(x, y, 15.0, 2.0, color);
             draw_line(x - 9.0, y + 10.0, x + 11.0, y - 10.0, 2.0, color);
             draw_line(x - 3.0, y + 10.0, x + 13.0, y + 10.0, 2.0, color);
+        }
+        "comfort" => {
+            // A bench seat: back rest and cushion.
+            draw_line(x - 14.0, y - 14.0, x - 14.0, y + 8.0, 2.0, color);
+            draw_rectangle_lines(x - 14.0, y + 2.0, 28.0, 10.0, 2.0, color);
+            draw_line(x + 14.0, y + 12.0, x + 14.0, y + 16.0, 2.0, color);
+            draw_line(x - 14.0, y + 12.0, x - 14.0, y + 16.0, 2.0, color);
         }
         _ => {
             draw_circle_lines(x, y, 14.0, 2.0, color);

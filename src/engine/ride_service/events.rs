@@ -281,6 +281,7 @@ mod tests {
                 passenger_id,
                 encountered: true,
                 knowledge_level: 1,
+                ..AlmanacEntry::default()
             },
         );
         assert!(

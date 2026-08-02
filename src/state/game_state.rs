@@ -142,6 +142,13 @@ pub struct PassengerNeedState {
     /// systems push a passenger's need around and none of them should have to
     /// remember to settle the driver's trust afterwards.
     pub pending_trust: f32,
+    /// The passenger has already been held at the brink of meltdown once.
+    ///
+    /// Meltdown was the one death in the game with no roll and no warning: the
+    /// stage flipped and the shift ended on the same leg. The first crossing
+    /// now pulls the passenger back to just under the threshold and burns this
+    /// flag; a second crossing is the real thing. One leg of grace, once.
+    pub brink_reached: bool,
 }
 
 impl PassengerNeedState {
@@ -158,6 +165,7 @@ impl PassengerNeedState {
             revealed_stages: HashMap::new(),
             profile,
             pending_trust: 0.0,
+            brink_reached: false,
         })
     }
 
@@ -501,6 +509,15 @@ pub struct GameState {
     pub active_guideline: Option<Guideline>,
     pub guideline_decision_start_time: Option<f64>,
     pub guideline_time_remaining: f32,
+
+    /// Cab actions that have already spent their comfort soothing this ride.
+    /// Each comfort channel works once per ride; the list clears at drop-off.
+    pub comfort_soothed_actions: Vec<String>,
+    /// This night is The Last Fare: quota is moot and the only passenger the
+    /// city sends is Death. Survived, it completes the run.
+    pub last_fare_night: bool,
+    /// Death's ride was completed this shift — the run's true ending.
+    pub death_delivered: bool,
 }
 
 impl GameState {
@@ -564,6 +581,9 @@ impl GameState {
             active_guideline: None,
             guideline_decision_start_time: None,
             guideline_time_remaining: 30.0,
+            comfort_soothed_actions: Vec::new(),
+            last_fare_night: false,
+            death_delivered: false,
         }
     }
 
@@ -611,6 +631,9 @@ impl GameState {
         self.active_guideline = None;
         self.guideline_decision_start_time = None;
         self.guideline_time_remaining = 30.0;
+        self.comfort_soothed_actions.clear();
+        self.last_fare_night = false;
+        self.death_delivered = false;
     }
 
     /// Check if time is running out

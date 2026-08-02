@@ -1,5 +1,5 @@
 use super::*;
-use crate::data::loader::{load_constants, load_rules};
+use crate::data::loader::{load_constants, load_guidelines, load_rules};
 
 /// A fixed-seed stream for tests: deterministic, and a fresh one per call
 /// so no test's draws depend on another's.
@@ -34,6 +34,38 @@ fn generated_shifts_never_contradict_themselves() {
                 }
             }
         }
+    }
+}
+
+/// Every action-keyed forbidden rule must name a real guideline.
+///
+/// `passenger_has_exception` filters on `related_guideline_id`, so a rule
+/// without one can never be excepted: its authored `exceptionNeedAdjustment`
+/// relief is unreachable and pressing its key is always a violation. Six of
+/// thirteen action rules shipped that way (both `drive_dark`, `use_ac` and
+/// `use_wipers` pairs), which fed the meltdown monoculture the balance sweep
+/// measured — a dangling or missing link here is authored relief nobody can
+/// ever earn.
+#[test]
+fn every_action_rule_names_a_guideline_that_exists() {
+    let guidelines = load_guidelines();
+    for rule in load_rules()
+        .iter()
+        .filter(|rule| rule.action_key.is_some() && rule.action_type == Some(ActionType::Forbidden))
+    {
+        let id = rule.related_guideline_id.unwrap_or_else(|| {
+            panic!(
+                "rule {} ({:?}) has an action key but no relatedGuidelineId - \
+                 its exception relief is unreachable",
+                rule.id, rule.title
+            )
+        });
+        assert!(
+            guidelines.iter().any(|guideline| guideline.id == id),
+            "rule {} ({:?}) names guideline {id}, which does not exist",
+            rule.id,
+            rule.title
+        );
     }
 }
 

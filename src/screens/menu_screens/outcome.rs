@@ -16,7 +16,7 @@ pub fn draw_game_over(game_state: &GameState, game_data: Option<&GameData>) -> U
     let center_x = screen_width() / 2.0;
 
     if let Some(data) = game_data {
-        let panel = UiRect::centered_x(screen_width(), 112.0, screen_width().min(540.0), 330.0);
+        let panel = UiRect::centered_x(screen_width(), 112.0, screen_width().min(540.0), 364.0);
         draw_glass_panel(panel, colors::ACCENT_DANGER);
         let inner = panel.inset(spacing::PADDING_LG);
 
@@ -62,6 +62,19 @@ pub fn draw_game_over(game_state: &GameState, game_data: Option<&GameData>) -> U
             colors::TEXT_PRIMARY,
         );
 
+        // The meta payout runs on death exactly as it does on success — half
+        // the fares bank, the lore keeps — but this screen never said so, and
+        // an early death looked like it bought nothing.
+        let payout = &game_state.shift_payout;
+        let banked = format!("Banked: ${} | Lore: {}", payout.bank, payout.lore);
+        draw_ui_text(
+            &banked,
+            inner.x,
+            inner.y + 220.0,
+            fonts::SIZE_MD,
+            colors::ACCENT_SKY,
+        );
+
         if draw_glass_button(
             UiRect::new(center_x - 150.0, panel.bottom() - 70.0, 300.0, 46.0),
             &data.localization.ui.common.try_again,
@@ -99,7 +112,13 @@ pub fn draw_success(game_state: &GameState, game_data: Option<&GameData>) -> UiA
             .game_constants
             .nights_per_run
             .saturating_sub(game_state.night);
-        let title = if interim {
+        // Held open past the final ordinary night, the run has one fare left.
+        let last_fare_awaits =
+            interim && game_state.night >= data.constants.game_constants.nights_per_run;
+
+        let title = if game_state.death_delivered {
+            "THE LAST FARE".to_string()
+        } else if interim {
             data.localization
                 .ui
                 .success
@@ -118,7 +137,13 @@ pub fn draw_success(game_state: &GameState, game_data: Option<&GameData>) -> UiA
             colors::ACCENT_GOLD,
         );
 
-        let subtitle = if interim {
+        let subtitle = if game_state.death_delivered {
+            "You drove Death to his own door, and he tipped his hat. \
+             Dawn belongs to you."
+                .to_string()
+        } else if last_fare_awaits {
+            "Every soul in the almanac is known. The city has one more fare for you.".to_string()
+        } else if interim {
             data.localization
                 .ui
                 .success

@@ -76,6 +76,15 @@ impl Game {
             return;
         }
 
+        // No rule in force forbids the action. This used to be a dead end —
+        // eight cab controls whose only unforbidden effect was +0.01 trust —
+        // which left the meltdown clock with no counterplay outside the
+        // exception system. A comfort-upgraded cab now soothes here: each
+        // channel once per ride, so the meter still climbs over a long night.
+        if self.try_comfort_soothe(&action_key, current_time) {
+            return;
+        }
+
         self.game_state.adjust_player_trust(0.01);
         self.game_state.current_dialogue = Some(CurrentDialogue {
             text: format!(
@@ -85,6 +94,66 @@ impl Game {
             speaker: DialogueSpeaker::Driver,
             timestamp: current_time,
         });
+    }
+
+    /// Spend a comfort upgrade's soothing on the current passenger, if the
+    /// action has one, it has not been used this ride, and there is anything
+    /// to soothe. Returns whether it did.
+    fn try_comfort_soothe(&mut self, action_key: &str, current_time: f64) -> bool {
+        let Some(data) = self.game_data.as_ref() else {
+            return false;
+        };
+        let mods = SkillModifiers::from_unlocked(&data.skills, &self.player_stats.unlocked_skills);
+        let relief = match action_key {
+            "play_music" => mods.soothe_music,
+            "use_ac" | "open_window" => mods.soothe_climate,
+            "eye_contact" | "stop_vehicle" => mods.soothe_presence,
+            _ => 0,
+        };
+        if relief <= 0
+            || self
+                .game_state
+                .comfort_soothed_actions
+                .iter()
+                .any(|a| a == action_key)
+        {
+            return false;
+        }
+        let (Some(mut need), Some(passenger)) = (
+            self.game_state.current_passenger_need_state.clone(),
+            self.game_state.current_passenger.clone(),
+        ) else {
+            return false;
+        };
+        if need.level == 0 {
+            return false;
+        }
+
+        self.game_state
+            .comfort_soothed_actions
+            .push(action_key.to_string());
+        let triggered =
+            PassengerStateMachine::apply_stress_delta(&mut need, &passenger, -relief, current_time);
+        self.game_state.current_passenger_need_state = Some(need);
+        PassengerStateMachine::merge_detected_tells(
+            &mut self.game_state.rng,
+            &mut self.game_state.detected_tells,
+            triggered,
+            &passenger,
+            self.game_state.player_trust,
+            current_time,
+            &self.game_state.current_guidelines,
+        );
+        self.game_state.adjust_player_trust(0.02);
+        self.game_state.current_dialogue = Some(CurrentDialogue {
+            text: format!(
+                "You {}. The cab does its quiet work; the passenger eases a little.",
+                Self::cab_action_phrase(action_key)
+            ),
+            speaker: DialogueSpeaker::Narrator,
+            timestamp: current_time,
+        });
+        true
     }
 
     fn resolve_cab_rule_action(

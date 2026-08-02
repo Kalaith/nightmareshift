@@ -51,6 +51,7 @@ fn hitting_the_stated_target_unlocks_the_achievement() {
                 passenger_id,
                 encountered: true,
                 knowledge_level: 3,
+                ..AlmanacEntry::default()
             },
         );
     }

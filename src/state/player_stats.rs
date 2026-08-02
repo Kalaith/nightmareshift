@@ -23,6 +23,21 @@ pub struct AlmanacEntry {
     pub passenger_id: u32,
     pub encountered: bool,
     pub knowledge_level: u32,
+    /// Rides delivered with this passenger, across every run. Surviving them
+    /// is study: crossing `AlmanacEntry::STUDY_THRESHOLDS` raises
+    /// `knowledge_level` for free, and lore purchases remain the accelerant.
+    #[serde(default)]
+    pub rides_survived: u32,
+    /// Tell descriptions the driver has personally noticed, kept forever.
+    /// The dossier shows these at any knowledge level — what you have seen
+    /// with your own eyes is not gated behind lore.
+    #[serde(default)]
+    pub tells_seen: Vec<String>,
+}
+
+impl AlmanacEntry {
+    /// Rides survived at which knowledge levels 1..=3 are earned by play.
+    pub const STUDY_THRESHOLDS: [u32; 3] = [1, 3, 6];
 }
 
 /// Accepts saves from before the `Achievements` registry adoption, where
@@ -125,6 +140,13 @@ pub struct PlayerStats {
     /// Route usage counts
     #[serde(default)]
     pub route_usage: HashMap<String, u32>,
+    /// Full five-night runs survived. The save never recorded its headline
+    /// result before this.
+    #[serde(default)]
+    pub runs_completed: u32,
+    /// Times Death himself was delivered on The Last Fare — the true ending.
+    #[serde(default)]
+    pub death_deliveries: u32,
     /// Unlocked achievements
     #[serde(default, deserialize_with = "deserialize_achievements")]
     pub achievements: Achievements,
@@ -289,43 +311,67 @@ impl PlayerStats {
             .cloned()
             .unwrap_or(AlmanacEntry {
                 passenger_id,
-                encountered: false,
-                knowledge_level: 0,
+                ..AlmanacEntry::default()
+            })
+    }
+
+    fn almanac_entry_mut(&mut self, passenger_id: u32) -> &mut AlmanacEntry {
+        self.almanac_progress
+            .entry(passenger_id)
+            .or_insert(AlmanacEntry {
+                passenger_id,
+                ..AlmanacEntry::default()
             })
     }
 
     /// Mark passenger as encountered
     pub fn mark_passenger_encountered(&mut self, passenger_id: u32) {
-        let entry = self
-            .almanac_progress
-            .entry(passenger_id)
-            .or_insert(AlmanacEntry {
-                passenger_id,
-                encountered: false,
-                knowledge_level: 0,
-            });
+        self.almanac_entry_mut(passenger_id).encountered = true;
+    }
+
+    /// Surviving a ride is study. Counts the ride, and when the count crosses
+    /// a `STUDY_THRESHOLDS` step the knowledge level rises for free — the
+    /// almanac used to be purchase-only, which left nothing about a run that
+    /// taught the player anything durable. Returns the new level when one was
+    /// just earned this way.
+    pub fn record_ride_survived(&mut self, passenger_id: u32) -> Option<u32> {
+        let entry = self.almanac_entry_mut(passenger_id);
         entry.encountered = true;
+        entry.rides_survived += 1;
+        let earned = AlmanacEntry::STUDY_THRESHOLDS
+            .iter()
+            .filter(|threshold| entry.rides_survived >= **threshold)
+            .count() as u32;
+        if earned > entry.knowledge_level {
+            entry.knowledge_level = earned;
+            Some(earned)
+        } else {
+            None
+        }
+    }
+
+    /// Inscribe a tell the driver actually noticed. Permanent and free:
+    /// what was seen stays seen, whatever the almanac level.
+    pub fn record_tell_seen(&mut self, passenger_id: u32, description: &str) {
+        let entry = self.almanac_entry_mut(passenger_id);
+        if !entry.tells_seen.iter().any(|seen| seen == description) {
+            entry.tells_seen.push(description.to_string());
+        }
     }
 
     /// Upgrade almanac knowledge level
     pub fn upgrade_almanac_knowledge(&mut self, passenger_id: u32, cost: u32) -> bool {
-        if self.lore_fragments >= cost {
-            let entry = self
-                .almanac_progress
-                .entry(passenger_id)
-                .or_insert(AlmanacEntry {
-                    passenger_id,
-                    encountered: true,
-                    knowledge_level: 0,
-                });
-
-            if entry.knowledge_level < 3 {
-                self.lore_fragments -= cost;
-                entry.knowledge_level += 1;
-                return true;
-            }
+        if self.lore_fragments < cost {
+            return false;
         }
-        false
+        let entry = self.almanac_entry_mut(passenger_id);
+        entry.encountered = true;
+        if entry.knowledge_level >= 3 {
+            return false;
+        }
+        entry.knowledge_level += 1;
+        self.lore_fragments -= cost;
+        true
     }
 
     /// Purchase a skill with bank balance

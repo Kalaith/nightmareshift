@@ -218,7 +218,8 @@ pub fn draw_waiting(
             colors::ACCENT_SKY,
         );
 
-        let earned_enough = game_state.earnings >= game_state.minimum_earnings;
+        let earned_enough =
+            game_state.earnings >= game_state.minimum_earnings && !game_state.last_fare_night;
         let find_y = panel.bottom() - 72.0;
         if earned_enough {
             let action_gap = 14.0;

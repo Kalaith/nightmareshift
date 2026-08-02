@@ -69,6 +69,7 @@ impl RideService {
         );
         if Self::is_passenger_meltdown(state)
             && !Self::absorb_meltdown_with_protection(state, current_time)
+            && !Self::hold_at_the_brink(state, current_time)
         {
             return RouteOutcome::GameOver(
                 "The passenger's need became uncontrollable.".to_string(),
@@ -569,6 +570,40 @@ impl RideService {
         }
 
         !Self::is_passenger_meltdown(state)
+    }
+
+    /// The first meltdown is a brink, not a death.
+    ///
+    /// Meltdown was the only game over with neither a probability roll nor a
+    /// warning leg — rule breaks roll 0.3–0.7 and guideline misreads roll
+    /// their consequence, but the stage flipping killed on the spot. The
+    /// first crossing now drags the passenger back under the threshold,
+    /// announces itself, and burns the one-per-ride `brink_reached` flag;
+    /// the player has a leg to soothe, trade, or arrive. The second
+    /// crossing is final.
+    fn hold_at_the_brink(state: &mut GameState, current_time: f64) -> bool {
+        let Some(mut need_state) = state.current_passenger_need_state.clone() else {
+            return false;
+        };
+        if need_state.brink_reached {
+            return false;
+        }
+        need_state.brink_reached = true;
+        need_state.level = need_state.profile.thresholds.meltdown.saturating_sub(1);
+        need_state.stage =
+            PassengerNeedState::calculate_stage(need_state.level, &need_state.profile.thresholds);
+        need_state.stability = 1.0 - (need_state.level as f32 / 100.0);
+        need_state.last_updated = current_time;
+        state.current_passenger_need_state = Some(need_state);
+
+        state.current_dialogue = Some(CurrentDialogue {
+            text: "The passenger is at the brink — one more push and they are lost. \
+                   Settle them, or get them there."
+                .to_string(),
+            speaker: DialogueSpeaker::Narrator,
+            timestamp: current_time,
+        });
+        true
     }
 
     /// Check if guideline decision should be triggered.

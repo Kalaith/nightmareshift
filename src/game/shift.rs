@@ -92,6 +92,15 @@ impl Game {
             let growth = (base_quota as f32 * step * (night - 1) as f32).round() as u32;
             self.game_state.minimum_earnings = base_quota + growth;
 
+            // Past the last ordinary night lies The Last Fare: quota is moot
+            // (Death pays nothing), and the only success is delivering him.
+            // Reachable only when night 5 was survived with the whole roster
+            // mastered — `end_shift` holds the run open in that case.
+            if night > data.constants.game_constants.nights_per_run {
+                self.game_state.last_fare_night = true;
+                self.game_state.minimum_earnings = 0;
+            }
+
             // Apply the player's unlocked-skill effects for this shift.
             let skill_mods =
                 SkillModifiers::from_unlocked(&data.skills, &self.player_stats.unlocked_skills);
@@ -161,6 +170,15 @@ impl Game {
         // invisible and then reappear over the next passenger's drop-off,
         // trading an item the previous passenger was holding.
         self.game_state.pending_trade = None;
+        // Comfort soothing recharges between fares.
+        self.game_state.comfort_soothed_actions.clear();
+
+        // Delivering Death closes the run then and there — nothing about the
+        // night after that ride matters.
+        if self.game_state.death_delivered {
+            self.end_shift(true);
+            return;
+        }
 
         // Check end conditions
         if self.game_state.should_end_shift() {
@@ -172,10 +190,27 @@ impl Game {
         }
     }
 
+    /// Whether the whole roster is mastered — the gate for The Last Fare.
+    /// "All knowledge" means every soul in the almanac at Lv.3, the reaper
+    /// included, whether studied with lore or learned ride by ride.
+    fn death_gate_met(&self) -> bool {
+        self.game_data.as_ref().is_some_and(|data| {
+            data.passengers.iter().all(|passenger| {
+                self.player_stats
+                    .get_almanac_entry(passenger.id)
+                    .knowledge_level
+                    >= 3
+            })
+        })
+    }
+
     /// End the shift
     pub(super) fn end_shift(&mut self, success: bool) {
         let earned_enough = self.game_state.earnings >= self.game_state.minimum_earnings;
-        let actually_successful = success && earned_enough;
+        // On The Last Fare the quota is moot: only delivering Death counts.
+        let actually_successful = success
+            && earned_enough
+            && (!self.game_state.last_fare_night || self.game_state.death_delivered);
 
         let nights_per_run = self
             .game_data
@@ -189,15 +224,24 @@ impl Game {
             if let Some(ref data) = self.game_data {
                 self.game_state.earnings += data.constants.game_constants.survival_bonus;
             }
-            // Surviving the final night completes the run; otherwise this is an
-            // interim night and the results screen offers to press on.
-            self.game_state.run_complete = self.game_state.night >= nights_per_run;
+            // Surviving the final night completes the run — unless the whole
+            // roster is mastered, in which case the run holds open for one
+            // more night: The Last Fare, which only delivering Death closes.
+            self.game_state.run_complete = if self.game_state.last_fare_night {
+                self.game_state.death_delivered
+            } else {
+                self.game_state.night >= nights_per_run && !self.death_gate_met()
+            };
             self.transition.begin_scene();
             self.game_state.game_phase = GamePhase::Success;
             self.screen = Screen::Success;
         } else {
             if self.game_state.game_over_reason.is_none() {
-                self.game_state.game_over_reason = Some(if !earned_enough {
+                self.game_state.game_over_reason = Some(if self.game_state.last_fare_night {
+                    "Dawn broke with the last fare uncollected. The city does not \
+                         forgive an unfinished ledger."
+                        .to_string()
+                } else if !earned_enough {
                     format!(
                         "You only earned ${} but needed ${}.",
                         self.game_state.earnings, self.game_state.minimum_earnings
@@ -299,6 +343,10 @@ impl Game {
         // Surviving every night of a run is the game's headline result and
         // used to pay nothing beyond the per-night survival bonus.
         if actually_successful && self.game_state.run_complete {
+            self.player_stats.runs_completed += 1;
+            if self.game_state.death_delivered {
+                self.player_stats.death_deliveries += 1;
+            }
             if let Some(data) = &self.game_data {
                 let nights = data.constants.game_constants.nights_per_run.max(1);
                 let payout = data.rewards.run_completion.payout(nights);

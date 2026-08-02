@@ -121,6 +121,24 @@ pub fn build(
         }
     }
 
+    // What the driver has personally witnessed needs no almanac either. A
+    // noticed tell is inscribed at ride completion and kept across runs; at
+    // Studied and above the catalogued tells below take over, so only the
+    // ones the catalogue does not already name are repeated here.
+    if let Some(driver) = driver {
+        let entry = driver.stats.get_almanac_entry(passenger.id);
+        for seen in entry.tells_seen.iter().filter(|seen| {
+            knowledge_level < 2
+                || !passenger
+                    .tells
+                    .iter()
+                    .take(3)
+                    .any(|tell| tell.description == **seen)
+        }) {
+            lines.push(DossierLine::new("Witnessed", seen.clone(), 1));
+        }
+    }
+
     // Lv.1 "Observed" — name, description, and basic needs. The player can
     // already see name and description on the request, so the payoff here is
     // knowing what the passenger needs and where it starts to slip.

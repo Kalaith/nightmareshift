@@ -28,6 +28,34 @@ pub struct RideService;
 impl RideService {
     /// Spawn a new passenger. Returns true if a passenger was found, false otherwise.
     pub fn spawn_passenger(state: &mut GameState, data: &GameData, current_time: f64) -> bool {
+        // The Last Fare: the city sends exactly one passenger tonight, and it
+        // is Death. No weather weighting, no kin rolls — the night exists to
+        // put him in the cab.
+        if state.last_fare_night {
+            if state.death_delivered {
+                return false;
+            }
+            let Some(death) = data
+                .passengers
+                .iter()
+                .find(|p| p.id == DEATH_PASSENGER_ID)
+                .cloned()
+            else {
+                return false;
+            };
+            let presented = Self::present_passenger(state, death, current_time);
+            if presented {
+                state.current_dialogue = Some(CurrentDialogue {
+                    text: "The radio is silent. The kerb holds a single figure, \
+                           patient as the end of the night."
+                        .to_string(),
+                    speaker: DialogueSpeaker::Narrator,
+                    timestamp: current_time,
+                });
+            }
+            return presented;
+        }
+
         let context = PassengerSelectionContext {
             difficulty_level: state.difficulty_level,
             weather: &state.current_weather,
@@ -210,6 +238,12 @@ impl RideService {
             state.earnings += fare;
             state.rides_completed += 1;
 
+            // Delivering Death on The Last Fare is the run's true ending;
+            // `continue_from_dropoff` reads this and closes the run.
+            if state.last_fare_night && passenger.id == DEATH_PASSENGER_ID {
+                state.death_delivered = true;
+            }
+
             // A rule imposed for a few rides runs out.
             for lifted in RuleModificationService::expire_temporary_rules(state) {
                 state.current_dialogue = Some(CurrentDialogue {
@@ -234,6 +268,26 @@ impl RideService {
 
             // Record encounter
             stats.record_passenger_encounter(passenger.id);
+
+            // Observational learning. Delivering a passenger is study — the
+            // almanac used to be purchase-only, so a run taught the player
+            // nothing durable — and any tell the driver actually noticed is
+            // inscribed for good.
+            if let Some(level) = stats.record_ride_survived(passenger.id) {
+                state.consequence_notes.push(format!(
+                    "You understand {} better now. (Almanac Lv.{})",
+                    passenger.name, level
+                ));
+            }
+            let noticed: Vec<String> = state
+                .detected_tells
+                .iter()
+                .filter(|tell| tell.passenger_id == passenger.id && tell.player_noticed)
+                .map(|tell| tell.tell.description.clone())
+                .collect();
+            for description in noticed {
+                stats.record_tell_seen(passenger.id, &description);
+            }
 
             // Update reputation
             let is_positive = passenger

@@ -143,7 +143,7 @@ impl PlaytestBot {
     ) -> UiAction {
         match state.game_phase {
             GamePhase::Waiting => {
-                if state.earnings >= state.minimum_earnings {
+                if state.earnings >= state.minimum_earnings && !state.last_fare_night {
                     UiAction::EndShift
                 } else if state.fuel < 35.0 && state.earnings >= 15 {
                     UiAction::RefuelPartial

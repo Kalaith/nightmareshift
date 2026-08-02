@@ -34,7 +34,10 @@ The whole in-shift loop is playable from the keyboard.
 
 Playable horror-shift loop with passenger tells, route choices, rules, fuel
 pressure, earnings, and upgrades, over a five-night run whose quota and
-difficulty rise each night.
+difficulty rise each night. Knowledge is earned as well as bought — surviving
+rides and noticing tells fill the almanac — and a fully mastered roster opens
+the endgame: a sixth night with no quota and a single fare, Death himself,
+whose delivery is the run's true ending.
 
 Open work — audio, settings, the seeded-RNG seam, packaging and everything
 between here and a commercial release — is tracked in `TODO.md`.

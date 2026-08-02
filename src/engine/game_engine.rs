@@ -41,6 +41,12 @@ pub struct SkillModifiers {
     pub refuel_cost_mult: f32,
     /// Protective wards granted at the start of each shift.
     pub bonus_protection: u32,
+    /// Need soothed when playing music with no rule in force (stereo tier).
+    pub soothe_music: i32,
+    /// Need soothed by the AC or a cracked window (climate tier).
+    pub soothe_climate: i32,
+    /// Need soothed by eye contact or pulling over calmly (cabin comfort tier).
+    pub soothe_presence: i32,
 }
 
 impl Default for SkillModifiers {
@@ -53,6 +59,9 @@ impl Default for SkillModifiers {
             fare_mult: 1.0,
             refuel_cost_mult: 1.0,
             bonus_protection: 0,
+            soothe_music: 0,
+            soothe_climate: 0,
+            soothe_presence: 0,
         }
     }
 }
@@ -75,6 +84,9 @@ impl SkillModifiers {
                 "fare_multiplier" => m.fare_mult *= v,
                 "refuel_discount" => m.refuel_cost_mult *= (1.0 - v).max(0.0),
                 "supernatural_protection" => m.bonus_protection += v as u32,
+                "soothe_music" => m.soothe_music += v as i32,
+                "soothe_climate" => m.soothe_climate += v as i32,
+                "soothe_presence" => m.soothe_presence += v as i32,
                 _ => {}
             }
         }
