@@ -62,10 +62,14 @@ pub fn draw_main_menu(
             .replacen("{}", &player_stats.total_rides_completed.to_string(), 1)
             .replacen("{}", &player_stats.total_rules_violated.to_string(), 1);
 
+        // Play time was accumulated and saved from the first release and
+        // never shown anywhere until this line.
         let progression = format!(
-            "Experience Lv. {} | Suggested Difficulty {}",
+            "Experience Lv. {} | Suggested Difficulty {} | {}h {:02}m behind the wheel",
             player_stats.experience_level(),
-            player_stats.suggested_difficulty() + 1
+            player_stats.suggested_difficulty() + 1,
+            player_stats.total_play_time / 60,
+            player_stats.total_play_time % 60
         );
         let unlocked_count = player_stats
             .achievements

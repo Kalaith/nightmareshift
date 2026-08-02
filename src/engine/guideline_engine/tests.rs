@@ -131,6 +131,107 @@ fn deception_and_trust_required_agree() {
     );
 }
 
+/// A conjured tell must actually be false: it may only borrow from a
+/// breaking-safer exception that is not live for the passenger it is
+/// pinned on, and it must arrive noticed, because unnoticed tells never
+/// display. The old implementation cloned a genuine tell — a lie
+/// indistinguishable from the truth is not a lie, and the dedupe threw it
+/// away regardless.
+#[test]
+fn a_conjured_tell_points_at_a_dormant_breaking_safer_exception() {
+    let guidelines = load_guidelines();
+    let weather = WeatherCondition::default();
+    let mut conjured = 0;
+    for passenger in load_passengers() {
+        for _ in 0..10 {
+            let Some(tell) =
+                super::GuidelineEngine::conjure_false_tell(&passenger, &weather, &guidelines, 0.0)
+            else {
+                continue;
+            };
+            conjured += 1;
+            assert!(tell.player_noticed, "an unnoticed lie never displays");
+            let exception_id = tell
+                .exception_id
+                .as_ref()
+                .expect("a false tell names its bait");
+            let exception = guidelines
+                .iter()
+                .flat_map(|g| g.exceptions.iter())
+                .find(|e| &e.id == exception_id)
+                .expect("the bait exception exists");
+            assert!(
+                exception.breaking_safer,
+                "the bait must tempt a break, not a follow"
+            );
+            let live = super::GuidelineEngine::passenger_matches_exception(&passenger, exception)
+                && super::GuidelineEngine::check_exception_conditions(
+                    exception, &weather, &passenger,
+                );
+            assert!(
+                !live,
+                "conjured a tell for an exception genuinely live on {}",
+                passenger.name
+            );
+        }
+    }
+    assert!(conjured > 0, "no passenger ever yields a false tell");
+}
+
+/// The false-tell gate opens only for a seasoned, currently-accurate
+/// driver. The rookie cases are deterministic; the open-gate case is a
+/// coin the test flips enough times to trust.
+#[test]
+fn false_tells_wait_for_a_seasoned_accurate_driver() {
+    use crate::state::{GameState, GuidelineAction, GuidelineDecision, PlayerStats};
+
+    let constants = crate::data::loader::load_constants();
+    let decision = |was_correct: bool| GuidelineDecision {
+        guideline_id: 1,
+        passenger_id: 1,
+        action: GuidelineAction::Follow,
+        was_correct,
+        tells_present: Vec::new(),
+        timestamp: 0.0,
+    };
+
+    let mut state = GameState::new(0.0, &constants.game_constants);
+    let mut stats = PlayerStats::new();
+    stats.total_rides_completed = 100;
+
+    // Two decisions is not a record, however good it looks.
+    state.decision_history = vec![decision(true), decision(true)];
+    assert!(!super::GuidelineEngine::should_introduce_false_tells(
+        &state, &stats
+    ));
+
+    // A seasoned driver misreading tonight is not worth deceiving.
+    state.decision_history = vec![
+        decision(true),
+        decision(false),
+        decision(false),
+        decision(false),
+    ];
+    assert!(!super::GuidelineEngine::should_introduce_false_tells(
+        &state, &stats
+    ));
+
+    // A rookie reading perfectly has not earned the lies yet.
+    state.decision_history = vec![decision(true), decision(true), decision(true)];
+    let rookie = PlayerStats::new();
+    assert!(!super::GuidelineEngine::should_introduce_false_tells(
+        &state, &rookie
+    ));
+
+    // Seasoned and sharp: the gate is a coin toss, so flip until it lands.
+    let opened =
+        (0..300).any(|_| super::GuidelineEngine::should_introduce_false_tells(&state, &stats));
+    assert!(
+        opened,
+        "the gate never opened for a seasoned, accurate driver"
+    );
+}
+
 /// Relief is the only downward pressure on a passenger's need, so a
 /// profile that authors none can never be settled by reading it right.
 #[test]

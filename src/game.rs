@@ -509,7 +509,11 @@ impl Game {
             }
 
             // Proactive tell detection during rides
-            GuidelineEngine::update_detection(&mut self.game_state, current_time);
+            GuidelineEngine::update_detection(
+                &mut self.game_state,
+                &self.player_stats,
+                current_time,
+            );
 
             // Dynamic weather updates
             if self.game_state.shift_start_time.is_some() {

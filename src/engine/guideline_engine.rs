@@ -61,7 +61,7 @@ impl GuidelineEngine {
     }
 
     /// Update detection cycle for game loop
-    pub fn update_detection(state: &mut GameState, current_time: f64) {
+    pub fn update_detection(state: &mut GameState, stats: &PlayerStats, current_time: f64) {
         if matches!(
             state.game_phase,
             GamePhase::Driving | GamePhase::Interaction
@@ -80,18 +80,14 @@ impl GuidelineEngine {
                     current_time,
                 );
 
-                // Introduce false tells for experienced players
-                if Self::should_introduce_false_tells(state) {
-                    if let Some(real_tell) = new_tells.first().cloned() {
-                        let false_tell = DetectedTell {
-                            tell: real_tell.tell.clone(),
-                            passenger_id: real_tell.passenger_id,
-                            detection_time: current_time,
-                            player_noticed: false,
-                            related_guideline: real_tell.related_guideline,
-                            exception_id: real_tell.exception_id,
-                        };
+                // Introduce a false tell for experienced players — at most
+                // one per decision, or the panel fills with fiction.
+                if !state.false_tell_planted && Self::should_introduce_false_tells(state, stats) {
+                    if let Some(false_tell) =
+                        Self::conjure_false_tell(&passenger, &weather, &guidelines, current_time)
+                    {
                         new_tells.push(false_tell);
+                        state.false_tell_planted = true;
                     }
                 }
 
@@ -106,6 +102,58 @@ impl GuidelineEngine {
                 }
             }
         }
+    }
+
+    /// A tell borrowed from an exception that does not apply to this
+    /// passenger — bait to break a guideline that should be kept.
+    ///
+    /// This is the only honest way to lie. The old code cloned a tell the
+    /// passenger had genuinely emitted: the merge dedupe discarded it as the
+    /// duplicate it was, and had it landed it would only have shown the same
+    /// sentence twice. A tell for a dormant breaking-safer exception reads
+    /// exactly like the real thing, and acting on it walks into "Breaking X
+    /// was dangerous".
+    fn conjure_false_tell(
+        passenger: &Passenger,
+        weather: &WeatherCondition,
+        guidelines: &[Guideline],
+        current_time: f64,
+    ) -> Option<DetectedTell> {
+        let candidates: Vec<_> = guidelines
+            .iter()
+            .flat_map(|guideline| {
+                guideline
+                    .exceptions
+                    .iter()
+                    .map(move |exception| (guideline, exception))
+            })
+            .filter(|(_, exception)| {
+                exception.breaking_safer
+                    && !(Self::passenger_matches_exception(passenger, exception)
+                        && Self::check_exception_conditions(exception, weather, passenger))
+            })
+            .flat_map(|(guideline, exception)| {
+                exception
+                    .tells
+                    .iter()
+                    .map(move |tell| (guideline, exception, tell))
+            })
+            .collect();
+
+        if candidates.is_empty() {
+            return None;
+        }
+        let pick = macroquad_toolkit::rng::gen_range(0u32, candidates.len() as u32) as usize;
+        let (guideline, exception, tell) = candidates[pick];
+        Some(DetectedTell {
+            tell: tell.clone(),
+            passenger_id: passenger.id,
+            detection_time: current_time,
+            // A lie nobody sees is no lie: unnoticed tells never display.
+            player_noticed: true,
+            related_guideline: Some(guideline.id),
+            exception_id: Some(exception.id.clone()),
+        })
     }
 
     /// Check if passenger matches an exception
@@ -341,26 +389,32 @@ impl GuidelineEngine {
         ]
     }
 
-    /// Check if false tells should be introduced
-    pub fn should_introduce_false_tells(state: &GameState) -> bool {
-        let total_rides = state.rides_completed;
+    /// Check if false tells should be introduced.
+    ///
+    /// Seasoning is a lifetime quantity: the per-shift ride counter this
+    /// used to read caps around twelve on a full clock, against a threshold
+    /// of twenty, so the gate never opened. Accuracy is this shift's
+    /// decision record — the driver worth deceiving is the one currently
+    /// reading passengers well, and three decisions is the least a ratio
+    /// can be trusted on.
+    pub fn should_introduce_false_tells(state: &GameState, stats: &PlayerStats) -> bool {
+        let decisions = state.decision_history.len();
+        if decisions < 3 {
+            return false;
+        }
         let correct = state
             .decision_history
             .iter()
             .filter(|d| d.was_correct)
             .count();
-        let skill_level = if total_rides > 0 {
-            correct as f32 / total_rides as f32
-        } else {
-            0.0
-        };
+        let accuracy = correct as f32 / decisions as f32;
 
-        if total_rides > 20 && skill_level > 0.7 {
-            return macroquad_toolkit::rng::rand() < 0.3;
-        }
-
-        if total_rides > 35 && skill_level > 0.6 {
+        let seasoned_rides = stats.total_rides_completed;
+        if seasoned_rides > 35 && accuracy > 0.6 {
             return macroquad_toolkit::rng::rand() < 0.5;
+        }
+        if seasoned_rides > 20 && accuracy > 0.7 {
+            return macroquad_toolkit::rng::rand() < 0.3;
         }
 
         false

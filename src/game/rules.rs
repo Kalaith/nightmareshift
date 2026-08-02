@@ -660,6 +660,7 @@ impl Game {
             self.game_state.active_guideline = None;
             self.game_state.guideline_decision_start_time = None;
             self.game_state.detected_tells.clear();
+            self.game_state.false_tell_planted = false;
 
             let completion_route = self
                 .game_state

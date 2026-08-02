@@ -4,11 +4,6 @@
 
 Code and data that exist but never reach the player. Verified against the source; file references are to the anchor site, not every occurrence.
 
-### Simulation outputs that go nowhere
-
-- The false-tell system is doubly dead: its gate requires `rides_completed > 20` but a 480-minute/100-fuel shift caps out around 12–13 rides, and even if it opened, the merge dedupe rejects the cloned tell it tries to insert (`guideline_engine.rs:86-103`, `343-365`).
-- `PlayerStats.total_play_time` is accumulated and persisted but no screen shows it.
-
 ### Dead data (authored JSON → nothing)
 
 - `constants.json` `SCREENS` and `STORAGE_KEYS` are JS-port leftovers with no serde mapping; the `nightshift_*` storage keys don't even match the hardcoded `nightmare_shift*` names in `persistence.rs`. Also `RISK.EXTREME_RISK` and `CONSECUTIVE_ROUTE.VIOLATION_THRESHOLD` are read only by tests.

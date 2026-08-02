@@ -441,6 +441,11 @@ pub struct GameState {
     /// the seasonal spawn weights and winter conditions rotate into play.
     /// Kept across the run's nights; each night derives `season` from it.
     pub campaign_month: u32,
+    /// Whether a false tell has been planted for the current decision.
+    /// Detection runs every frame, so without this latch an open false-tell
+    /// gate would stack a new lie every few frames until the panel was all
+    /// fiction. Cleared wherever `detected_tells` is.
+    pub false_tell_planted: bool,
     pub environmental_hazards: Vec<EnvironmentalHazard>,
 
     // Persistence
@@ -523,6 +528,7 @@ impl GameState {
             time_of_day: TimeOfDay::default(),
             season: Season::default(),
             campaign_month: DEFAULT_MONTH,
+            false_tell_planted: false,
             environmental_hazards: Vec::new(),
             passenger_reputation: HashMap::new(),
             minimum_earnings: constants.minimum_earnings,
@@ -568,6 +574,7 @@ impl GameState {
         self.shift_payout = MetaPayout::default();
         self.current_passenger_need_state = None;
         self.detected_tells.clear();
+        self.false_tell_planted = false;
         self.route_history.clear();
         self.consecutive_route_streak = None;
         self.environmental_hazards.clear();
