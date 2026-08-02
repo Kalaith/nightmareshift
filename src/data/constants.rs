@@ -191,8 +191,6 @@ pub struct RouteFareConstants {
 pub struct ConsecutiveRouteConstants {
     #[serde(rename = "WARNING_THRESHOLD")]
     pub warning_threshold: u32,
-    #[serde(rename = "VIOLATION_THRESHOLD")]
-    pub violation_threshold: u32,
     #[serde(rename = "PENALTY_PER_REPEAT")]
     pub penalty_per_repeat: f32,
     #[serde(rename = "RISK_INCREASE_PER_REPEAT")]
@@ -354,12 +352,6 @@ mod tests {
     fn route_streak_warning_is_reachable() {
         let streak = load_constants().consecutive_route;
         assert!(streak.warning_threshold > 0);
-        assert!(
-            streak.warning_threshold < streak.violation_threshold,
-            "warning {} is not below violation {}",
-            streak.warning_threshold,
-            streak.violation_threshold
-        );
         assert!(
             streak.risk_increase_per_repeat > 0,
             "a streak adds no risk, so the warning has nothing behind it"

@@ -314,6 +314,9 @@ pub fn draw_driving(
             draw_rectangle(card.x, card.y, card.w, card.h, tint);
             draw_rectangle_lines(card.x, card.y, card.w, card.h, 1.0, border);
 
+            // All five authored tiers. This topped out at "High" above
+            // medium, so `HIGH_RISK` and `EXTREME_RISK` were constants the
+            // player could feel but never read.
             let (risk_label, risk_color) = if !route_risk_known {
                 ("Unknown", colors::TEXT_MUTED)
             } else if risk <= data.constants.risk.safe {
@@ -322,6 +325,8 @@ pub fn draw_driving(
                 ("Low", colors::FUEL_GOOD)
             } else if risk <= data.constants.risk.medium_risk {
                 ("Medium", colors::ACCENT_WARNING)
+            } else if risk >= data.constants.risk.extreme_risk {
+                ("Extreme", colors::FUEL_CRITICAL)
             } else {
                 ("High", colors::FUEL_CRITICAL)
             };

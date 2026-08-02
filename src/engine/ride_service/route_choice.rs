@@ -290,8 +290,9 @@ impl RideService {
     /// `CONSECUTIVE_ROUTE.PENALTY_PER_REPEAT` already trimmed the fare, but
     /// `WARNING_THRESHOLD` and `RISK_INCREASE_PER_REPEAT` were unread, so a
     /// streak cost money and nothing else — and the player was never told it
-    /// was building. `VIOLATION_THRESHOLD` is authored at 999, which is the
-    /// data saying "no violation", and is left alone rather than invented.
+    /// was building. A `VIOLATION_THRESHOLD` was once authored at 999 — the
+    /// data's way of saying "no violation" — and has since been deleted
+    /// outright rather than kept as a sentinel nothing reads.
     fn apply_route_streak_pressure(
         state: &mut GameState,
         costs: &mut RouteCosts,

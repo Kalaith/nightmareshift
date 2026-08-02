@@ -2252,7 +2252,6 @@
         "title": "Mayor's Decree",
         "description": "Follow all commands from city officials without question",
         "difficulty": "nightmare",
-        "temporary": true,
         "duration": 3
       }
     },

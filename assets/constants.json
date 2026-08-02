@@ -1,10 +1,4 @@
 {
-  "STORAGE_KEYS": {
-    "PLAYER_STATS": "nightshift_player_stats",
-    "LEADERBOARD": "nightshift_leaderboard",
-    "SAVE_GAME": "nightshift_saved_game",
-    "BACKSTORY_PROGRESS": "nightshift_backstories"
-  },
   "GAME_CONSTANTS": {
     "INITIAL_FUEL": 100,
     "INITIAL_TIME": 480,
@@ -83,7 +77,6 @@
   },
   "CONSECUTIVE_ROUTE": {
     "WARNING_THRESHOLD": 4,
-    "VIOLATION_THRESHOLD": 999,
     "PENALTY_PER_REPEAT": 0.1,
     "RISK_INCREASE_PER_REPEAT": 1
   },
@@ -104,15 +97,5 @@
     "uncommon": 25,
     "rare": 4,
     "legendary": 1
-  },
-  "SCREENS": {
-    "LOADING": "loading",
-    "LEADERBOARD": "leaderboard",
-    "BRIEFING": "briefing",
-    "GAME": "game",
-    "GAME_OVER": "gameOver",
-    "SUCCESS": "success",
-    "SKILL_TREE": "skillTree",
-    "ALMANAC": "almanac"
   }
 }

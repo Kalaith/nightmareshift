@@ -6,8 +6,6 @@ Code and data that exist but never reach the player. Verified against the source
 
 ### Dead data (authored JSON → nothing)
 
-- `constants.json` `SCREENS` and `STORAGE_KEYS` are JS-port leftovers with no serde mapping; the `nightshift_*` storage keys don't even match the hardcoded `nightmare_shift*` names in `persistence.rs`. Also `RISK.EXTREME_RISK` and `CONSECUTIVE_ROUTE.VIOLATION_THRESHOLD` are read only by tests.
-- `shiftRulesData.json` `defaultSafety` (13 rules) and the `temporary: true` flag on the Mayor's Decree rule modification are silently dropped at load — no struct field, and unlike the other known-dropped keys, undocumented.
 - `Guideline.visible` and `Guideline.difficulty` are deserialized but never read (five authored difficulty tiers decide nothing); `exceptions[].probability` is never rolled — `check_exception_conditions` is fully deterministic; `ExceptionCondition.description` is unread.
 - `Location.description` (all 24 locations), `AlmanacLevel.description`, and `EventTemplate.id` are loaded and never consumed.
 - `skillTreeData.json`: `effect.type` distinguishes `stat_boost`/`mechanic_unlock`/`passive_bonus` but dispatch is entirely on `effect.target`; `effect.value` is discarded for the five passive ability unlocks; `third_eye_1`'s text promises a per-ride reveal but the roll happens once per shift.

@@ -9,7 +9,6 @@
         "actionKey": "eye_contact",
         "actionType": "forbidden",
         "relatedGuidelineId": 1001,
-        "defaultSafety": "safe",
         "defaultOutcome": "Averting your gaze keeps predatory spirits at bay and maintains cab stability.",
         "exceptions": [],
         "followConsequences": [
@@ -57,7 +56,6 @@
         "actionKey": "play_music",
         "actionType": "forbidden",
         "relatedGuidelineId": 1011,
-        "defaultSafety": "safe",
         "defaultOutcome": "Maintaining silence prevents the radio frequencies from attracting spirits.",
         "exceptions": [],
         "followConsequences": [
@@ -112,7 +110,6 @@
         "actionKey": "accept_tip",
         "actionType": "forbidden",
         "relatedGuidelineId": 1003,
-        "defaultSafety": "safe",
         "defaultOutcome": "Hard currency keeps cursed favors from binding to you.",
         "exceptions": [],
         "followConsequences": [
@@ -166,7 +163,6 @@
         "actionKey": "open_window",
         "actionType": "forbidden",
         "relatedGuidelineId": 1009,
-        "defaultSafety": "safe",
         "defaultOutcome": "Closed windows keep whispers, ash, and hungry winds outside the cab.",
         "exceptions": [],
         "followConsequences": [
@@ -221,7 +217,6 @@
         "actionKey": "take_shortcut",
         "actionType": "forbidden",
         "relatedGuidelineId": 1010,
-        "defaultSafety": "safe",
         "defaultOutcome": "Following dispatch routes minimizes ambush chances and keeps dispatch happy.",
         "exceptions": [],
         "followConsequences": [
@@ -418,7 +413,6 @@
         "visible": true,
         "actionKey": "drive_dark",
         "actionType": "forbidden",
-        "defaultSafety": "safe",
         "defaultOutcome": "Your lights hold the roadside shapes at the edge of the beam.",
         "exceptions": [],
         "followConsequences": [
@@ -465,7 +459,6 @@
         "visible": true,
         "actionKey": "drive_dark",
         "actionType": "forbidden",
-        "defaultSafety": "safe",
         "defaultOutcome": "Light is the only fare the far road accepts.",
         "exceptions": [],
         "followConsequences": [
@@ -512,7 +505,6 @@
         "visible": true,
         "actionKey": "use_ac",
         "actionType": "forbidden",
-        "defaultSafety": "safe",
         "defaultOutcome": "The unnatural chill is a truce; disturbing it ends the truce.",
         "exceptions": [],
         "followConsequences": [
@@ -559,7 +551,6 @@
         "visible": true,
         "actionKey": "use_ac",
         "actionType": "forbidden",
-        "defaultSafety": "safe",
         "defaultOutcome": "The dead keep the temperature they died in; matching it keeps the peace.",
         "exceptions": [],
         "followConsequences": [
@@ -606,7 +597,6 @@
         "visible": true,
         "actionKey": "use_wipers",
         "actionType": "forbidden",
-        "defaultSafety": "safe",
         "defaultOutcome": "Ignoring the smears on the windshield denies them your attention.",
         "exceptions": [],
         "followConsequences": [
@@ -653,7 +643,6 @@
         "visible": true,
         "actionKey": "use_wipers",
         "actionType": "forbidden",
-        "defaultSafety": "safe",
         "defaultOutcome": "The film on the glass is a veil; lifting it works both ways.",
         "exceptions": [],
         "followConsequences": [
@@ -700,7 +689,6 @@
         "visible": true,
         "actionKey": "stop_vehicle",
         "actionType": "forbidden",
-        "defaultSafety": "safe",
         "defaultOutcome": "A moving cab is a closed door; a stopped one is an open invitation.",
         "exceptions": [],
         "followConsequences": [
@@ -748,7 +736,6 @@
         "visible": true,
         "actionKey": "stop_vehicle",
         "actionType": "forbidden",
-        "defaultSafety": "safe",
         "defaultOutcome": "Momentum itself is the ward on nights like this.",
         "exceptions": [],
         "followConsequences": [
