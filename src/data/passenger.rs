@@ -340,13 +340,9 @@ pub struct Passenger {
 }
 
 impl Passenger {
-    /// Get random dialogue line
-    pub fn random_dialogue(&self) -> Option<&str> {
-        if self.dialogue.is_empty() {
-            None
-        } else {
-            macroquad_toolkit::rng::choose(&self.dialogue).map(|s| s.as_str())
-        }
+    /// Get random dialogue line, drawn from the shift's stream.
+    pub fn random_dialogue(&self, rng: &mut macroquad_toolkit::rng::SeededRng) -> Option<&str> {
+        rng.choose(&self.dialogue).map(|s| s.as_str())
     }
 
     /// Find route preference for a given route type

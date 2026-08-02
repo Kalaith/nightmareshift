@@ -99,7 +99,9 @@ impl RideService {
         state.current_passenger_need_state =
             PassengerStateMachine::initialize(&passenger, current_time);
         // Select dialogue once and store it
-        state.current_passenger_dialogue = passenger.random_dialogue().map(|s| s.to_string());
+        state.current_passenger_dialogue = passenger
+            .random_dialogue(&mut state.rng)
+            .map(|s| s.to_string());
         // Roll which authored exceptions are in play for this fare, once,
         // here — everything that asks afterwards must get one answer.
         state.live_exceptions = crate::engine::GuidelineEngine::roll_exception_liveness(
@@ -237,6 +239,7 @@ impl RideService {
             // Generate item drop
             let mut items_received = Vec::new();
             if let Some(drop) = ItemService::generate_drop(
+                &mut state.rng,
                 passenger,
                 route,
                 backstory_unlocked.is_some(),
@@ -251,6 +254,7 @@ impl RideService {
 
             // Check for trade offer
             if let Some(trade) = ItemService::check_trade_offer(
+                &mut state.rng,
                 passenger,
                 &state.inventory,
                 &data.constants,

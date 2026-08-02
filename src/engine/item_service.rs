@@ -57,6 +57,7 @@ impl ItemService {
 
     /// Generate an item drop from a passenger
     pub fn generate_drop(
+        rng: &mut macroquad_toolkit::rng::SeededRng,
         passenger: &Passenger,
         route_type: RouteType,
         backstory_unlocked: bool,
@@ -68,12 +69,13 @@ impl ItemService {
         let drop_chance =
             Self::calculate_drop_chance(passenger, route_type, backstory_unlocked, constants);
 
-        if macroquad_toolkit::rng::rand() > drop_chance {
+        if rng.next_f32() > drop_chance {
             return None;
         }
 
         // Determine item based on passenger
-        let item = Self::select_item_for_passenger(passenger, current_time, item_pools, catalog);
+        let item =
+            Self::select_item_for_passenger(rng, passenger, current_time, item_pools, catalog);
 
         Some(ItemDrop { item })
     }
@@ -109,6 +111,7 @@ impl ItemService {
 
     /// Select an appropriate item for a passenger to drop
     fn select_item_for_passenger(
+        rng: &mut macroquad_toolkit::rng::SeededRng,
         passenger: &Passenger,
         current_time: f64,
         item_pools: &ItemPools,
@@ -116,18 +119,19 @@ impl ItemService {
     ) -> InventoryItem {
         // Check if passenger has specific drop items
         if !passenger.drop_items.is_empty() {
-            let idx = macroquad_toolkit::rng::gen_range(0, passenger.drop_items.len());
+            let idx = rng.below(passenger.drop_items.len());
             let item_name = &passenger.drop_items[idx];
             return catalog.create_item(item_name, &passenger.name, current_time);
         }
 
         // Otherwise generate based on supernatural type
-        let item_name = item_pools.pick(Self::item_category(passenger));
+        let item_name = item_pools.pick(rng, Self::item_category(passenger));
         catalog.create_item(&item_name, &passenger.name, current_time)
     }
 
     /// Check if a passenger wants to trade
     pub fn check_trade_offer(
+        rng: &mut macroquad_toolkit::rng::SeededRng,
         passenger: &Passenger,
         inventory: &[InventoryItem],
         constants: &ConstantsData,
@@ -145,17 +149,19 @@ impl ItemService {
             .iter()
             .find(|item| passenger.wanted_items.contains(&item.name) && item.can_be_given_away());
 
-        if wanted_item.is_some()
-            || macroquad_toolkit::rng::chance(constants.probabilities.trade_offer_chance)
-        {
+        if wanted_item.is_some() || rng.chance(constants.probabilities.trade_offer_chance) {
             // Someone holding what this passenger came for is offered their
             // own work, when they have any to give.
             let reward = wanted_item.and(passenger.trade_reward.as_deref());
             let offered_item = match reward.filter(|name| catalog.contains(name)) {
                 Some(name) => catalog.create_item(name, &passenger.name, current_time),
-                None => {
-                    Self::select_item_for_passenger(passenger, current_time, item_pools, catalog)
-                }
+                None => Self::select_item_for_passenger(
+                    rng,
+                    passenger,
+                    current_time,
+                    item_pools,
+                    catalog,
+                ),
             };
 
             return Some(TradeOffer {

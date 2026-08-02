@@ -120,6 +120,7 @@ impl Game {
                     let mut found = Vec::new();
                     for _ in 0..256 {
                         let generated = WeatherService::generate_hazards(
+                            &mut self.game_state.rng,
                             &heavy,
                             &self.game_state.time_of_day,
                             &self.game_state.season,
@@ -277,6 +278,7 @@ impl Game {
                     let mut generated = Vec::new();
                     for _ in 0..64 {
                         generated = WeatherService::generate_hazards(
+                            &mut self.game_state.rng,
                             &heavy,
                             &self.game_state.time_of_day,
                             &self.game_state.season,

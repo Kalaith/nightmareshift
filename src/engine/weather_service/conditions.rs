@@ -7,12 +7,15 @@ use super::WeatherService;
 
 impl WeatherService {
     /// Generate initial weather for a shift
-    pub fn generate_initial_weather(season: &Season, current_time: f64) -> WeatherCondition {
+    pub fn generate_initial_weather(
+        rng: &mut macroquad_toolkit::rng::SeededRng,
+        season: &Season,
+        current_time: f64,
+    ) -> WeatherCondition {
         let weather_types = Self::get_seasonal_weather_types(season);
-        let weather_type =
-            *macroquad_toolkit::rng::choose(&weather_types).unwrap_or(&WeatherType::Clear);
+        let weather_type = *rng.choose(&weather_types).unwrap_or(&WeatherType::Clear);
 
-        Self::create_weather_condition(weather_type, season, current_time)
+        Self::create_weather_condition(rng, weather_type, season, current_time)
     }
 
     /// Get available weather types for a season
@@ -46,11 +49,12 @@ impl WeatherService {
 
     /// Create a weather condition
     fn create_weather_condition(
+        rng: &mut macroquad_toolkit::rng::SeededRng,
         weather_type: WeatherType,
         season: &Season,
         current_time: f64,
     ) -> WeatherCondition {
-        let intensity = Self::get_random_intensity(weather_type);
+        let intensity = Self::get_random_intensity(rng, weather_type);
         let effects = Self::get_weather_effects(weather_type, intensity);
         let visibility = Self::calculate_visibility(weather_type, intensity);
         let duration = Self::get_weather_duration(weather_type, intensity, season);
@@ -67,12 +71,15 @@ impl WeatherService {
     }
 
     /// Get random intensity (clear is always light)
-    fn get_random_intensity(weather_type: WeatherType) -> WeatherIntensity {
+    fn get_random_intensity(
+        rng: &mut macroquad_toolkit::rng::SeededRng,
+        weather_type: WeatherType,
+    ) -> WeatherIntensity {
         if weather_type == WeatherType::Clear {
             return WeatherIntensity::Light;
         }
 
-        let rand = macroquad_toolkit::rng::rand();
+        let rand = rng.next_f32();
         if rand < 0.5 {
             WeatherIntensity::Light
         } else if rand < 0.8 {
@@ -294,6 +301,7 @@ impl WeatherService {
 
     /// Update weather over time
     pub fn update_weather(
+        rng: &mut macroquad_toolkit::rng::SeededRng,
         current: &WeatherCondition,
         season: &Season,
         current_time: f64,
@@ -318,11 +326,11 @@ impl WeatherService {
         }
 
         let change_chance: f32 = 0.3;
-        if macroquad_toolkit::rng::chance(change_chance) {
-            return Self::generate_initial_weather(season, current_time);
+        if rng.chance(change_chance) {
+            return Self::generate_initial_weather(rng, season, current_time);
         }
 
-        let new_intensity = Self::get_random_intensity(current.weather_type);
+        let new_intensity = Self::get_random_intensity(rng, current.weather_type);
         WeatherCondition {
             intensity: new_intensity,
             effects: Self::get_weather_effects(current.weather_type, new_intensity),
@@ -354,9 +362,10 @@ mod tests {
         // Well past ten minutes. Either the front turns into different weather
         // or it shifts intensity, and either way the clock restarts.
         let past = front.duration as f64 * 60.0 + 1.0;
+        let mut rng = macroquad_toolkit::rng::SeededRng::new(0xA11CE);
         let mut turned = 0;
         for run in 0..200 {
-            let next = WeatherService::update_weather(&front, &season, past + run as f64);
+            let next = WeatherService::update_weather(&mut rng, &front, &season, past + run as f64);
             if next.intensity != front.intensity || next.weather_type != front.weather_type {
                 turned += 1;
             }
@@ -402,9 +411,11 @@ mod tests {
         );
 
         let mut weather = front;
+        let mut rng = macroquad_toolkit::rng::SeededRng::new(0xB0B);
         let mut changes = 0;
         for frame in 1..=600 {
-            let next = WeatherService::update_weather(&weather, &season, frame as f64 * 0.016);
+            let next =
+                WeatherService::update_weather(&mut rng, &weather, &season, frame as f64 * 0.016);
             if next.intensity != weather.intensity {
                 changes += 1;
             }

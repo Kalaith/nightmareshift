@@ -25,8 +25,9 @@ pub struct ItemPools {
 
 impl ItemPools {
     /// Pick a random item name from the named category, falling back to the
-    /// common pool (and finally a hardcoded name) if a pool is empty.
-    pub fn pick(&self, category: &str) -> String {
+    /// common pool (and finally a hardcoded name) if a pool is empty. Draws
+    /// from the shift's stream so drops replay under a seed.
+    pub fn pick(&self, rng: &mut macroquad_toolkit::rng::SeededRng, category: &str) -> String {
         let pool = match category {
             "ghost" => &self.ghost,
             "vampire" => &self.vampire,
@@ -39,7 +40,7 @@ impl ItemPools {
         if pool.is_empty() {
             return "Old Key".to_string();
         }
-        pool[macroquad_toolkit::rng::gen_range(0, pool.len())].clone()
+        pool[rng.below(pool.len())].clone()
     }
 
     /// Every name any pool can produce, in declaration order. Used by the

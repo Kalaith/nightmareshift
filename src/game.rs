@@ -558,6 +558,7 @@ impl Game {
             // Dynamic weather updates
             if self.game_state.shift_start_time.is_some() {
                 self.game_state.current_weather = WeatherService::update_weather(
+                    &mut self.game_state.rng,
                     &self.game_state.current_weather,
                     &self.game_state.season,
                     current_time,
@@ -584,6 +585,7 @@ impl Game {
 
                 if current_time - self.last_hazard_update >= 60.0 {
                     let new_hazards = WeatherService::generate_hazards(
+                        &mut self.game_state.rng,
                         &self.game_state.current_weather,
                         &self.game_state.time_of_day,
                         &self.game_state.season,

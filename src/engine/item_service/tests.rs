@@ -56,10 +56,11 @@ fn every_item_can_be_obtained() {
     let pools = load_item_pools();
     let passengers = load_passengers();
 
+    let mut rng = macroquad_toolkit::rng::SeededRng::new(0xC0FFEE);
     let mut reachable: HashSet<String> = HashSet::new();
     for pool in ["ghost", "vampire", "demon", "occult", "holy", "common"] {
         for _ in 0..200 {
-            reachable.insert(pools.pick(pool).to_lowercase());
+            reachable.insert(pools.pick(&mut rng, pool).to_lowercase());
         }
     }
     for passenger in &passengers {
@@ -141,8 +142,16 @@ fn the_crafter_offers_his_work_to_someone_holding_what_he_wants() {
     let wanted = collector.wanted_items.first().cloned().expect("a want");
 
     let offer_with = |inventory: Vec<crate::data::InventoryItem>| {
-        ItemService::check_trade_offer(&collector, &inventory, &constants, 0.0, &pools, &catalog)
-            .map(|offer| offer.offered_item.name)
+        ItemService::check_trade_offer(
+            &mut macroquad_toolkit::rng::SeededRng::new(7),
+            &collector,
+            &inventory,
+            &constants,
+            0.0,
+            &pools,
+            &catalog,
+        )
+        .map(|offer| offer.offered_item.name)
     };
 
     let holding = vec![catalog.create_item(&wanted, "test", 0.0)];

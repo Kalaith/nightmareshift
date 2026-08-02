@@ -452,6 +452,13 @@ pub struct GameState {
     /// exceptions are in play tonight — rolling at each ask would let them
     /// disagree frame to frame.
     pub live_exceptions: std::collections::HashSet<String>,
+    /// The run's gameplay random stream. Every draw that decides anything —
+    /// spawns, rolls, hazards, drops — comes from here, so a run is replayed
+    /// by its seed and a mid-run save can carry the stream's state. Visual
+    /// effects deliberately stay on macroquad's global generator: they draw
+    /// every frame, and routing them through this stream would make the
+    /// simulation's future depend on how long a screen was looked at.
+    pub rng: macroquad_toolkit::rng::SeededRng,
     pub environmental_hazards: Vec<EnvironmentalHazard>,
 
     // Persistence
@@ -536,6 +543,10 @@ impl GameState {
             campaign_month: DEFAULT_MONTH,
             false_tell_planted: false,
             live_exceptions: std::collections::HashSet::new(),
+            // Seeded from the global generator so ordinary runs stay varied;
+            // a seeded/daily run overwrites this with `SeededRng::new(seed)`
+            // before play begins. Not reseeded per night: one run, one stream.
+            rng: macroquad_toolkit::rng::SeededRng::new(macroquad_toolkit::rng::random_u64()),
             environmental_hazards: Vec::new(),
             passenger_reputation: HashMap::new(),
             minimum_earnings: constants.minimum_earnings,
