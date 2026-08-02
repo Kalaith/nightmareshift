@@ -6,6 +6,7 @@
 //! this is the layer the meta-progression is settled in.
 
 use super::Game;
+use crate::data::{EndingFacts, EpilogueCause, EpilogueKind};
 use crate::engine::*;
 use crate::screens::Screen;
 use crate::state::*;
@@ -242,6 +243,30 @@ impl Game {
         }
     }
 
+    /// Bucket a dead run's cause for epilogue selection, from the authored
+    /// `game_over_reason` strings this codebase writes — matched here, next
+    /// to nothing, because the strings and the buckets live in one repo and
+    /// the fallback for a miss is the generic game-over pool.
+    fn game_over_cause(&self) -> Option<EpilogueCause> {
+        if self.game_state.last_fare_night && !self.game_state.death_delivered {
+            return Some(EpilogueCause::LastFareFailed);
+        }
+        let reason = self.game_state.game_over_reason.as_deref()?;
+        if reason.contains("uncontrollable") {
+            Some(EpilogueCause::Meltdown)
+        } else if reason.contains("Hidden Rule") {
+            Some(EpilogueCause::HiddenRule)
+        } else if reason.contains("only earned")
+            || reason.contains("Not enough")
+            || reason.contains("not make the next leg")
+            || reason.contains("ran out of fuel")
+        {
+            Some(EpilogueCause::OutOfNight)
+        } else {
+            None
+        }
+    }
+
     /// Whether the whole roster is mastered — the gate for The Last Fare.
     /// "All knowledge" means every soul in the almanac at Lv.3, the reaper
     /// included, whether studied with lore or learned ride by ride.
@@ -307,6 +332,41 @@ impl Game {
             self.transition.begin_scene();
             self.game_state.game_phase = GamePhase::GameOver;
             self.screen = Screen::GameOver;
+        }
+
+        // The ending's authored paragraph, chosen on the seeded stream so a
+        // seeded run ends on the same words. Interim nights get none — they
+        // end on a button, not a chapter. Selected before the run-completion
+        // counters move, so "first of its kind" still means first.
+        let kind = if actually_successful && self.game_state.run_complete {
+            if self.game_state.death_delivered {
+                Some(EpilogueKind::DeathDelivered)
+            } else {
+                Some(EpilogueKind::RunComplete)
+            }
+        } else if !actually_successful {
+            Some(EpilogueKind::GameOver)
+        } else {
+            None
+        };
+        self.game_state.epilogue = None;
+        if let Some(kind) = kind {
+            let facts = EndingFacts {
+                kind,
+                cause: self.game_over_cause(),
+                clean_night: self.game_state.rules_violated == 0,
+                first_of_its_kind: match kind {
+                    EpilogueKind::DeathDelivered => self.player_stats.death_deliveries == 0,
+                    _ => self.player_stats.runs_completed == 0,
+                },
+            };
+            // Cloned out so the deck and the state's rng can be borrowed
+            // together; the deck is a few kilobytes once per ending.
+            let deck = self.game_data.as_ref().map(|data| data.epilogues.clone());
+            if let Some(deck) = deck {
+                self.game_state.epilogue =
+                    crate::data::select_epilogue(&deck, facts, &mut self.game_state.rng);
+            }
         }
 
         // Record stats

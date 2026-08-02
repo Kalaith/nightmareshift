@@ -14,6 +14,28 @@ use crate::state::*;
 use macroquad::prelude::*;
 
 impl Game {
+    /// Give a fabricated ending scene the epilogue the real path would
+    /// select, so the outcome captures show the paragraph too.
+    fn seed_capture_epilogue(
+        &mut self,
+        kind: crate::data::EpilogueKind,
+        cause: Option<crate::data::EpilogueCause>,
+    ) {
+        let deck = self.game_data.as_ref().map(|data| data.epilogues.clone());
+        if let Some(deck) = deck {
+            self.game_state.epilogue = crate::data::select_epilogue(
+                &deck,
+                crate::data::EndingFacts {
+                    kind,
+                    cause,
+                    clean_night: false,
+                    first_of_its_kind: false,
+                },
+                &mut self.game_state.rng,
+            );
+        }
+    }
+
     /// Seed a specific scene for the screenshot harness.
     pub fn begin_capture_scene(&mut self, scene: &str) {
         self.capture_mode = true;
@@ -378,6 +400,10 @@ impl Game {
                 self.game_state.time_remaining = 96;
                 self.game_state.game_over_reason =
                     Some("The passenger's need became uncontrollable.".to_string());
+                self.seed_capture_epilogue(
+                    crate::data::EpilogueKind::GameOver,
+                    Some(crate::data::EpilogueCause::Meltdown),
+                );
                 self.game_state.game_phase = GamePhase::GameOver;
                 self.change_screen(Screen::GameOver);
             }
@@ -409,6 +435,7 @@ impl Game {
                     run_bonus_bank: 1500,
                     run_bonus_lore: 15,
                 };
+                self.seed_capture_epilogue(crate::data::EpilogueKind::RunComplete, None);
                 self.game_state.game_phase = GamePhase::Success;
                 self.change_screen(Screen::Success);
             }

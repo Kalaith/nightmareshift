@@ -1,0 +1,72 @@
+[
+  {
+    "kind": "run_complete",
+    "requiresCleanNight": true,
+    "texts": [
+      "Five nights, and the ledger closes without a single rule bent. The city notices things like that. Somewhere in the dispatch office a file is moved to a drawer that opens less often, and the morning you drive home through is a shade warmer than the one everyone else gets.",
+      "You kept every rule they gave you and a few they didn't write down. Dawn finds the cab idling outside your building as if it drove itself there, engine settling like something falling asleep. Whatever rides this city at night, tonight it tipped its hat."
+    ]
+  },
+  {
+    "kind": "run_complete",
+    "texts": [
+      "Five nights survived, not all of them gracefully. The dents in the ledger match the dents in your nerve, but the quota is met and the sun is real. You sleep through the day with the curtains open, because you have earned the light and you want witnesses.",
+      "The last fare of the week steps out and the meter falls quiet. Five nights of rules, tells, and roads that wanted things from you — and you are still the one holding the wheel. The city files you under 'keeps'. It does not file everyone.",
+      "Dawn breaks over the depot like a debt being paid. You hand in the keys, and the night dispatcher looks at you the way people look at weather that missed them. Next week there will be another five nights. This morning, there is coffee."
+    ]
+  },
+  {
+    "kind": "death_delivered",
+    "firstOfItsKind": true,
+    "texts": [
+      "He does not pay, because what he owes you is not money. At his door he pauses, one hand on the frame, and for a moment you see every fare you have ever carried standing in his outline. 'Most drivers I collect,' he says. 'You, I commend.' The door closes, and for the first time since you took this job, the night feels like it is over because it chose to be."
+    ]
+  },
+  {
+    "kind": "death_delivered",
+    "texts": [
+      "He recognises the cab now. He settles into the seat like a regular, and the meter reads nothing it should. At his door he tips his hat — an old joke between colleagues, by this point. You drive home through streets that part for you. The city has stopped keeping your file. It knows how your story goes.",
+      "Death rides in the back like any other tired soul at the end of a shift, and you deliver him the way you have delivered everyone: watching, listening, breaking only the rules that needed breaking. The door closes. Dawn belongs to you, and this time it brought interest."
+    ]
+  },
+  {
+    "kind": "game_over",
+    "cause": "meltdown",
+    "texts": [
+      "The need wins. Whatever they were holding together comes apart in the back seat, and the cab is suddenly a very small place with no outside. Dispatch marks the fare unresolved. The next driver on this route will find the cab parked neatly at the kerb, engine warm, meter still running for a ride that never ends.",
+      "You watched the meter when you should have watched the mirror. The passenger's last sound is not a scream — it is a sigh, like a held breath finally let go, and it fills the cab until there is no room left for you."
+    ]
+  },
+  {
+    "kind": "game_over",
+    "cause": "hidden_rule",
+    "texts": [
+      "Some rules are not posted. They are learned, one driver at a time, and filed in a cabinet nobody living has opened. Tonight your name goes in the file, next to the rule you found the hard way. The next driver will not be told either. That is what hidden means.",
+      "The city has laws beneath its laws, and tonight you drove through one of them. There is no citation, no hearing. There is only the moment after, which does not end."
+    ]
+  },
+  {
+    "kind": "game_over",
+    "cause": "out_of_night",
+    "texts": [
+      "The night runs out before the ledger fills. No claws, no whispers — just arithmetic, which in this city is its own kind of predator. Dispatch does not shout. Dispatch simply stops answering, and the silence where a job used to be follows you home.",
+      "Fuel, minutes, dollars: the night takes payment in whichever currency you run short of first. You coast the last block on fumes and pride, and neither covers the quota. The morning shift finds the cab where the mathematics left it."
+    ]
+  },
+  {
+    "kind": "game_over",
+    "cause": "last_fare_failed",
+    "texts": [
+      "Dawn comes with the last fare uncollected, and dawn is not on your side. The figure at the kerb does not board another cab, because there is no other cab, and no other night. He simply stops waiting — and starts walking toward the driver's door.",
+      "You had one delivery left and the city gave you every warning it owns: the storm, the closed stations, the cold in the vents. The ledger stays open. The reaper does not mind. He has your address, and now he has your schedule."
+    ]
+  },
+  {
+    "kind": "game_over",
+    "texts": [
+      "The rules were posted, and the rules were broken, and the space between those two facts is where drivers go missing. The cab will be recovered. The fare will be re-listed. The vacancy will be filled by Thursday. The city is nothing if not efficient about its appetites.",
+      "Every driver thinks the rules are for the other drivers, once. The city keeps a special patience for that thought. It waited exactly as long as it needed to, and no longer.",
+      "Somewhere a radio crackles your call sign and gets no answer. The night shift has one law older than all the posted ones: the meter always collects. Tonight it collected you."
+    ]
+  }
+]

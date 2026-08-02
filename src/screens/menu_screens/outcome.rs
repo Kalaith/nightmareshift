@@ -16,7 +16,13 @@ pub fn draw_game_over(game_state: &GameState, game_data: Option<&GameData>) -> U
     let center_x = screen_width() / 2.0;
 
     if let Some(data) = game_data {
-        let panel = UiRect::centered_x(screen_width(), 112.0, screen_width().min(540.0), 364.0);
+        // Taller when an epilogue paragraph rides along.
+        let panel_h = if game_state.epilogue.is_some() {
+            470.0
+        } else {
+            364.0
+        };
+        let panel = UiRect::centered_x(screen_width(), 96.0, screen_width().min(560.0), panel_h);
         draw_glass_panel(panel, colors::ACCENT_DANGER);
         let inner = panel.inset(spacing::PADDING_LG);
 
@@ -75,6 +81,21 @@ pub fn draw_game_over(game_state: &GameState, game_data: Option<&GameData>) -> U
             colors::ACCENT_SKY,
         );
 
+        // The ending's authored paragraph — what this death was, in the
+        // city's own voice.
+        if let Some(ref epilogue) = game_state.epilogue {
+            draw_wrapped_text(
+                epilogue,
+                inner.x,
+                inner.y + 256.0,
+                inner.w,
+                fonts::SIZE_SM,
+                19.0,
+                colors::TEXT_SECONDARY,
+                6,
+            );
+        }
+
         if draw_glass_button(
             UiRect::new(center_x - 150.0, panel.bottom() - 70.0, 300.0, 46.0),
             &data.localization.ui.common.try_again,
@@ -95,13 +116,16 @@ pub fn draw_success(game_state: &GameState, game_data: Option<&GameData>) -> UiA
 
     if let Some(data) = game_data {
         // Tall enough for the meta-payout lines beneath the score; the run
-        // summary carries one more than a night's does.
-        let panel_h = if game_state.run_complete {
+        // summary carries one more than a night's does, and a completed run
+        // carries its epilogue paragraph besides.
+        let panel_h = if game_state.epilogue.is_some() {
+            540.0
+        } else if game_state.run_complete {
             430.0
         } else {
             400.0
         };
-        let panel = UiRect::centered_x(screen_width(), 104.0, screen_width().min(540.0), panel_h);
+        let panel = UiRect::centered_x(screen_width(), 88.0, screen_width().min(560.0), panel_h);
         draw_glass_panel(panel, colors::ACCENT_GOLD);
         let inner = panel.inset(spacing::PADDING_LG);
 
@@ -210,6 +234,20 @@ pub fn draw_success(game_state: &GameState, game_data: Option<&GameData>) -> UiA
                 payout.run_bonus_bank, payout.run_bonus_lore
             );
             draw_ui_text(&bonus, inner.x, y + 160.0, 16.0, colors::FUEL_GOOD);
+        }
+
+        // The run's authored epilogue — dawn in the city's own voice.
+        if let Some(ref epilogue) = game_state.epilogue {
+            draw_wrapped_text(
+                epilogue,
+                inner.x,
+                y + 192.0,
+                inner.w,
+                fonts::SIZE_SM,
+                19.0,
+                colors::TEXT_SECONDARY,
+                6,
+            );
         }
 
         if interim {

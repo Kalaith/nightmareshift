@@ -34,7 +34,7 @@
 
 - Grow the passenger roster past 16 toward 30–40. Selection is data-driven now, so new fares are a JSON entry — gated on portrait art, since ids 1–16 have `assets/passengers/N.png` and anything new falls back to the procedural silhouette.
 - ~~Per-night run modifiers~~ Done — `assets/nightModifierData.json` authors a six-card deck (Blood Moon, Hungry City, Rationed Pumps, Dead Frequency, Witching Hour, Gilded Dusk; 40% chance on nights 2–5, weighted draw on the seeded stream, never night 1 or The Last Fare), applied through the quota/difficulty/fare/fuel/lore hooks and named in the briefing forecast. Deck is data-only to extend; three tests pin its shape.
-- Longer authored epilogues, branching endings, and a credits sequence — the campaign's endings are currently mechanically distinct but thin.
+- ~~Longer authored epilogues and branching endings~~ Done — `assets/epilogueData.json` authors an 18-paragraph deck across run-complete, death-delivered, and game-over (bucketed meltdown / hidden-rule / out-of-night / last-fare-failed), narrowed by clean-night and first-of-its-kind conditions, selected most-specific-first on the seeded stream at `end_shift` and drawn on both outcome screens. Interim nights stay a button, not a chapter. Deck is data-only to extend; three tests hold every reachable ending to non-empty prose. Still open from this line: a credits sequence.
 - Further location depth: per-location fuel and distance, spawn-affinity tables, destination risk on the drop-off leg.
 
 ## Art

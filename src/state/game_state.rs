@@ -524,6 +524,9 @@ pub struct GameState {
     pub last_fare_night: bool,
     /// Death's ride was completed this shift — the run's true ending.
     pub death_delivered: bool,
+    /// The authored paragraph this ending selected, for the outcome screen.
+    /// `None` on interim nights, which end on a button, not a chapter.
+    pub epilogue: Option<String>,
 }
 
 impl GameState {
@@ -592,6 +595,7 @@ impl GameState {
             night_modifier: None,
             last_fare_night: false,
             death_delivered: false,
+            epilogue: None,
         }
     }
 
@@ -644,6 +648,7 @@ impl GameState {
         self.night_modifier = None;
         self.last_fare_night = false;
         self.death_delivered = false;
+        self.epilogue = None;
     }
 
     /// Check if time is running out

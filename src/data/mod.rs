@@ -2,6 +2,7 @@
 
 pub mod constants;
 pub mod environment;
+pub mod epilogue;
 pub mod event;
 pub mod inventory;
 pub mod loader;
@@ -15,6 +16,7 @@ pub mod skill_tree;
 
 pub use constants::*;
 pub use environment::*;
+pub use epilogue::*;
 pub use event::*;
 pub use inventory::*;
 pub use loader::*;

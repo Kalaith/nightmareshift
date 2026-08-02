@@ -17,6 +17,7 @@ pub struct GameData {
     pub items: ItemCatalog,
     pub rewards: RewardData,
     pub night_modifiers: NightModifierData,
+    pub epilogues: Vec<Epilogue>,
     /// Content files that failed to parse and fell back empty. The night
     /// can still run without them — thinner — and the menu says so, since
     /// a stderr line reaches nobody on the web build.
@@ -46,6 +47,7 @@ impl GameData {
             items: load_item_catalog(),
             rewards: load_rewards(),
             night_modifiers: load_night_modifiers(),
+            epilogues: load_epilogues(),
             load_errors: Vec::new(),
         };
         for (file, empty) in [
@@ -118,6 +120,16 @@ pub fn load_skill_tree() -> Vec<Skill> {
     let json = include_str!("../../assets/skillTreeData.json");
     serde_json::from_str(json).unwrap_or_else(|e| {
         eprintln!("Failed to parse skill tree: {}", e);
+        Vec::new()
+    })
+}
+
+/// Load the ending epilogues from embedded JSON. An unparseable file falls
+/// back empty — endings show their title and subtitle, just no paragraph.
+pub fn load_epilogues() -> Vec<Epilogue> {
+    let json = include_str!("../../assets/epilogueData.json");
+    serde_json::from_str(json).unwrap_or_else(|e| {
+        eprintln!("Failed to parse epilogues: {}", e);
         Vec::new()
     })
 }
