@@ -515,6 +515,10 @@ pub struct GameState {
     pub comfort_soothed_actions: Vec<String>,
     /// The night's single brink-of-meltdown grace has been used.
     pub brink_spent: bool,
+    /// Tonight's rolled run modifier, if any — quota, difficulty, fare,
+    /// fuel and lore hooks all consult it. Never on night 1 or The Last
+    /// Fare.
+    pub night_modifier: Option<NightModifier>,
     /// This night is The Last Fare: quota is moot and the only passenger the
     /// city sends is Death. Survived, it completes the run.
     pub last_fare_night: bool,
@@ -585,6 +589,7 @@ impl GameState {
             guideline_time_remaining: 30.0,
             comfort_soothed_actions: Vec::new(),
             brink_spent: false,
+            night_modifier: None,
             last_fare_night: false,
             death_delivered: false,
         }
@@ -636,6 +641,7 @@ impl GameState {
         self.guideline_time_remaining = 30.0;
         self.comfort_soothed_actions.clear();
         self.brink_spent = false;
+        self.night_modifier = None;
         self.last_fare_night = false;
         self.death_delivered = false;
     }

@@ -228,11 +228,17 @@ impl RideService {
             // Cloned so the fare call can also borrow the state's rng.
             let reputation = state.passenger_reputation.get(&passenger.id).cloned();
             let skill_mods = SkillModifiers::from_unlocked(&data.skills, &stats.unlocked_skills);
+            let night_fare_mult = state
+                .night_modifier
+                .as_ref()
+                .map(|m| m.fare_mult)
+                .unwrap_or(1.0);
             let destination_fare_modifier = data
                 .get_location(&passenger.destination)
                 .map(|l| l.fare_modifier)
                 .unwrap_or(1.0)
-                * skill_mods.fare_mult;
+                * skill_mods.fare_mult
+                * night_fare_mult;
             let streak = state.consecutive_route_streak.clone();
             let fare = GameEngine::calculate_fare(
                 &mut state.rng,

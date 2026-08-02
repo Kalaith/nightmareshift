@@ -1,0 +1,52 @@
+{
+  "chance": 0.4,
+  "modifiers": [
+    {
+      "id": "blood_moon",
+      "name": "Blood Moon",
+      "description": "The moon rides low and red. Every fare pays a fifth more, and the night deals one rule deeper.",
+      "weight": 3,
+      "fareMult": 1.2,
+      "difficultyBonus": 1
+    },
+    {
+      "id": "hungry_city",
+      "name": "Hungry City",
+      "description": "Dispatch wants more than the night is worth. The quota rises by a quarter.",
+      "weight": 3,
+      "quotaMult": 1.25
+    },
+    {
+      "id": "rationed_pumps",
+      "name": "Rationed Pumps",
+      "description": "The depots are dry until dawn. You start thirty points down, and desperate fares tip better.",
+      "weight": 2,
+      "startFuelDelta": -30,
+      "fareMult": 1.1
+    },
+    {
+      "id": "dead_frequency",
+      "name": "Dead Frequency",
+      "description": "The radio picks up voices between stations. Fares run a tenth light, but the night is thick with lore.",
+      "weight": 2,
+      "fareMult": 0.9,
+      "loreBonus": 6
+    },
+    {
+      "id": "witching_traffic",
+      "name": "Witching Hour",
+      "description": "The streets empty of the living. The quota eases, but what remains out there runs a rule deeper.",
+      "weight": 2,
+      "quotaMult": 0.85,
+      "difficultyBonus": 1
+    },
+    {
+      "id": "gilded_dusk",
+      "name": "Gilded Dusk",
+      "description": "Money moves tonight, and dispatch knows it. Fares and quota both climb by a third.",
+      "weight": 2,
+      "fareMult": 1.3,
+      "quotaMult": 1.3
+    }
+  ]
+}

@@ -33,7 +33,7 @@
 ## Content
 
 - Grow the passenger roster past 16 toward 30–40. Selection is data-driven now, so new fares are a JSON entry — gated on portrait art, since ids 1–16 have `assets/passengers/N.png` and anything new falls back to the procedural silhouette.
-- Per-night run modifiers ("Blood Moon: fares +20%, +1 rule") selected in `begin_night` and applied through the existing `minimum_earnings` / `SkillModifiers` / rule-count hooks.
+- ~~Per-night run modifiers~~ Done — `assets/nightModifierData.json` authors a six-card deck (Blood Moon, Hungry City, Rationed Pumps, Dead Frequency, Witching Hour, Gilded Dusk; 40% chance on nights 2–5, weighted draw on the seeded stream, never night 1 or The Last Fare), applied through the quota/difficulty/fare/fuel/lore hooks and named in the briefing forecast. Deck is data-only to extend; three tests pin its shape.
 - Longer authored epilogues, branching endings, and a credits sequence — the campaign's endings are currently mechanically distinct but thin.
 - Further location depth: per-location fuel and distance, spawn-affinity tables, destination risk on the drop-off leg.
 

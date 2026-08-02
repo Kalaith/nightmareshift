@@ -66,13 +66,27 @@ impl Game {
             // a previous screen may survive into this one.
             self.overlays.close_all();
 
+            // An ordinary mid-run night may carry a modifier — rolled on the
+            // seeded stream before anything reads it. Night 1 never does
+            // (the opening stays learnable) and The Last Fare never does
+            // (that night is authored whole).
+            let night = self.game_state.night;
+            let nights_per_run = data.constants.game_constants.nights_per_run;
+            self.game_state.night_modifier = if night > 1 && night <= nights_per_run {
+                data.night_modifiers.roll(&mut self.game_state.rng)
+            } else {
+                None
+            };
+            let modifier = self.game_state.night_modifier.clone();
+
             // Difficulty escalates with the night within the run, layered on top
             // of the player's lifetime experience, and drives the rule count.
-            let night = self.game_state.night;
             let max_diff = data.constants.scoring.max_difficulty;
             let base_diff = self.player_stats.suggested_difficulty();
             let difficulty_step = data.constants.game_constants.difficulty_increase_per_night;
-            let effective_diff = (base_diff + (night - 1) * difficulty_step).min(max_diff);
+            let modifier_diff = modifier.as_ref().map(|m| m.difficulty_bonus).unwrap_or(0);
+            let effective_diff =
+                (base_diff + (night - 1) * difficulty_step + modifier_diff).min(max_diff);
             let synthetic_xp = effective_diff * data.constants.scoring.experience_per_level;
             let shift_rules = GameEngine::generate_shift_rules(
                 &mut self.game_state.rng,
@@ -90,13 +104,15 @@ impl Game {
             let base_quota = data.constants.game_constants.minimum_earnings;
             let step = data.constants.game_constants.quota_increase_per_night;
             let growth = (base_quota as f32 * step * (night - 1) as f32).round() as u32;
-            self.game_state.minimum_earnings = base_quota + growth;
+            let quota_mult = modifier.as_ref().map(|m| m.quota_mult).unwrap_or(1.0);
+            self.game_state.minimum_earnings =
+                ((base_quota + growth) as f32 * quota_mult).round() as u32;
 
             // Past the last ordinary night lies The Last Fare: quota is moot
             // (Death pays nothing), and the only success is delivering him.
             // Reachable only when night 5 was survived with the whole roster
             // mastered — `end_shift` holds the run open in that case.
-            if night > data.constants.game_constants.nights_per_run {
+            if night > nights_per_run {
                 self.game_state.last_fare_night = true;
                 self.game_state.minimum_earnings = 0;
             }
@@ -106,6 +122,16 @@ impl Game {
                 SkillModifiers::from_unlocked(&data.skills, &self.player_stats.unlocked_skills);
             self.game_state.max_fuel = 100.0 + skill_mods.max_fuel_bonus;
             self.game_state.supernatural_protection += skill_mods.bonus_protection;
+            // A modifier can open the night with a lighter tank; never so
+            // light there is no night to drive.
+            if let Some(delta) = modifier
+                .as_ref()
+                .map(|m| m.start_fuel_delta)
+                .filter(|delta| *delta != 0)
+            {
+                self.game_state.fuel =
+                    (self.game_state.fuel + delta as f32).clamp(10.0, self.game_state.max_fuel);
+            }
             // Glimpse: a chance to reveal one hidden rule up front.
             if skill_mods.reveal_hidden_chance > 0.0
                 && self.game_state.rng.chance(skill_mods.reveal_hidden_chance)
@@ -319,6 +345,13 @@ impl Game {
         lore_earned += backstories_unlocked * 2;
         // Difficulty bonus
         lore_earned += self.game_state.difficulty_level;
+        // A modifier can thicken the night with story.
+        lore_earned += self
+            .game_state
+            .night_modifier
+            .as_ref()
+            .map(|m| m.lore_bonus)
+            .unwrap_or(0);
         self.player_stats.lore_fragments += lore_earned;
         self.game_state.shift_payout.lore = lore_earned;
 

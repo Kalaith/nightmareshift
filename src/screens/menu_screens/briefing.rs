@@ -418,6 +418,26 @@ pub fn draw_briefing(
             2,
         ) + 14.0;
 
+        // Tonight's rolled modifier, named in the forecast — it has already
+        // moved the quota and the fares the driver is about to be offered,
+        // so a night that plays different must say so up front.
+        if let Some(modifier) = &game_state.night_modifier {
+            side_y = draw_wrapped_text(
+                &format!(
+                    "{} — {}",
+                    modifier.name.to_uppercase(),
+                    modifier.description
+                ),
+                conditions_inner.x,
+                side_y,
+                conditions_inner.w,
+                fonts::SIZE_SM,
+                18.0,
+                colors::ACCENT_DANGER,
+                3,
+            ) + 14.0;
+        }
+
         let weather_rule_ids = crate::engine::WeatherService::get_weather_triggered_rules(
             &game_state.current_weather,
             &game_state.time_of_day,

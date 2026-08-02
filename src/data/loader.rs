@@ -16,6 +16,7 @@ pub struct GameData {
     pub item_pools: ItemPools,
     pub items: ItemCatalog,
     pub rewards: RewardData,
+    pub night_modifiers: NightModifierData,
     /// Content files that failed to parse and fell back empty. The night
     /// can still run without them — thinner — and the menu says so, since
     /// a stderr line reaches nobody on the web build.
@@ -44,6 +45,7 @@ impl GameData {
             item_pools: load_item_pools(),
             items: load_item_catalog(),
             rewards: load_rewards(),
+            night_modifiers: load_night_modifiers(),
             load_errors: Vec::new(),
         };
         for (file, empty) in [
@@ -117,6 +119,20 @@ pub fn load_skill_tree() -> Vec<Skill> {
     serde_json::from_str(json).unwrap_or_else(|e| {
         eprintln!("Failed to parse skill tree: {}", e);
         Vec::new()
+    })
+}
+
+/// Load the night-modifier deck from embedded JSON. An unparseable file
+/// falls back to an empty deck — no modifier ever rolls, the campaign
+/// still runs.
+pub fn load_night_modifiers() -> NightModifierData {
+    let json = include_str!("../../assets/nightModifierData.json");
+    serde_json::from_str(json).unwrap_or_else(|e| {
+        eprintln!("Failed to parse night modifiers: {}", e);
+        NightModifierData {
+            chance: 0.0,
+            modifiers: Vec::new(),
+        }
     })
 }
 
