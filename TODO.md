@@ -16,12 +16,6 @@ Code and data that exist but never reach the player. Verified against the source
 - The status bar under-reports wards: `wards_in_hand()` counts only rule-immunity/supernatural-protection charges, not carried items with `protectiveProperties` that `ProtectionService` actually spends — a driver holding a Blessed Medallion reads "0 wards".
 - Never-constructed variants: `ProtectionType::SafePassage`/`LuckyEncounters` (no item may author them — a test enforces it) and `EventConsequence::None` (matched, never produced).
 
-### Input/UI wiring gaps
-
-- ESC cannot pause during `RideRequest` (it declines the ride instead, with no on-screen pause button), and the briefing screen has no path back to the menu.
-- `PassengerCard`'s Accept/Decline controls are dead — the only call site passes `show_controls = false`; the ride-request screen builds its own buttons.
-- The loading screen advances after 2 frames, making it the never-legible sole reader of `localization.meta` (language/code/version).
-
 ### Dead data (authored JSON → nothing)
 
 - `constants.json` `SCREENS` and `STORAGE_KEYS` are JS-port leftovers with no serde mapping; the `nightshift_*` storage keys don't even match the hardcoded `nightmare_shift*` names in `persistence.rs`. Also `RISK.EXTREME_RISK` and `CONSECUTIVE_ROUTE.VIOLATION_THRESHOLD` are read only by tests.

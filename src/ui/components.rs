@@ -187,17 +187,12 @@ impl StatusBar {
     }
 }
 
-/// Passenger card component
+/// Display-only passenger card. The ride-request screen owns the
+/// accept/decline controls; this card never draws any.
 pub struct PassengerCard;
 
 impl PassengerCard {
-    pub fn draw(
-        passenger: &Passenger,
-        rect: UiRect,
-        show_controls: bool,
-        dialogue: Option<&String>,
-        game_data: Option<&GameData>,
-    ) -> UiAction {
+    pub fn draw(passenger: &Passenger, rect: UiRect, dialogue: Option<&String>) {
         draw_glass_panel(rect, colors::BORDER);
         let inner = rect.inset(spacing::PADDING_MD);
         let portrait_h = (rect.h * 0.38).clamp(150.0, 220.0);
@@ -268,42 +263,6 @@ impl PassengerCard {
                 2,
             );
         }
-
-        if show_controls {
-            let accept_text = if let Some(d) = game_data {
-                d.localization.ui.common.accept_space.clone()
-            } else {
-                "Accept (SPACE)".to_string()
-            };
-
-            let decline_text = if let Some(d) = game_data {
-                d.localization.ui.common.decline_esc.clone()
-            } else {
-                "Decline (ESC)".to_string()
-            };
-
-            let btn_h = 40.0;
-            let gap = 12.0;
-            let btn_w = (inner.w - gap) / 2.0;
-            let btn_y = rect.bottom() - btn_h - spacing::PADDING_MD;
-            if draw_glass_button(
-                UiRect::new(inner.x, btn_y, btn_w, btn_h),
-                &accept_text,
-                colors::ACCENT_PRIMARY,
-                true,
-            ) {
-                return UiAction::AcceptRide;
-            }
-            if draw_glass_button(
-                UiRect::new(inner.x + btn_w + gap, btn_y, btn_w, btn_h),
-                &decline_text,
-                colors::ACCENT_DANGER,
-                true,
-            ) {
-                return UiAction::DeclineRide;
-            }
-        }
-        UiAction::None
     }
 }
 /// Completion summary component

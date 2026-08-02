@@ -41,8 +41,8 @@ pub struct CommonStrings {
     pub continue_space: String,
     #[serde(rename = "acceptSpace")]
     pub accept_space: String,
-    #[serde(rename = "declineEsc")]
-    pub decline_esc: String,
+    #[serde(rename = "declineKey")]
+    pub decline_key: String,
     pub loading: String,
     #[serde(rename = "tryAgain")]
     pub try_again: String,

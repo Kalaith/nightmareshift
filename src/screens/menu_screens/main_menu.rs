@@ -251,6 +251,22 @@ pub fn draw_main_menu(
                 return UiAction::DeleteSave;
             }
         }
+
+        // Locale and data version, somewhere a player can actually read
+        // them — the loading screen shows for two frames.
+        let meta_text = format!(
+            "{} {} v{}",
+            data.localization.meta.language,
+            data.localization.meta.code,
+            data.localization.meta.version
+        );
+        draw_ui_text(
+            &meta_text,
+            title_x,
+            screen_height() - 18.0,
+            fonts::SIZE_XS,
+            colors::TEXT_MUTED,
+        );
     }
 
     UiAction::None

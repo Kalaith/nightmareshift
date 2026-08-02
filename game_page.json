@@ -19,10 +19,14 @@
     },
     {
       "key": "ESC",
-      "desc": "Decline / Back / Pause"
+      "desc": "Pause / Back"
     },
     {
-      "key": "1-3",
+      "key": "D",
+      "desc": "Decline ride offer"
+    },
+    {
+      "key": "1-4",
       "desc": "Select Route options"
     },
     {

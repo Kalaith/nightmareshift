@@ -224,10 +224,10 @@ pub fn draw_ride_request(
         let (accept_text, decline_text) = if let Some(data) = game_data {
             (
                 data.localization.ui.common.accept_space.as_str(),
-                data.localization.ui.common.decline_esc.as_str(),
+                data.localization.ui.common.decline_key.as_str(),
             )
         } else {
-            ("Accept (SPACE)", "Decline (ESC)")
+            ("Accept (SPACE)", "Decline (D)")
         };
 
         let gap = 14.0;

@@ -534,6 +534,17 @@ pub fn draw_briefing(
         ) {
             return UiAction::StartGame;
         }
+        // The night can still be walked away from: nothing is committed
+        // until the shift starts.
+        let back_rect = UiRect::new(margin, screen_h - 62.0, 220.0, 48.0);
+        if draw_glass_button(
+            back_rect,
+            &data.localization.ui.common.back_button,
+            colors::TEXT_MUTED,
+            true,
+        ) {
+            return UiAction::ReturnToMenu;
+        }
     }
 
     UiAction::None

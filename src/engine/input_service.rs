@@ -34,6 +34,9 @@ impl InputService {
                 if is_key_pressed(KeyCode::Space) {
                     actions.push(UiAction::StartGame); // Mapped to StartShift in context
                 }
+                if is_key_pressed(KeyCode::Escape) {
+                    actions.push(UiAction::ReturnToMenu);
+                }
             }
             Screen::Game if overlay == Overlay::Pause => {
                 if is_key_pressed(KeyCode::Escape) {
@@ -48,8 +51,7 @@ impl InputService {
                     actions.push(UiAction::ToggleInventory);
                 }
                 // ESC over a panel opens the pause menu, which closes the
-                // panels — even during RideRequest, where a bare ESC would
-                // have declined a ride the player was not looking at.
+                // panels.
                 if is_key_pressed(KeyCode::Escape) {
                     actions.push(UiAction::TogglePauseMenu);
                 }
@@ -65,8 +67,10 @@ impl InputService {
                 if is_key_pressed(KeyCode::I) {
                     actions.push(UiAction::ToggleInventory);
                 }
-                // ESC for pause menu (except during RideRequest where ESC declines)
-                if is_key_pressed(KeyCode::Escape) && game_phase != GamePhase::RideRequest {
+                // ESC pauses in every phase. It used to decline during
+                // RideRequest, leaving that the one phase the shift could
+                // not be paused from.
+                if is_key_pressed(KeyCode::Escape) {
                     actions.push(UiAction::TogglePauseMenu);
                 }
 
@@ -81,7 +85,8 @@ impl InputService {
                         if is_key_pressed(KeyCode::Space) {
                             actions.push(UiAction::AcceptRide);
                         }
-                        if is_key_pressed(KeyCode::Escape) {
+                        // D matches the button label; ESC pauses now.
+                        if is_key_pressed(KeyCode::D) {
                             actions.push(UiAction::DeclineRide);
                         }
                         Self::capture_cab_controls(&mut actions);

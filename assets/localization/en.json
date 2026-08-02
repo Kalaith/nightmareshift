@@ -13,7 +13,7 @@
       "continue": "Continue",
       "continueSpace": "Continue (SPACE)",
       "acceptSpace": "Accept (SPACE)",
-      "declineEsc": "Decline (ESC)",
+      "declineKey": "Decline (D)",
       "loading": "Loading...",
       "tryAgain": "Try Again (SPACE)"
     },

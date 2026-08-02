@@ -514,9 +514,7 @@ pub fn draw_driving(
             crate::ui::PassengerCard::draw(
                 passenger,
                 passenger_rect,
-                false,
                 game_state.current_passenger_dialogue.as_ref(),
-                game_data,
             );
         }
     }

@@ -77,6 +77,7 @@ impl Game {
                     || self.screen == Screen::SkillTree
                     || self.screen == Screen::Almanac
                     || self.screen == Screen::Leaderboard
+                    || self.screen == Screen::Briefing
                     || (self.screen == Screen::Game && self.show_pause_menu)
                 {
                     self.show_pause_menu = false;
