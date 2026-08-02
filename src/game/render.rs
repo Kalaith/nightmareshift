@@ -46,6 +46,7 @@ impl Game {
                 &self.player_stats,
                 self.game_data.as_ref(),
                 self.delete_armed_until.is_some(),
+                self.save_notice.as_deref(),
             ),
             Screen::Briefing => menu_screens::draw_briefing(
                 &self.game_state,

@@ -17,6 +17,7 @@ pub fn draw_main_menu(
     player_stats: &PlayerStats,
     game_data: Option<&GameData>,
     delete_armed: bool,
+    save_notice: Option<&str>,
 ) -> UiAction {
     draw_noir_city_background();
 
@@ -256,10 +257,14 @@ pub fn draw_main_menu(
             }
         }
 
-        // Degraded-content warnings: a content file that failed to parse
-        // fell back empty, and until this line the only witness was stderr,
-        // which the web build has no way to show.
-        for (idx, warning) in data.load_errors.iter().take(3).enumerate() {
+        // Degraded-content warnings and the save-quarantine notice: a
+        // content file that failed to parse fell back empty, and an
+        // unreadable save was set aside — until these lines the only
+        // witness was stderr, which the web build has no way to show.
+        let warnings = save_notice
+            .into_iter()
+            .chain(data.load_errors.iter().take(3).map(String::as_str));
+        for (idx, warning) in warnings.enumerate() {
             draw_ui_text(
                 warning,
                 title_x,

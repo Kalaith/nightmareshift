@@ -73,6 +73,60 @@ impl Persistence {
         Ok(save_data.player_stats)
     }
 
+    /// Load the save, or set an unreadable one aside and start fresh.
+    ///
+    /// A load failure used to fall straight through to `PlayerStats::new()`,
+    /// and the next auto-save overwrote the file — every meta-progression
+    /// wiped by the very mechanism meant to keep it, silently. The bytes now
+    /// survive under a quarantine name, and the caller gets a sentence for
+    /// the menu. A save that simply does not exist is not a failure and
+    /// reports nothing.
+    pub fn load_or_quarantine() -> (PlayerStats, Option<String>) {
+        match Self::load() {
+            Ok(stats) => (stats, None),
+            Err(_) if !Self::save_exists() => (PlayerStats::new(), None),
+            Err(error) => (PlayerStats::new(), Some(Self::quarantine(&error))),
+        }
+    }
+
+    /// Move the unreadable save aside and say what happened. Also fires for
+    /// a save from a newer build: that file is healthy, but this binary
+    /// would overwrite it on the next save, so setting it aside protects it
+    /// just the same.
+    #[cfg(not(target_arch = "wasm32"))]
+    fn quarantine(error: &str) -> String {
+        let stamp = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|elapsed| elapsed.as_secs())
+            .unwrap_or(0);
+        let path = Self::get_save_path();
+        let quarantined = path.with_file_name(format!("nightmare_shift_save.corrupt-{stamp}.json"));
+        match std::fs::rename(&path, &quarantined) {
+            Ok(()) => format!(
+                "The old save could not be read ({error}). It was set aside as {} and a fresh record begun.",
+                quarantined
+                    .file_name()
+                    .and_then(|name| name.to_str())
+                    .unwrap_or("a quarantine file")
+            ),
+            Err(rename_error) => format!(
+                "The old save could not be read ({error}) or set aside ({rename_error}); the next save will overwrite it."
+            ),
+        }
+    }
+
+    #[cfg(target_arch = "wasm32")]
+    fn quarantine(error: &str) -> String {
+        match macroquad_toolkit::persistence::quarantine_slot(GAME_NAME, SAVE_SLOT) {
+            Ok(slot) => format!(
+                "The old save could not be read ({error}). It was set aside in slot {slot:?} and a fresh record begun."
+            ),
+            Err(quarantine_error) => format!(
+                "The old save could not be read ({error}) or set aside ({quarantine_error}); the next save will overwrite it."
+            ),
+        }
+    }
+
     /// Check if a save file exists
     pub fn save_exists() -> bool {
         #[cfg(not(target_arch = "wasm32"))]

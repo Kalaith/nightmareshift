@@ -25,8 +25,7 @@
 
 ## Persistence
 
-- Handle corrupt saves: any load failure currently wipes all progression silently. Quarantine the bad file and tell the player.
-- Add a save-migration path — a version field exists and newer saves are rejected, but there is no upgrade route for schema changes.
+- Add a save-migration path — a version field exists and newer saves are rejected, but there is no upgrade route for schema changes. (Corrupt and newer-version saves are now quarantined — renamed aside with a menu notice — instead of being silently overwritten; migration would let the quarantined file be brought forward.)
 - Mid-run save and resume (depends on the serializable seeded RNG above).
 - Save export/import for the web build, since localStorage dies with a cache clear; cloud-save hook if Steam happens.
 

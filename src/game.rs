@@ -71,6 +71,10 @@ pub struct Game {
     /// which refuses to advance — a structural data failure used to be a
     /// panic, which on the web build is a silent black canvas.
     data_error: Option<String>,
+    /// What happened to an unreadable save, shown on the main menu. The
+    /// quarantine already ran by the time this is set; the notice is the
+    /// player's only way to learn the old record still exists.
+    save_notice: Option<String>,
 }
 
 impl Game {
@@ -89,8 +93,9 @@ impl Game {
             }
         };
 
-        // Try to load saved player stats
-        let mut player_stats = Persistence::load().unwrap_or_else(|_| PlayerStats::new());
+        // Try to load saved player stats; an unreadable save is set aside
+        // rather than left in place for the next auto-save to destroy.
+        let (mut player_stats, save_notice) = Persistence::load_or_quarantine();
         player_stats.init_achievements();
         let playtest_bot = PlaytestBot::from_launch_args();
         if let (Some(bot), Some(data)) = (&playtest_bot, &game_data) {
@@ -123,6 +128,7 @@ impl Game {
             delete_armed_until: None,
             capture_mode: false,
             data_error,
+            save_notice,
         }
     }
 
