@@ -63,6 +63,25 @@ pub fn draw_dropoff(game_state: &GameState, game_data: Option<&GameData>) -> UiA
             );
         }
 
+        // The ride's consequence ledger: the authored lines for whatever
+        // fired this ride, stacked upward so the newest sits closest to the
+        // summary rows. Three at most; the ledger is flavor, not a log.
+        for (idx, note) in game_state
+            .consequence_notes
+            .iter()
+            .rev()
+            .take(3)
+            .enumerate()
+        {
+            draw_ui_text(
+                note,
+                rect.x + 16.0,
+                rect.bottom() - 116.0 - idx as f32 * 18.0,
+                fonts::SIZE_XS,
+                colors::ACCENT_SKY,
+            );
+        }
+
         // What the last swap did, on the screen the swap happened on. This
         // used to be written into `current_dialogue`, which only the driving
         // screen renders and which accepting the next ride overwrites — so

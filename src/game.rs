@@ -126,6 +126,8 @@ impl Game {
         let Some(constants) = self.game_data.as_ref().map(|data| data.constants.clone()) else {
             return;
         };
+        // A fresh ride starts a fresh ledger; the drop-off screen reads it.
+        self.game_state.consequence_notes.clear();
         if let Err(reason) = RideService::accept_ride(&mut self.game_state, &constants) {
             self.game_state.game_over_reason = Some(reason);
             self.end_shift(false);

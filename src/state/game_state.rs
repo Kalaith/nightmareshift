@@ -461,6 +461,10 @@ pub struct GameState {
 
     // UI state
     pub current_dialogue: Option<CurrentDialogue>,
+    /// Authored lines from consequences that fired this ride, shown on the
+    /// drop-off screen. ~150 of these are written in the rule and guideline
+    /// data and none ever reached a screen before this ledger.
+    pub consequence_notes: Vec<String>,
     pub last_ride_completion: Option<RideCompletion>,
     pub game_over_reason: Option<String>,
 
@@ -519,6 +523,7 @@ impl GameState {
             pending_trade: None,
             trade_outcome: None,
             current_dialogue: None,
+            consequence_notes: Vec::new(),
             last_ride_completion: None,
             game_over_reason: None,
             active_guideline: None,
@@ -563,6 +568,7 @@ impl GameState {
         self.pending_trade = None;
         self.trade_outcome = None;
         self.current_dialogue = None;
+        self.consequence_notes.clear();
         self.last_ride_completion = None;
         self.game_over_reason = None;
         self.active_guideline = None;

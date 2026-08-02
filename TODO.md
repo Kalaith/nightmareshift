@@ -7,7 +7,6 @@ Code and data that exist but never reach the player. Verified against the source
 ### Simulation outputs that go nowhere
 
 - The false-tell system is doubly dead: its gate requires `rides_completed > 20` but a 480-minute/100-fuel shift caps out around 12–13 rides, and even if it opened, the merge dedupe rejects the cloned tell it tries to insert (`guideline_engine.rs:86-103`, `343-365`).
-- ~150 authored `Consequence.description` strings in `shiftRulesData.json`/`guidelineData.json` ("You resisted the passenger's pull…") never reach a screen — the shown message is built from the guideline title instead.
 - Passenger reputation is applied (fare multiplier, risk modifier) but never shown on any screen and never persisted — it dies at run end. `negative_choices` and `last_encounter` are write-only outside tests.
 - `PlayerStats.total_play_time` is accumulated and persisted but no screen shows it.
 

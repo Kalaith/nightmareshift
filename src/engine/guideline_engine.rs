@@ -262,7 +262,7 @@ impl GuidelineEngine {
                 // Wrong choice
                 GuidelineEvaluationResult {
                     is_safe: false,
-                    consequences: Self::calculate_negative_consequences(guideline),
+                    consequences: Self::calculate_negative_consequences(),
                     message: format!(
                         "Wrong choice regarding \"{}\" - misread the passenger",
                         guideline.title
@@ -319,15 +319,15 @@ impl GuidelineEngine {
     }
 
     /// Calculate negative consequences for wrong choice
-    fn calculate_negative_consequences(guideline: &Guideline) -> Vec<Consequence> {
+    fn calculate_negative_consequences() -> Vec<Consequence> {
         vec![
             Consequence {
                 consequence_type: ConsequenceType::Death,
                 value: 1,
-                description: format!(
-                    "Wrong choice regarding \"{}\" - misread the passenger",
-                    guideline.title
-                ),
+                // Empty on purpose: the evaluation message already carries
+                // this verdict, and the death description is appended to it
+                // — a copy here printed the same sentence twice.
+                description: String::new(),
                 probability: 0.7,
                 item: None,
             },

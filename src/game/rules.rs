@@ -9,6 +9,14 @@ use crate::engine::*;
 use crate::screens::Screen;
 use crate::state::*;
 
+/// What applying a consequence set did, for the caller that owns the kill.
+struct AppliedConsequences {
+    death_fired: bool,
+    /// The fired death's authored description, destined for
+    /// `game_over_reason` — a ledger line would never be read.
+    death_note: Option<String>,
+}
+
 impl Game {
     /// The reputation thresholds, or nothing before the data has loaded.
     fn reputation_constants(&self) -> Option<ReputationConstants> {
@@ -157,13 +165,13 @@ impl Game {
             let death_authored = break_consequences
                 .iter()
                 .any(|consequence| consequence.consequence_type == ConsequenceType::Death);
-            let death_fired = self.apply_rule_consequences(&break_consequences, current_time);
+            let applied = self.apply_rule_consequences(&break_consequences, current_time);
 
             // Thirteen rules author their own death odds, 0.3 to 0.7, and
             // every one of them used to kill at 1.0 — the roll happened and
             // the shift ended anyway. A rule that authors no death at all
             // keeps the old certainty.
-            if death_authored && !death_fired {
+            if death_authored && !applied.death_fired {
                 self.game_state.current_dialogue = Some(CurrentDialogue {
                     text: format!(
                         "Rule broken: {}. {} The moment passes; somehow you are still driving.",
@@ -175,7 +183,13 @@ impl Game {
                 return;
             }
 
-            self.game_state.game_over_reason = Some(message);
+            // The authored death prose rides along with the violation
+            // message — it was written for exactly this screen.
+            let reason = match applied.death_note {
+                Some(note) => format!("{} {}", message, note),
+                None => message,
+            };
+            self.game_state.game_over_reason = Some(reason);
             self.end_shift(false);
         } else {
             self.game_state.adjust_player_trust(0.05);
@@ -216,18 +230,41 @@ impl Game {
         }
     }
 
-    /// Applies each consequence that wins its probability roll. Returns
-    /// whether a `Death` consequence fired — the caller owns ending the
-    /// shift, because only the violation path may kill.
-    fn apply_rule_consequences(&mut self, consequences: &[Consequence], current_time: f64) -> bool {
-        let mut death_fired = false;
+    /// Keep a fired consequence's authored line for the drop-off ledger.
+    fn note_consequence(&mut self, description: &str) {
+        if !description.is_empty() {
+            self.game_state
+                .consequence_notes
+                .push(description.to_string());
+        }
+    }
+
+    /// Applies each consequence that wins its probability roll. Non-death
+    /// descriptions land in the ride's `consequence_notes` ledger; the death
+    /// outcome is returned because the caller owns ending the shift, and its
+    /// prose belongs in `game_over_reason` rather than a ledger nobody will
+    /// live to read.
+    fn apply_rule_consequences(
+        &mut self,
+        consequences: &[Consequence],
+        current_time: f64,
+    ) -> AppliedConsequences {
+        let mut applied = AppliedConsequences {
+            death_fired: false,
+            death_note: None,
+        };
         for consequence in consequences {
             if rng::rand() > consequence.probability.clamp(0.0, 1.0) {
                 continue;
             }
 
             match consequence.consequence_type {
-                ConsequenceType::Death => death_fired = true,
+                ConsequenceType::Death => {
+                    applied.death_fired = true;
+                    if !consequence.description.is_empty() {
+                        applied.death_note = Some(consequence.description.clone());
+                    }
+                }
                 ConsequenceType::Survival => {
                     // The same payment the guideline path makes: kept faith
                     // steadies the driver.
@@ -291,8 +328,12 @@ impl Game {
                 }
                 ConsequenceType::StoryUnlock => self.unlock_passenger_story(),
             }
+
+            if consequence.consequence_type != ConsequenceType::Death {
+                self.note_consequence(&consequence.description);
+            }
         }
-        death_fired
+        applied
     }
 
     /// Pay a rule's `followConsequences` for having kept it all ride.
@@ -579,13 +620,25 @@ impl Game {
                     ConsequenceType::Death => {
                         if rng::rand() < consequence.probability.clamp(0.0, 1.0) {
                             self.end_shift(false);
-                            self.game_state.game_over_reason = Some(result.message.clone());
+                            // The authored death line joins the verdict —
+                            // written for this screen, shown for the first
+                            // time. Never echo a description that just
+                            // restates the verdict.
+                            let reason = if consequence.description.is_empty()
+                                || consequence.description == result.message
+                            {
+                                result.message.clone()
+                            } else {
+                                format!("{} {}", result.message, consequence.description)
+                            };
+                            self.game_state.game_over_reason = Some(reason);
                             return;
                         }
                     }
                     ConsequenceType::Survival => {
                         self.game_state.player_trust =
                             (self.game_state.player_trust + 0.1).min(1.0);
+                        self.note_consequence(&consequence.description);
                     }
                     ConsequenceType::Reputation => {
                         if let Some(constants) = self.reputation_constants() {
@@ -593,8 +646,12 @@ impl Game {
                                 .get_passenger_reputation(passenger.id)
                                 .adjust(consequence.value, current_time, &constants);
                         }
+                        self.note_consequence(&consequence.description);
                     }
-                    ConsequenceType::StoryUnlock => self.unlock_passenger_story(),
+                    ConsequenceType::StoryUnlock => {
+                        self.unlock_passenger_story();
+                        self.note_consequence(&consequence.description);
+                    }
                     ConsequenceType::Item => {}
                     _ => {}
                 }
