@@ -329,12 +329,14 @@ impl GuidelineEngine {
                     guideline.title
                 ),
                 probability: 0.7,
+                item: None,
             },
             Consequence {
                 consequence_type: ConsequenceType::Reputation,
                 value: -20,
                 description: "Lost passenger trust through incorrect reading".to_string(),
                 probability: 0.9,
+                item: None,
             },
         ]
     }

@@ -57,8 +57,19 @@ pub struct Consequence {
     pub consequence_type: ConsequenceType,
     pub value: i32,
     pub description: String,
-    #[serde(default)]
+    /// An unauthored probability means the consequence always fires. The
+    /// bare `#[serde(default)]` read 0.0 here — a consequence that never
+    /// fires — silently contradicting the struct's own `Default`.
+    #[serde(default = "default_probability")]
     pub probability: f32,
+    /// Catalog name of the thing an `Item` consequence hands over. Unnamed
+    /// item consequences fall back to a crumpled note.
+    #[serde(default)]
+    pub item: Option<String>,
+}
+
+fn default_probability() -> f32 {
+    1.0
 }
 
 impl Default for Consequence {
@@ -68,6 +79,7 @@ impl Default for Consequence {
             value: 0,
             description: String::new(),
             probability: 1.0,
+            item: None,
         }
     }
 }

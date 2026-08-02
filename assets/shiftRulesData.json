@@ -92,6 +92,7 @@
             {
                 "type": "item",
                 "value": 1,
+                "item": "protective mixtape",
                 "description": "Received a protective mixtape for future rides.",
                 "probability": 0.35
             }
@@ -200,6 +201,7 @@
             {
                 "type": "item",
                 "value": 1,
+                "item": "sunlight talisman",
                 "description": "Received a sunlight talisman for your compassion.",
                 "probability": 0.4
             }

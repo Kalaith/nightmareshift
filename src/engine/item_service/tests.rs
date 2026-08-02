@@ -1,6 +1,7 @@
 use super::*;
 use crate::data::loader::{
-    load_constants, load_item_catalog, load_item_pools, load_passengers, load_skill_tree,
+    load_constants, load_item_catalog, load_item_pools, load_passengers, load_rules,
+    load_skill_tree,
 };
 use crate::engine::RideService;
 use std::collections::HashSet;
@@ -69,6 +70,20 @@ fn every_item_can_be_obtained() {
             reachable.insert(reward.to_lowercase());
         }
     }
+    // Rule consequences can also mint items now — an `item` consequence
+    // names its reward (rule 2's mixtape, rule 4's talisman).
+    for rule in load_rules() {
+        for consequence in rule
+            .follow_consequences
+            .iter()
+            .chain(rule.break_consequences.iter())
+            .chain(rule.exception_rewards.iter())
+        {
+            if let Some(name) = &consequence.item {
+                reachable.insert(name.to_lowercase());
+            }
+        }
+    }
 
     let mut names = catalog.names();
     names.sort();
@@ -80,6 +95,30 @@ fn every_item_can_be_obtained() {
         orphans.is_empty(),
         "nothing in the game can give the player: {orphans:?}"
     );
+}
+
+/// Every `item` a rule consequence names must exist in the catalogue —
+/// `create_item` on an unknown name silently mints a placeholder keepsake
+/// instead of failing, so a typo here would read as a bug in the reward.
+#[test]
+fn rule_item_consequences_name_real_items() {
+    let catalog = load_item_catalog();
+    for rule in load_rules() {
+        for consequence in rule
+            .follow_consequences
+            .iter()
+            .chain(rule.break_consequences.iter())
+            .chain(rule.exception_rewards.iter())
+        {
+            if let Some(name) = &consequence.item {
+                assert!(
+                    catalog.contains(name),
+                    "rule {} names an item the catalogue does not define: {name:?}",
+                    rule.id
+                );
+            }
+        }
+    }
 }
 
 /// Carrying what the crafter wants gets his work offered; carrying

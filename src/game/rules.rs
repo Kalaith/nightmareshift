@@ -149,8 +149,30 @@ impl Game {
                 return;
             }
 
-            if let Some(rule) = &result.rule {
-                self.apply_rule_consequences(&rule.break_consequences, current_time);
+            let break_consequences = result
+                .rule
+                .as_ref()
+                .map(|rule| rule.break_consequences.clone())
+                .unwrap_or_default();
+            let death_authored = break_consequences
+                .iter()
+                .any(|consequence| consequence.consequence_type == ConsequenceType::Death);
+            let death_fired = self.apply_rule_consequences(&break_consequences, current_time);
+
+            // Thirteen rules author their own death odds, 0.3 to 0.7, and
+            // every one of them used to kill at 1.0 — the roll happened and
+            // the shift ended anyway. A rule that authors no death at all
+            // keeps the old certainty.
+            if death_authored && !death_fired {
+                self.game_state.current_dialogue = Some(CurrentDialogue {
+                    text: format!(
+                        "Rule broken: {}. {} The moment passes; somehow you are still driving.",
+                        rule_title, message
+                    ),
+                    speaker: DialogueSpeaker::Narrator,
+                    timestamp: current_time,
+                });
+                return;
             }
 
             self.game_state.game_over_reason = Some(message);
@@ -194,15 +216,23 @@ impl Game {
         }
     }
 
-    fn apply_rule_consequences(&mut self, consequences: &[Consequence], current_time: f64) {
+    /// Applies each consequence that wins its probability roll. Returns
+    /// whether a `Death` consequence fired — the caller owns ending the
+    /// shift, because only the violation path may kill.
+    fn apply_rule_consequences(&mut self, consequences: &[Consequence], current_time: f64) -> bool {
+        let mut death_fired = false;
         for consequence in consequences {
             if rng::rand() > consequence.probability.clamp(0.0, 1.0) {
                 continue;
             }
 
             match consequence.consequence_type {
-                ConsequenceType::Death => {}
-                ConsequenceType::Survival => {}
+                ConsequenceType::Death => death_fired = true,
+                ConsequenceType::Survival => {
+                    // The same payment the guideline path makes: kept faith
+                    // steadies the driver.
+                    self.game_state.adjust_player_trust(0.1);
+                }
                 ConsequenceType::Reputation => {
                     if let Some(passenger_id) = self
                         .game_state
@@ -248,15 +278,21 @@ impl Game {
                         .as_ref()
                         .map(|passenger| passenger.name.clone());
                     if let (Some(source), Some(data)) = (source, self.game_data.as_ref()) {
-                        let item = data
-                            .items
-                            .create_item("Crumpled Note", &source, current_time);
-                        self.game_state.inventory.push(item);
+                        // The authored name and count, not a hardcoded
+                        // crumpled note: rule 2's mixtape and rule 4's
+                        // talisman were both minted as notes.
+                        let name = consequence.item.as_deref().unwrap_or("crumpled note");
+                        let count = consequence.value.max(1) as usize;
+                        let items: Vec<_> = (0..count)
+                            .map(|_| data.items.create_item(name, &source, current_time))
+                            .collect();
+                        self.game_state.inventory.extend(items);
                     }
                 }
                 ConsequenceType::StoryUnlock => self.unlock_passenger_story(),
             }
         }
+        death_fired
     }
 
     /// Pay a rule's `followConsequences` for having kept it all ride.

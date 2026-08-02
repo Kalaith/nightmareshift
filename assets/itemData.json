@@ -401,5 +401,43 @@
         "value": 5
       }
     ]
+  },
+  "protective mixtape": {
+    "type": "protective",
+    "rarity": "uncommon",
+    "description": "Side A is labelled in handwriting you almost recognise. Whatever is on it, the cab feels less watched while it plays",
+    "canUse": true,
+    "canTrade": true,
+    "maxDurability": 1,
+    "protectiveProperties": {
+      "protectionType": "supernatural_immunity",
+      "protectionStrength": 1,
+      "usesRemaining": 1
+    },
+    "effects": [
+      {
+        "type": "supernatural_protection",
+        "value": 1
+      }
+    ]
+  },
+  "sunlight talisman": {
+    "type": "protective",
+    "rarity": "uncommon",
+    "description": "A disc of amber that holds an afternoon somebody else gave up. One rule will look the other way for it",
+    "canUse": true,
+    "canTrade": true,
+    "maxDurability": 1,
+    "protectiveProperties": {
+      "protectionType": "rule_forgiveness",
+      "protectionStrength": 1,
+      "usesRemaining": 1
+    },
+    "effects": [
+      {
+        "type": "rule_immunity",
+        "value": 1
+      }
+    ]
   }
 }
