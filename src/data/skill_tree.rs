@@ -3,7 +3,17 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-/// Effect of a skill
+/// Effect of a skill.
+///
+/// Dispatch is by `target`: `SkillModifiers::from_unlocked` consumes the
+/// seven stat targets, and ability unlocks are consulted by trait id via
+/// the unlocked-skill list. `effect_type` routes only one way — the
+/// `"ability_unlock"` value marks a skill as a per-passenger ability; the
+/// `stat_boost`/`mechanic_unlock`/`passive_bonus` labels are authorial
+/// grouping with no behavior, and `value` on an ability unlock is a
+/// constant 1. A test in this file holds every effect to one of the two
+/// dispatch paths, because `from_unlocked` silently ignores an unknown
+/// target — a typo would sell a skill that does nothing.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SkillEffect {
     #[serde(rename = "type")]
@@ -183,6 +193,37 @@ mod tests {
             trimmed.contains("True Nature"),
             "excluding one reward dropped the others: {trimmed:?}"
         );
+    }
+
+    /// Every skill must do something when bought. `from_unlocked` ignores
+    /// unknown targets silently, so a typo'd target would sell a skill that
+    /// does nothing; this buys each skill alone and requires a modifier to
+    /// move. Ability unlocks dispatch by id instead, and their `value` is
+    /// read by nothing — held to the constant 1 so it cannot masquerade as
+    /// a magnitude.
+    #[test]
+    fn every_skill_moves_a_modifier_or_unlocks_an_ability() {
+        use crate::engine::SkillModifiers;
+        for skill in crate::data::loader::load_skill_tree() {
+            if skill.effect.effect_type == "ability_unlock" {
+                assert_eq!(
+                    skill.effect.value, 1.0,
+                    "{}: an ability unlock's value is read by nothing - author 1",
+                    skill.id
+                );
+                continue;
+            }
+            let bought = SkillModifiers::from_unlocked(
+                std::slice::from_ref(&skill),
+                std::slice::from_ref(&skill.id),
+            );
+            assert!(
+                bought != SkillModifiers::default(),
+                "{}: target {:?} moved no modifier - the skill does nothing",
+                skill.id,
+                skill.effect.target
+            );
+        }
     }
 
     /// Excluding everything a level offers leaves nothing to say, rather than

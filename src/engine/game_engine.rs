@@ -25,7 +25,7 @@ pub struct RuleEvaluationResult {
 ///
 /// Computed once from the skill definitions plus the player's unlocked list, so
 /// every skill's effect actually reaches the systems it names.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct SkillModifiers {
     /// Multiplier on route fuel cost (< 1.0 is cheaper).
     pub fuel_cost_mult: f32,

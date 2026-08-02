@@ -244,10 +244,20 @@ pub fn draw_guideline_decision(
                     } else {
                         "uncertain"
                     };
+                    // Which sense caught it. The four authored tell types
+                    // read identically on this panel until labelled, and the
+                    // channel matters: an environmental tell is the world
+                    // speaking, not the passenger performing.
+                    let channel = match tell.tell.tell_type {
+                        data::TellType::Verbal => "heard",
+                        data::TellType::Behavioral => "manner",
+                        data::TellType::Visual => "seen",
+                        data::TellType::Environmental => "the cab",
+                    };
                     let age = (get_time() - tell.detection_time).max(0.0);
                     let tell_text = format!(
-                        "- [{}] {} ({}, {:.0}s)",
-                        intensity_text, tell.tell.description, noticed_text, age
+                        "- [{} / {}] {} ({}, {:.0}s)",
+                        intensity_text, channel, tell.tell.description, noticed_text, age
                     );
                     draw_ui_text(
                         &tell_text,

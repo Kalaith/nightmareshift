@@ -306,11 +306,22 @@ impl GuidelineEngine {
             TellIntensity::Obvious => 1.0,
         };
 
-        let candour = (1.0 - passenger.deception_level).clamp(0.0, 1.0);
-        let guarded = if player_trust < passenger.trust_required {
-            0.5
+        // A passenger can guard their words, manner, and appearance — not
+        // the frost on the windows. Environmental tells are the world
+        // speaking, so deception and withheld trust cannot mute them; the
+        // driver's own attentiveness still applies. Until this branch,
+        // `tellType` was authored on every tell and decided nothing here.
+        let (candour, guarded) = if tell.tell_type == TellType::Environmental {
+            (1.0, 1.0)
         } else {
-            1.0
+            (
+                (1.0 - passenger.deception_level).clamp(0.0, 1.0),
+                if player_trust < passenger.trust_required {
+                    0.5
+                } else {
+                    1.0
+                },
+            )
         };
 
         let final_prob =

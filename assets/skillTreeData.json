@@ -48,7 +48,7 @@
     {
         "id": "third_eye_1",
         "name": "Glimpse",
-        "description": "5% chance to reveal a hidden rule at the start of a ride.",
+        "description": "5% chance to reveal a hidden rule at the start of a shift.",
         "cost": 600,
         "icon": "👁️",
         "category": "occult",

@@ -1,14 +1,5 @@
 # TODO — Nightmare Shift
 
-## Unconnected systems (wiring audit, 2026-08-02)
-
-Code and data that exist but never reach the player. Verified against the source; file references are to the anchor site, not every occurrence.
-
-### Dead data (authored JSON → nothing)
-
-- `skillTreeData.json`: `effect.type` distinguishes `stat_boost`/`mechanic_unlock`/`passive_bonus` but dispatch is entirely on `effect.target`; `effect.value` is discarded for the five passive ability unlocks; `third_eye_1`'s text promises a per-ride reveal but the roll happens once per shift.
-- `tells[].type`: only `verbal` is ever branched on; the 20 behavioral/visual/environmental tells are treated identically to each other.
-
 ## Audio
 
 - Enable a macroquad/kira-class audio backend with a mixing and volume layer. There is no playback code at all, and `assets/sounds/` holds only a placeholder README.
