@@ -3,7 +3,7 @@ use macroquad::prelude::*;
 use super::Game;
 use crate::data::WeatherType;
 use crate::engine::{
-    draw_danger_overlay, draw_fog_overlay, draw_glitch_effect, draw_tension_vignette,
+    draw_danger_overlay, draw_fog_overlay, draw_glitch_effect, draw_tension_vignette, Overlay,
 };
 use crate::screens::{game_screens, menu_screens, meta_screens, Screen};
 use crate::ui::StatusBar;
@@ -143,6 +143,13 @@ impl Game {
         }
 
         self.transition.draw();
+
+        // An open modal swallows the screen beneath it: the underlying
+        // screen still drew (and computed) its action, but dispatching it
+        // would let a click behind the rules panel pick a route or refuel.
+        if self.active_overlay() != Overlay::None {
+            return UiAction::None;
+        }
 
         action
     }

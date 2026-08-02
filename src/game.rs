@@ -550,9 +550,27 @@ impl Game {
         }
     }
 
+    /// Which modal overlay is eating input this frame, if any. The pause
+    /// menu wins over the panels because opening it closes them.
+    fn active_overlay(&self) -> Overlay {
+        if self.screen != Screen::Game {
+            Overlay::None
+        } else if self.show_pause_menu {
+            Overlay::Pause
+        } else if self.show_rules || self.show_inventory {
+            Overlay::Panel
+        } else {
+            Overlay::None
+        }
+    }
+
     /// Handle input
     pub fn handle_input(&mut self) {
-        let actions = InputService::capture_input(self.screen, self.game_state.game_phase);
+        let actions = InputService::capture_input(
+            self.screen,
+            self.game_state.game_phase,
+            self.active_overlay(),
+        );
         for action in actions {
             self.handle_ui_action(action);
         }

@@ -5,12 +5,23 @@ use crate::state::GamePhase;
 use crate::ui::UiAction;
 use macroquad::prelude::*; // GamePhase is in state, need to ensure imports are correct in mod.rs
 
+/// Which modal overlay is eating input this frame. While one is open, the
+/// only keys read are the ones that dismiss it (or trade it for the pause
+/// menu) — gameplay keys must not act on a screen the player cannot see.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Overlay {
+    None,
+    /// The rules panel or the inventory modal.
+    Panel,
+    Pause,
+}
+
 /// Input service structure
 pub struct InputService;
 
 impl InputService {
     /// Capture input and return a list of triggered UI actions
-    pub fn capture_input(screen: Screen, game_phase: GamePhase) -> Vec<UiAction> {
+    pub fn capture_input(screen: Screen, game_phase: GamePhase, overlay: Overlay) -> Vec<UiAction> {
         let mut actions = Vec::new();
 
         match screen {
@@ -23,6 +34,28 @@ impl InputService {
                 if is_key_pressed(KeyCode::Space) {
                     actions.push(UiAction::StartGame); // Mapped to StartShift in context
                 }
+            }
+            Screen::Game if overlay == Overlay::Pause => {
+                if is_key_pressed(KeyCode::Escape) {
+                    actions.push(UiAction::TogglePauseMenu);
+                }
+            }
+            Screen::Game if overlay == Overlay::Panel => {
+                if is_key_pressed(KeyCode::R) {
+                    actions.push(UiAction::ToggleRules);
+                }
+                if is_key_pressed(KeyCode::I) {
+                    actions.push(UiAction::ToggleInventory);
+                }
+                // ESC over a panel opens the pause menu, which closes the
+                // panels — even during RideRequest, where a bare ESC would
+                // have declined a ride the player was not looking at.
+                if is_key_pressed(KeyCode::Escape) {
+                    actions.push(UiAction::TogglePauseMenu);
+                }
+                // The rules panel draws the cab controls as key-labelled
+                // buttons, so the keys it advertises keep working under it.
+                Self::capture_cab_controls(&mut actions);
             }
             Screen::Game => {
                 // Global Game keys
@@ -93,6 +126,9 @@ impl InputService {
                         if is_key_pressed(KeyCode::B) {
                             actions.push(UiAction::BreakGuideline);
                         }
+                        // The rules panel's cab-action buttons stay live in
+                        // this phase, so the keys they advertise do too.
+                        Self::capture_cab_controls(&mut actions);
                     }
                     _ => {}
                 }
@@ -240,6 +276,77 @@ mod tests {
                 arm.contains("number_keys()"),
                 "{phase} numbers its options and reads no digits"
             );
+        }
+    }
+
+    /// While a modal overlay is open, the only keys read are the ones the
+    /// overlay itself advertises: its dismissals, and — for the rules panel,
+    /// which draws the cab controls as key-labelled buttons — the cab keys.
+    ///
+    /// Gameplay keys used to pass straight through an open overlay: SPACE
+    /// with the rules panel up could accept a ride the player was not
+    /// looking at, and the digits could pick a route behind the pause menu.
+    #[test]
+    fn open_overlays_swallow_gameplay_keys() {
+        let source = include_str!("input_service.rs");
+        let ride_and_route_keys = [
+            "StartGame",
+            "AcceptRide",
+            "DeclineRide",
+            "SelectRoute",
+            "SelectEventChoice",
+            "UiAction::Continue",
+            "FollowGuideline",
+            "BreakGuideline",
+        ];
+        // The pause menu advertises no cab controls, so it swallows those too.
+        let pause_forbidden = [
+            "StartGame",
+            "AcceptRide",
+            "DeclineRide",
+            "SelectRoute",
+            "SelectEventChoice",
+            "UiAction::Continue",
+            "FollowGuideline",
+            "BreakGuideline",
+            "capture_cab_controls",
+            "PerformRuleAction",
+        ];
+        for (arm_start, allowed, forbidden) in [
+            (
+                "Overlay::Pause => {",
+                &["TogglePauseMenu"][..],
+                &pause_forbidden[..],
+            ),
+            (
+                "Overlay::Panel => {",
+                &[
+                    "ToggleRules",
+                    "ToggleInventory",
+                    "TogglePauseMenu",
+                    "capture_cab_controls",
+                ][..],
+                &ride_and_route_keys[..],
+            ),
+        ] {
+            let arm = source
+                .split(arm_start)
+                .nth(1)
+                .expect("the overlay arm exists");
+            let arm = &arm[..arm.find("Screen::Game").unwrap_or(arm.len())];
+
+            for key in forbidden {
+                assert!(
+                    !arm.contains(key),
+                    "{arm_start} reads a gameplay key ({key}) through a modal"
+                );
+            }
+            for key in allowed {
+                assert!(
+                    arm.contains(key),
+                    "{arm_start} no longer reads {key}; the overlay lost an advertised key"
+                );
+            }
         }
     }
 

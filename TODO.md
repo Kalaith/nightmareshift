@@ -18,9 +18,7 @@ Code and data that exist but never reach the player. Verified against the source
 
 ### Input/UI wiring gaps
 
-- Open modals (rules, inventory, pause) do not block input: `render.rs` computes the underlying screen's action before drawing overlays, so a click behind an open modal still dispatches (route cards, refuel).
 - SPACE on the mid-ride event screen skips the event without applying any `EventConsequence` and enters a phase the engine comments "should not happen"; SPACE on drop-off silently declines a pending trade; `AcceptTrade`/`DeclineTrade` are the only actions dispatched with no screen/phase guard.
-- Cab-control keys (E/M/W/Y/H/A) are dead during `GuidelineDecision`, while the rules panel renders them as live key-labelled buttons (the buttons work; the advertised keys don't).
 - ESC cannot pause during `RideRequest` (it declines the ride instead, with no on-screen pause button), and the briefing screen has no path back to the menu.
 - `PassengerCard`'s Accept/Decline controls are dead — the only call site passes `show_controls = false`; the ride-request screen builds its own buttons.
 - The loading screen advances after 2 frames, making it the never-legible sole reader of `localization.meta` (language/code/version).
