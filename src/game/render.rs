@@ -12,9 +12,31 @@ use macroquad_toolkit::ui::{draw_ui_text, format_clock};
 
 impl Game {
     pub fn draw(&mut self) -> UiAction {
-        clear_background(Color::from_hex(0x1a1a2e));
+        // The shake displaces visuals only: hit-testing stays in unshaken
+        // screen space, so buttons drift up to max_offset px for the shake's
+        // duration. Zoom mirrors VirtualUi::camera() — positive Y, no
+        // viewport — which reproduces macroquad's default screen mapping.
+        let shake_offset = self.screen_shake.offset();
+        let shaking = shake_offset != Vec2::ZERO;
+        if shaking {
+            set_camera(&Camera2D {
+                target: vec2(
+                    screen_width() * 0.5 - shake_offset.x,
+                    screen_height() * 0.5 - shake_offset.y,
+                ),
+                zoom: vec2(2.0 / screen_width(), 2.0 / screen_height()),
+                ..Default::default()
+            });
+        }
+        let action = self.draw_frame();
+        if shaking {
+            set_default_camera();
+        }
+        action
+    }
 
-        let _shake_offset = self.screen_shake.offset();
+    fn draw_frame(&mut self) -> UiAction {
+        clear_background(Color::from_hex(0x1a1a2e));
 
         let action = match self.screen {
             Screen::Loading => menu_screens::draw_loading(self.game_data.as_ref()),

@@ -1,5 +1,39 @@
 # TODO — Nightmare Shift
 
+## Unconnected systems (wiring audit, 2026-08-02)
+
+Code and data that exist but never reach the player. Verified against the source; file references are to the anchor site, not every occurrence.
+
+### Simulation outputs that go nowhere
+
+- Time-of-day is frozen at Dusk. `weather_service/calendar.rs:52` hardcodes start hour 18 and derives elapsed time from real wall-clock hours, so `Night`/`LateNight` never occur in play — permanently disabling weather rule 104, the `PoliceCheckpoint` hazard, the night route-risk bonus and Scenic-latenight penalty, the low-ambient-light headlight fuel penalty, and night-weighted passenger spawns. The `DEFAULT_START_HOUR = 20` seeded in `shift.rs` is overwritten on the first frame (and lives in `ui/core.rs` despite being a sim constant).
+- Season is a constant Fall (`DEFAULT_MONTH = 10`), so the spring/summer/winter passenger spawn weights, the winter hazard-chance bonus, and the winter conditions branch never fire; the `Temperature` enum and `Season.description` are computed but displayed nowhere.
+- The false-tell system is doubly dead: its gate requires `rides_completed > 20` but a 480-minute/100-fuel shift caps out around 12–13 rides, and even if it opened, the merge dedupe rejects the cloned tell it tries to insert (`guideline_engine.rs:86-103`, `343-365`).
+- Shift-rule consequences half-ignore their data: `ConsequenceType::Death`/`Survival` are no-op arms in the rule path (`game/rules.rs:204-205`), so 11 of the 13 rules whose follow reward is `survival` pay nothing for being kept, and the authored death `probability` is ignored (the shift ends unconditionally two lines later). `Item` consequences hardcode a "Crumpled Note", discarding the authored value and description. (The guideline path at `rules.rs:543-551` handles both properly.)
+- ~150 authored `Consequence.description` strings in `shiftRulesData.json`/`guidelineData.json` ("You resisted the passenger's pull…") never reach a screen — the shown message is built from the guideline title instead.
+- Passenger reputation is applied (fare multiplier, risk modifier) but never shown on any screen and never persisted — it dies at run end. `negative_choices` and `last_encounter` are write-only outside tests.
+- `GameState.pending_route_dialogue` is declared, initialised and reset but never written or read (`game_state.rs:460`). `PlayerStats.total_play_time` is accumulated and persisted but no screen shows it.
+- The status bar under-reports wards: `wards_in_hand()` counts only rule-immunity/supernatural-protection charges, not carried items with `protectiveProperties` that `ProtectionService` actually spends — a driver holding a Blessed Medallion reads "0 wards".
+- Never-constructed variants: `ProtectionType::SafePassage`/`LuckyEncounters` (no item may author them — a test enforces it) and `EventConsequence::None` (matched, never produced).
+
+### Input/UI wiring gaps
+
+- Open modals (rules, inventory, pause) do not block input: `render.rs` computes the underlying screen's action before drawing overlays, so a click behind an open modal still dispatches (route cards, refuel).
+- SPACE on the mid-ride event screen skips the event without applying any `EventConsequence` and enters a phase the engine comments "should not happen"; SPACE on drop-off silently declines a pending trade; `AcceptTrade`/`DeclineTrade` are the only actions dispatched with no screen/phase guard.
+- Cab-control keys (E/M/W/Y/H/A) are dead during `GuidelineDecision`, while the rules panel renders them as live key-labelled buttons (the buttons work; the advertised keys don't).
+- ESC cannot pause during `RideRequest` (it declines the ride instead, with no on-screen pause button), and the briefing screen has no path back to the menu.
+- `PassengerCard`'s Accept/Decline controls are dead — the only call site passes `show_controls = false`; the ride-request screen builds its own buttons.
+- The loading screen advances after 2 frames, making it the never-legible sole reader of `localization.meta` (language/code/version).
+
+### Dead data (authored JSON → nothing)
+
+- `constants.json` `SCREENS` and `STORAGE_KEYS` are JS-port leftovers with no serde mapping; the `nightshift_*` storage keys don't even match the hardcoded `nightmare_shift*` names in `persistence.rs`. Also `RISK.EXTREME_RISK` and `CONSECUTIVE_ROUTE.VIOLATION_THRESHOLD` are read only by tests.
+- `shiftRulesData.json` `defaultSafety` (13 rules) and the `temporary: true` flag on the Mayor's Decree rule modification are silently dropped at load — no struct field, and unlike the other known-dropped keys, undocumented.
+- `Guideline.visible` and `Guideline.difficulty` are deserialized but never read (five authored difficulty tiers decide nothing); `exceptions[].probability` is never rolled — `check_exception_conditions` is fully deterministic; `ExceptionCondition.description` is unread.
+- `Location.description` (all 24 locations), `AlmanacLevel.description`, and `EventTemplate.id` are loaded and never consumed.
+- `skillTreeData.json`: `effect.type` distinguishes `stat_boost`/`mechanic_unlock`/`passive_bonus` but dispatch is entirely on `effect.target`; `effect.value` is discarded for the five passive ability unlocks; `third_eye_1`'s text promises a per-ride reveal but the roll happens once per shift.
+- `tells[].type`: only `verbal` is ever branched on; the 20 behavioral/visual/environmental tells are treated identically to each other.
+
 ## Audio
 
 - Enable a macroquad/kira-class audio backend with a mixing and volume layer. There is no playback code at all, and `assets/sounds/` holds only a placeholder README.
@@ -48,6 +82,7 @@
 ## Localization
 
 - Externalize narrative content: passenger names, dialogue and backstories, rules, and route/event text are raw English in data JSON and Rust, and the game-over strings are hardcoded.
+- Route the ~145 hardcoded UI strings through `en.json` — the entire pause menu, dossier module, briefing panel headers, driving-screen risk labels, and skill-tree/leaderboard/almanac labels all bypass the localization struct (~90 keys) today.
 - Add a language selector and one non-English locale to prove the pipeline, with a font strategy covering the target scripts.
 
 ## Code health

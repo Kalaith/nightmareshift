@@ -153,7 +153,7 @@ impl PlaytestBot {
         stats: &PlayerStats,
         data: Option<&GameData>,
     ) -> usize {
-        let candidates = available_route_indices(state);
+        let candidates = available_route_indices(state, stats, data);
         if candidates.is_empty() {
             return 0;
         }
@@ -190,25 +190,9 @@ impl PlaytestBot {
 
         let knowledge = stats.get_almanac_entry(passenger.id).knowledge_level;
         if knowledge < 2 {
-            // Without almanac knowledge the bot still picks blindly, but it
-            // may only pick something it can pay for — the driving screen
-            // refuses unaffordable routes, so a bot that took them would
-            // measure a difficulty no player can encounter.
-            let affordable: Vec<usize> = candidates
-                .iter()
-                .copied()
-                .filter(|idx| {
-                    let costs =
-                        RouteService::quote_route(route_for_index(*idx), state, data, stats);
-                    state.fuel >= costs.fuel as f32 && state.time_remaining >= costs.time
-                })
-                .collect();
-            let pool = if affordable.is_empty() {
-                candidates
-            } else {
-                &affordable
-            };
-            let idx = pool[self.route_cursor % pool.len()];
+            // Without almanac knowledge the bot picks blindly among the
+            // candidates, which are already affordability-filtered.
+            let idx = candidates[self.route_cursor % candidates.len()];
             self.route_cursor += 1;
             return idx;
         }
@@ -222,11 +206,6 @@ impl PlaytestBot {
             // adjustment to passenger risk, so it could talk itself into a
             // route it could not actually pay for.
             let costs = RouteService::quote_route(route, state, data, stats);
-
-            if state.fuel < costs.fuel as f32 || state.time_remaining < costs.time {
-                continue;
-            }
-
             evaluated.push((*idx, route, costs));
         }
 
@@ -297,8 +276,12 @@ impl PlaytestBot {
     }
 }
 
-fn available_route_indices(state: &GameState) -> Vec<usize> {
-    [0, 1, 2, 3]
+fn available_route_indices(
+    state: &GameState,
+    stats: &PlayerStats,
+    data: Option<&GameData>,
+) -> Vec<usize> {
+    let open: Vec<usize> = [0, 1, 2, 3]
         .into_iter()
         .filter(|idx| {
             let route = route_for_index(*idx);
@@ -306,6 +289,18 @@ fn available_route_indices(state: &GameState) -> Vec<usize> {
                 .environmental_hazards
                 .iter()
                 .any(|hazard| hazard.blocks_route(route))
+        })
+        .collect();
+    let Some(data) = data else {
+        return open;
+    };
+    // The dispatcher refuses unaffordable routes the same way the route
+    // cards do, so a candidate the bot cannot pay for is a wasted press —
+    // and the Conservative strategy would press it forever.
+    open.into_iter()
+        .filter(|idx| {
+            let costs = RouteService::quote_route(route_for_index(*idx), state, data, stats);
+            (state.fuel as u32) >= costs.fuel && state.time_remaining >= costs.time
         })
         .collect()
 }

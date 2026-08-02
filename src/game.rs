@@ -138,6 +138,54 @@ impl Game {
         self.spawn_passenger();
     }
 
+    /// True while the driving screen would let this route be clicked: not
+    /// hazard-blocked, and the quoted fuel/time cost is payable. The engine
+    /// still adds curse and streak pressure on top of the quote, so an open
+    /// route can legitimately end the shift once actually taken.
+    fn route_open(
+        state: &GameState,
+        stats: &PlayerStats,
+        data: &GameData,
+        route: RouteType,
+    ) -> bool {
+        if state
+            .environmental_hazards
+            .iter()
+            .any(|hazard| hazard.blocks_route(route))
+        {
+            return false;
+        }
+        let quote = RouteService::quote_route(route, state, data, stats);
+        (state.fuel as u32) >= quote.fuel && state.time_remaining >= quote.time
+    }
+
+    /// Route selection with the driving screen's gate applied, so the digit
+    /// keys and the playtest bot cannot take a route the cards refuse. When
+    /// every route is closed the night cannot continue by any input, so it
+    /// ends instead of soft-locking on the route screen.
+    fn select_route(&mut self, route: RouteType) {
+        let Some(data) = self.game_data.as_ref() else {
+            return;
+        };
+        if Self::route_open(&self.game_state, &self.player_stats, data, route) {
+            self.choose_route(route);
+            return;
+        }
+        let any_open = [
+            RouteType::Normal,
+            RouteType::Shortcut,
+            RouteType::Scenic,
+            RouteType::Police,
+        ]
+        .into_iter()
+        .any(|open| Self::route_open(&self.game_state, &self.player_stats, data, open));
+        if !any_open {
+            self.game_state.game_over_reason =
+                Some("No route the cab can still afford. The night ends here.".to_string());
+            self.end_shift(false);
+        }
+    }
+
     /// Choose a route
     fn choose_route(&mut self, route: RouteType) {
         if let Some(ref data) = self.game_data {

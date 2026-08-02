@@ -36,8 +36,8 @@ impl Game {
                     3 => RouteType::Police,
                     _ => RouteType::Normal,
                 };
-                if self.screen == Screen::Game {
-                    self.choose_route(route_type);
+                if self.screen == Screen::Game && self.game_state.game_phase == GamePhase::Driving {
+                    self.select_route(route_type);
                 }
             }
             UiAction::SelectEventChoice(idx) => {
