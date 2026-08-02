@@ -195,7 +195,16 @@ impl PlaytestBot {
                     Self::read_the_passenger(state, stats)
                 }
             }
-            GamePhase::DropOff => UiAction::Continue,
+            GamePhase::DropOff => {
+                // Continue no longer answers an open trade offer, so the bot
+                // declines it explicitly — the same net behaviour it had when
+                // Continue declined silently.
+                if state.pending_trade.is_some() {
+                    UiAction::DeclineTrade
+                } else {
+                    UiAction::Continue
+                }
+            }
             GamePhase::GameOver | GamePhase::Success => UiAction::None,
             _ => UiAction::None,
         }

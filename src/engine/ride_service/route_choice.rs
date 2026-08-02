@@ -560,10 +560,11 @@ impl RideService {
     ///
     /// Fires on the ride's final leg, because resolving the decision completes
     /// the ride (`evaluate_guideline_decision` calls `complete_ride`). This
-    /// used to gate on `DrivingPhase::Destination`, a phase the mid-ride-event
-    /// flow never enters — `transition_driving_phase` even marks its
-    /// `Destination` arm "should not happen with new flow" — so the decision,
-    /// and with it every authored guideline exception, was unreachable.
+    /// used to gate on `DrivingPhase::Destination` during a period when the
+    /// mid-ride-event flow never set it — so the decision, and with it every
+    /// authored guideline exception, was unreachable. The event exit sets the
+    /// phase honestly again now, but the leg count stays the gate: it cannot
+    /// drift, whatever the phase enum does next.
     fn check_guideline_triggers(state: &mut GameState, current_time: f64) -> Option<RouteOutcome> {
         // `apply_transit_effects` has already recorded this leg, so a count
         // above one means we are on the second (final) leg of the ride.
@@ -634,13 +635,14 @@ impl RideService {
                     state.game_phase = GamePhase::Interaction;
                     RouteOutcome::Success
                 } else {
-                    // Second leg -> Complete Ride (DropOff)
+                    // Defensive: the final leg normally arrives with the
+                    // Destination phase set by the event exit.
                     Self::complete_ride(state, data, stats, route, current_time);
                     RouteOutcome::RideCompleted
                 }
             }
             Some(DrivingPhase::Destination) => {
-                // Should not happen with new flow, but safe fallback
+                // Final leg -> Complete Ride (DropOff)
                 Self::complete_ride(state, data, stats, route, current_time);
                 RouteOutcome::RideCompleted
             }

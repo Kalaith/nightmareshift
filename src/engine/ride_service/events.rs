@@ -142,10 +142,12 @@ impl RideService {
             }
         }
 
-        // Return to Driving (Pickup) to present route options for the second leg.
-        // transition_driving_phase completes the ride after the second leg.
+        // On to the final leg: back to Driving to pick a route to the
+        // destination, where transition_driving_phase completes the ride.
+        // The phase used to stay Pickup here, which made the driving screen
+        // label the final leg as a pickup and aim it at the pickup location.
         state.game_phase = GamePhase::Driving;
-        state.driving_phase = Some(DrivingPhase::Pickup);
+        state.driving_phase = Some(DrivingPhase::Destination);
     }
 
     /// Apply a stress delta from an event choice to the current passenger's need

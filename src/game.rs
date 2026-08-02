@@ -209,8 +209,10 @@ impl Game {
         }
     }
 
-    /// Continue after interaction
-    fn continue_to_destination(&mut self) {
+    /// Continue past an event that offered nothing to answer, onto the
+    /// ride's final leg — the same exit `resolve_event_choice` takes, minus
+    /// a consequence to apply.
+    fn continue_past_event(&mut self) {
         self.game_state.game_phase = GamePhase::Driving;
         self.game_state.driving_phase = Some(DrivingPhase::Destination);
     }

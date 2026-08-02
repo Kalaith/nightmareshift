@@ -49,8 +49,24 @@ impl Game {
                 if self.screen == Screen::Game {
                     match self.game_state.game_phase {
                         GamePhase::Waiting => self.spawn_passenger(),
-                        GamePhase::Interaction => self.continue_to_destination(),
-                        GamePhase::DropOff => self.continue_from_dropoff(),
+                        GamePhase::Interaction => {
+                            // With choices on screen, SPACE is not an answer:
+                            // skipping applied no consequence and completed
+                            // the ride a leg early.
+                            let awaiting_choice = self
+                                .game_state
+                                .current_event
+                                .as_ref()
+                                .is_some_and(|event| !event.choices.is_empty());
+                            if !awaiting_choice {
+                                self.continue_past_event();
+                            }
+                        }
+                        // An open trade offer must be answered, not skipped —
+                        // Continue used to decline it silently.
+                        GamePhase::DropOff if self.game_state.pending_trade.is_none() => {
+                            self.continue_from_dropoff();
+                        }
                         _ => {}
                     }
                 }
@@ -130,10 +146,15 @@ impl Game {
                     self.perform_rule_action(action_key);
                 }
             }
-            UiAction::AcceptTrade(item_idx) => self.complete_trade(item_idx),
+            UiAction::AcceptTrade(item_idx) => {
+                if self.screen == Screen::Game && self.game_state.game_phase == GamePhase::DropOff {
+                    self.complete_trade(item_idx);
+                }
+            }
             UiAction::DeclineTrade => {
-                // Clear pending trade
-                self.game_state.pending_trade = None;
+                if self.screen == Screen::Game && self.game_state.game_phase == GamePhase::DropOff {
+                    self.game_state.pending_trade = None;
+                }
             }
             UiAction::FollowGuideline => {
                 if self.game_state.game_phase == GamePhase::GuidelineDecision {
