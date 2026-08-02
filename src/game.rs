@@ -87,9 +87,16 @@ pub struct Game {
 #[cfg(not(target_arch = "wasm32"))]
 fn seed_from_launch() -> Option<u64> {
     let args: Vec<String> = std::env::args().collect();
-    args.windows(2)
-        .find(|pair| pair[0] == "--seed")
-        .and_then(|pair| pair[1].parse().ok())
+    // Both `--seed 7` and `--seed=7`: the bot's flags are all `=`-form, and
+    // a space-form-only flag next to them is a trap (the bot's own
+    // `--bot-shifts 1` parsed as nothing for exactly that reason).
+    args.iter()
+        .find_map(|arg| arg.strip_prefix("--seed=").and_then(|v| v.parse().ok()))
+        .or_else(|| {
+            args.windows(2)
+                .find(|pair| pair[0] == "--seed")
+                .and_then(|pair| pair[1].parse().ok())
+        })
         .or_else(|| {
             std::env::var("NIGHTMARE_SHIFT_SEED")
                 .ok()
