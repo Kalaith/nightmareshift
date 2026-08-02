@@ -1,6 +1,7 @@
 //! Core game state structure.
 
 use crate::data::*;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 /// What is happening inside a shift.
@@ -91,13 +92,25 @@ impl NeedStage {
 }
 
 /// Relationship level with a passenger
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
 pub enum RelationshipLevel {
     Hostile,
     #[default]
     Neutral,
     Friendly,
     Trusted,
+}
+
+impl RelationshipLevel {
+    /// How the dossier names this standing.
+    pub fn label(self) -> &'static str {
+        match self {
+            Self::Hostile => "Hostile",
+            Self::Neutral => "Neutral",
+            Self::Friendly => "Friendly",
+            Self::Trusted => "Trusted",
+        }
+    }
 }
 
 /// Current ride information
@@ -178,28 +191,28 @@ pub struct DetectedTell {
     pub exception_id: Option<String>,
 }
 
-/// Passenger reputation tracking
-#[derive(Debug, Clone, Default)]
+/// Passenger reputation tracking.
+///
+/// Serialized into the save via `PlayerStats`, so a standing outlives the
+/// run that earned it. Two fields were shed on the way into the save:
+/// `negative_choices` was always `interactions - positive_choices` (both
+/// update paths bumped them in lockstep), and `last_encounter` was a
+/// wall-clock-relative timestamp that would read as nonsense next session.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct PassengerReputation {
     pub interactions: u32,
     pub positive_choices: u32,
-    pub negative_choices: u32,
-    pub last_encounter: f64,
+    #[serde(default)]
     pub relationship_level: RelationshipLevel,
 }
 
 impl PassengerReputation {
     /// Update reputation based on choice outcome
-    pub fn update(&mut self, positive: bool, current_time: f64, constants: &ReputationConstants) {
+    pub fn update(&mut self, positive: bool, constants: &ReputationConstants) {
         self.interactions += 1;
-        self.last_encounter = current_time;
-
         if positive {
             self.positive_choices += 1;
-        } else {
-            self.negative_choices += 1;
         }
-
         self.settle(constants);
     }
 
@@ -218,18 +231,15 @@ impl PassengerReputation {
     /// which skews the very ratio the level is derived from — a passenger
     /// handed two gifts on their first ride reads as 2/1 positive. Counting
     /// the act keeps the ratio meaning what it says.
-    pub fn adjust(&mut self, delta: i32, current_time: f64, constants: &ReputationConstants) {
+    pub fn adjust(&mut self, delta: i32, constants: &ReputationConstants) {
         if delta == 0 {
             return;
         }
         let magnitude = delta.unsigned_abs();
         if delta > 0 {
             self.positive_choices += magnitude;
-        } else {
-            self.negative_choices += magnitude;
         }
         self.interactions += magnitude;
-        self.last_encounter = current_time;
         self.settle(constants);
     }
 

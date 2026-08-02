@@ -281,6 +281,35 @@ fn current_achievement_registry_round_trips() {
     assert_eq!(reloaded.achievements.len(), stats.achievements.len());
 }
 
+/// A standing earned in one session must come back in the next — the whole
+/// point of moving reputation into the save — and a save from before the
+/// field existed must load with no standings rather than fail.
+#[test]
+fn standings_survive_a_save_round_trip_and_old_saves_still_load() {
+    let constants = crate::data::loader::load_constants().reputation;
+    let mut stats = PlayerStats::new();
+    let mut reputation = crate::state::PassengerReputation::default();
+    reputation.update(true, &constants);
+    stats.passenger_reputation.insert(7, reputation);
+
+    let json = serde_json::to_string(&stats).unwrap();
+    let reloaded: PlayerStats = serde_json::from_str(&json).unwrap();
+    let standing = reloaded
+        .passenger_reputation
+        .get(&7)
+        .expect("the standing survives the round trip");
+    assert_eq!(standing.interactions, 1);
+    assert_eq!(standing.positive_choices, 1);
+
+    let mut value = serde_json::to_value(&stats).unwrap();
+    value
+        .as_object_mut()
+        .unwrap()
+        .remove("passenger_reputation");
+    let legacy: PlayerStats = serde_json::from_value(value).expect("old saves load");
+    assert!(legacy.passenger_reputation.is_empty());
+}
+
 /// A missing `achievements` key (very old saves, from before achievements
 /// existed at all) should default to an empty registry rather than
 /// failing deserialization.

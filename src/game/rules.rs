@@ -280,7 +280,7 @@ impl Game {
                         if let Some(constants) = self.reputation_constants() {
                             self.game_state
                                 .get_passenger_reputation(passenger_id)
-                                .adjust(consequence.value, current_time, &constants);
+                                .adjust(consequence.value, &constants);
                         }
                     }
                 }
@@ -499,7 +499,7 @@ impl Game {
             if let Some(constants) = self.reputation_constants() {
                 self.game_state
                     .get_passenger_reputation(passenger.id)
-                    .adjust(bonus.reputation_bonus as i32, current_time, &constants);
+                    .adjust(bonus.reputation_bonus as i32, &constants);
             }
         }
 
@@ -644,7 +644,7 @@ impl Game {
                         if let Some(constants) = self.reputation_constants() {
                             self.game_state
                                 .get_passenger_reputation(passenger.id)
-                                .adjust(consequence.value, current_time, &constants);
+                                .adjust(consequence.value, &constants);
                         }
                         self.note_consequence(&consequence.description);
                     }

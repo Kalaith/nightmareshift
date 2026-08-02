@@ -101,6 +101,26 @@ pub fn build(
 ) -> Vec<DossierLine> {
     let mut lines = Vec::new();
 
+    // The driver's own memory needs no almanac. Reputation moves the fare
+    // and the route risk, and until this line it moved them from nowhere
+    // any screen could see.
+    if let Some(driver) = driver {
+        if let Some(reputation) = driver.shift.passenger_reputation.get(&passenger.id) {
+            if reputation.interactions > 0 {
+                lines.push(DossierLine::new(
+                    "Standing",
+                    format!(
+                        "{} - {} kindnesses over {} dealings",
+                        reputation.relationship_level.label(),
+                        reputation.positive_choices,
+                        reputation.interactions
+                    ),
+                    1,
+                ));
+            }
+        }
+    }
+
     // Lv.1 "Observed" — name, description, and basic needs. The player can
     // already see name and description on the request, so the payoff here is
     // knowing what the passenger needs and where it starts to slip.

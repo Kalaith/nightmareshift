@@ -1,5 +1,6 @@
 //! Player statistics tracking across sessions.
 
+use super::game_state::PassengerReputation;
 use crate::data::RouteType;
 use macroquad_toolkit::achievements::{Achievement, Achievements};
 use serde::{Deserialize, Deserializer, Serialize};
@@ -110,6 +111,11 @@ pub struct PlayerStats {
     /// Almanac progress by passenger ID
     #[serde(default)]
     pub almanac_progress: HashMap<u32, AlmanacEntry>,
+    /// Standing with each passenger, carried across runs. The shift plays
+    /// against a working copy on `GameState`; `end_shift` folds it back
+    /// here and `start_game` deals it out again.
+    #[serde(default)]
+    pub passenger_reputation: HashMap<u32, PassengerReputation>,
     /// Lore fragments for upgrading almanac knowledge
     #[serde(default)]
     pub lore_fragments: u32,

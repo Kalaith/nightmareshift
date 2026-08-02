@@ -224,11 +224,9 @@ impl RideService {
                 })
                 .unwrap_or(false);
 
-            state.get_passenger_reputation(passenger.id).update(
-                is_positive,
-                current_time,
-                &data.constants.reputation,
-            );
+            state
+                .get_passenger_reputation(passenger.id)
+                .update(is_positive, &data.constants.reputation);
 
             // Generate item drop
             let mut items_received = Vec::new();

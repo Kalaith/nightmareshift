@@ -206,11 +206,9 @@ impl ItemService {
                 // point of the withered flowers and the faded photograph was
                 // dropped on the floor the first time you offered either.
                 if let Some(passenger_id) = state.current_passenger.as_ref().map(|p| p.id) {
-                    state.get_passenger_reputation(passenger_id).adjust(
-                        effect.value,
-                        current_time,
-                        reputation_constants,
-                    );
+                    state
+                        .get_passenger_reputation(passenger_id)
+                        .adjust(effect.value, reputation_constants);
                 }
             }
             ItemEffectType::RuleTrigger => {

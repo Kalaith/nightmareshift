@@ -31,6 +31,8 @@ impl Game {
     pub fn start_game(&mut self) {
         self.game_state.night = 1;
         self.game_state.run_complete = false;
+        // Deal the saved standings out as this run's working copy.
+        self.game_state.passenger_reputation = self.player_stats.passenger_reputation.clone();
         // Each run falls in its own month, so the seasonal spawn weights,
         // the winter hazard bonus, and the winter conditions branch rotate
         // into play across runs instead of being locked to October.
@@ -238,6 +240,11 @@ impl Game {
         for passenger_id in &self.game_state.used_passengers {
             self.player_stats.mark_passenger_encountered(*passenger_id);
         }
+
+        // Fold the night's standings back into the save. The shift plays
+        // against the working copy on `game_state`; without this, every
+        // reputation earned died with the run.
+        self.player_stats.passenger_reputation = self.game_state.passenger_reputation.clone();
 
         // Add leaderboard entry
         if let Some(ref data) = self.game_data {

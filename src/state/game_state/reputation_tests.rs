@@ -14,7 +14,7 @@ fn a_gift_moves_the_level_the_fare_reads() {
     assert_eq!(reputation.relationship_level, RelationshipLevel::Neutral);
     let before = reputation.fare_multiplier(&constants);
 
-    reputation.adjust(2, 0.0, &constants);
+    reputation.adjust(2, &constants);
 
     assert_ne!(reputation.relationship_level, RelationshipLevel::Neutral);
     assert!(
@@ -30,7 +30,7 @@ fn a_gift_moves_the_level_the_fare_reads() {
 fn a_gift_counts_as_an_interaction() {
     let constants = load_constants().reputation;
     let mut reputation = PassengerReputation::default();
-    reputation.adjust(2, 0.0, &constants);
+    reputation.adjust(2, &constants);
 
     assert_eq!(reputation.interactions, 2);
     assert!(
@@ -47,7 +47,7 @@ fn a_gift_counts_as_an_interaction() {
 fn a_slight_moves_it_the_other_way() {
     let constants = load_constants().reputation;
     let mut reputation = PassengerReputation::default();
-    reputation.adjust(-2, 0.0, &constants);
+    reputation.adjust(-2, &constants);
 
     assert_eq!(reputation.relationship_level, RelationshipLevel::Hostile);
     assert!(
@@ -61,9 +61,8 @@ fn a_slight_moves_it_the_other_way() {
 fn an_empty_adjustment_changes_nothing() {
     let constants = load_constants().reputation;
     let mut reputation = PassengerReputation::default();
-    reputation.adjust(0, 5.0, &constants);
+    reputation.adjust(0, &constants);
 
     assert_eq!(reputation.interactions, 0);
-    assert_eq!(reputation.last_encounter, 0.0);
     assert_eq!(reputation.relationship_level, RelationshipLevel::Neutral);
 }
