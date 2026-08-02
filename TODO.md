@@ -53,7 +53,7 @@
 
 ## Packaging & release
 
-- Compress and resize the 16 portraits (~19 MB) and ship them once — they are embedded via `include_bytes!` *and* duplicated in `assets.zip`, which is the single biggest download-size win.
+- ~~Compress and resize the 16 portraits~~ Done — 1024² RGB → 768² palette-quantized PNG (Lanczos + Floyd–Steinberg; macroquad's `image` decodes only PNG/TGA, so JPEG was never an option): 18.9 MB → 5.4 MB, debug exe 23.1 → 9.6 MB, verified visually in-engine via the capture harness. The *ship-once* half stays open: `assets.zip` still duplicates the embedded bytes because the shared publisher has no exclude option (documented in README) — the zip just shrank by the same 13.5 MB.
 - Windows executable polish: icon and version metadata via `build.rs`, plus an installer and code signing.
 - Crash-report upload (opt-in), gated on the privacy-policy decision below. The local half is done: `macroquad_toolkit::crash::install_crash_log` writes every native panic to `crash_log.txt` beside the save file. (A per-project `[profile.release]` was also once listed here; dropped — profiles come from the workspace root, a member's is ignored with a warning, and no sibling carries one.)
 - Steam/itch integration for the existing internal achievements, cloud saves, and a DRM-free pipeline; release automation in CI, which builds but publishes nothing.
