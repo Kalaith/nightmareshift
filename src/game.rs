@@ -130,8 +130,17 @@ impl Game {
         let (mut player_stats, save_notice) = Persistence::load_or_quarantine();
         player_stats.init_achievements();
         let playtest_bot = PlaytestBot::from_launch_args();
-        if let (Some(bot), Some(data)) = (&playtest_bot, &game_data) {
-            bot.apply_test_unlocks(&mut player_stats, data);
+        if let Some(bot) = &playtest_bot {
+            // A fresh-stats measurement never touches the real save: it did
+            // not load it (below replaces the loaded stats) and `save_stats`
+            // refuses to write for it.
+            if bot.wants_fresh_stats() {
+                player_stats = PlayerStats::new();
+                player_stats.init_achievements();
+            }
+            if let Some(data) = &game_data {
+                bot.apply_test_unlocks(&mut player_stats, data);
+            }
         }
 
         // Create game state using constants from loaded data
@@ -173,6 +182,13 @@ impl Game {
     /// Save player stats
     fn save_stats(&self) {
         if self.capture_mode {
+            return;
+        }
+        if self
+            .playtest_bot
+            .as_ref()
+            .is_some_and(|bot| bot.wants_fresh_stats())
+        {
             return;
         }
         if let Some(data) = &self.game_data {

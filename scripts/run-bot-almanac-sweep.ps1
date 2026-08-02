@@ -21,6 +21,9 @@ if ($HadSave) {
 
 Push-Location $ProjectRoot
 try {
+    # Up to 4 levels x $RunsPerLevel bot runs, none of which anyone watches —
+    # keep the game window off the desktop.
+    $env:NIGHTMARE_SHIFT_HEADLESS = "1"
     $foundSuccess = $false
 
     foreach ($level in 0..3) {
@@ -64,6 +67,7 @@ try {
 }
 finally {
     Pop-Location
+    Remove-Item Env:\NIGHTMARE_SHIFT_HEADLESS -ErrorAction SilentlyContinue
     if ($HadSave) {
         Copy-Item -LiteralPath $BackupPath -Destination $SavePath -Force
         Write-Output "[SWEEP] Restored save from backup"

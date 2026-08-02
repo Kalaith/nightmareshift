@@ -45,6 +45,36 @@ impl PlaytestBot {
                     .map(|key| (key, rule.related_guideline_id))
             })
             .collect();
+
+        // A comfort-equipped cab soothes with controls no rule names — free
+        // relief before any gamble. The bot never pressed an unforbidden
+        // control, so the comfort branch measured as identical to baseline:
+        // a purchased upgrade the harness could not see.
+        let visible_forbidden: Vec<&str> = state
+            .current_rules
+            .iter()
+            .filter(|rule| rule.action_type == Some(ActionType::Forbidden))
+            .filter_map(|rule| rule.action_key.as_deref())
+            .collect();
+        let comfort_candidates: [(&str, &str); 5] = [
+            ("stereo_1", "play_music"),
+            ("climate_1", "use_ac"),
+            ("climate_1", "open_window"),
+            ("upholstery_1", "eye_contact"),
+            ("upholstery_1", "stop_vehicle"),
+        ];
+        for (skill, action) in comfort_candidates {
+            if stats.is_skill_unlocked(skill)
+                && !visible_forbidden.contains(&action)
+                && !state
+                    .comfort_soothed_actions
+                    .iter()
+                    .any(|used| used == action)
+            {
+                return Some(action.to_string());
+            }
+        }
+
         if forbidden.is_empty() {
             return None;
         }
@@ -73,6 +103,19 @@ impl PlaytestBot {
                 return Some((*key).to_string());
             }
 
+            // Blind guessing means pressing a forbidden control and eating
+            // its 0.3-0.7 death roll when the guess is wrong. A player does
+            // not gamble that at Warning — they wait. Only a passenger at
+            // Critical, where meltdown is one leg away, makes the gamble
+            // rational; guessing from Warning modelled a driver with a
+            // death wish and measured baseline night 1 at 0/15.
+            if need.stage < NeedStage::Critical {
+                return None;
+            }
+            if self.guessed_at_ride == Some(state.rides_completed) {
+                return None;
+            }
+            self.guessed_at_ride = Some(state.rides_completed);
             let guess = forbidden[self.soothe_cursor % forbidden.len()]
                 .0
                 .to_string();

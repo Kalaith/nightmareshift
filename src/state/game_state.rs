@@ -513,6 +513,8 @@ pub struct GameState {
     /// Cab actions that have already spent their comfort soothing this ride.
     /// Each comfort channel works once per ride; the list clears at drop-off.
     pub comfort_soothed_actions: Vec<String>,
+    /// The night's single brink-of-meltdown grace has been used.
+    pub brink_spent: bool,
     /// This night is The Last Fare: quota is moot and the only passenger the
     /// city sends is Death. Survived, it completes the run.
     pub last_fare_night: bool,
@@ -582,6 +584,7 @@ impl GameState {
             guideline_decision_start_time: None,
             guideline_time_remaining: 30.0,
             comfort_soothed_actions: Vec::new(),
+            brink_spent: false,
             last_fare_night: false,
             death_delivered: false,
         }
@@ -632,6 +635,7 @@ impl GameState {
         self.guideline_decision_start_time = None;
         self.guideline_time_remaining = 30.0;
         self.comfort_soothed_actions.clear();
+        self.brink_spent = false;
         self.last_fare_night = false;
         self.death_delivered = false;
     }

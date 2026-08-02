@@ -14,6 +14,11 @@ pub struct GuidelineEvaluationResult {
     /// caller relieve the passenger's need when it is the one their
     /// `stateProfile.exceptionId` points at.
     pub satisfied_exception: Option<String>,
+    /// The satisfied exception was authored but rolled dormant tonight: a
+    /// right read of a real tell on a night the need never fully surfaced.
+    /// Relief pays at half, and the break is spared the full "dangerous"
+    /// death roll — the weaker fallback the balance sweep asked after.
+    pub dormant: bool,
 }
 
 /// Guideline engine for exception detection and evaluation
@@ -393,6 +398,7 @@ impl GuidelineEngine {
                         guideline.title, exc.description
                     ),
                     satisfied_exception: Some(exc.id.clone()),
+                    dormant: false,
                 }
             }
             (Some(exc), GuidelineAction::Follow) if !exc.breaking_safer => {
@@ -402,6 +408,7 @@ impl GuidelineEngine {
                     consequences: guideline.follow_consequences.clone(),
                     message: format!("Following \"{}\" was the right choice", guideline.title),
                     satisfied_exception: Some(exc.id.clone()),
+                    dormant: false,
                 }
             }
             (Some(_exc), _) => {
@@ -414,6 +421,7 @@ impl GuidelineEngine {
                         guideline.title
                     ),
                     satisfied_exception: None,
+                    dormant: false,
                 }
             }
             (None, GuidelineAction::Follow) => {
@@ -423,18 +431,68 @@ impl GuidelineEngine {
                     consequences: guideline.follow_consequences.clone(),
                     message: format!("Following \"{}\" was the safe choice", guideline.title),
                     satisfied_exception: None,
+                    dormant: false,
                 }
             }
             (None, GuidelineAction::Break) => {
-                // No exception, breaking is dangerous
+                // No *live* exception — but a break made on a real tell is
+                // not a blind one. When the passenger's authored
+                // breaking-safer exception matched everything except its
+                // per-ride liveness roll, the read was right and the night
+                // was merely quieter than it looked. Without this, every
+                // dormant roll turned a correct read into a 0.7 death — the
+                // trap that dominated baseline deaths once meltdowns
+                // stopped masking it.
+                if let Some(exc) = Self::find_dormant_exception(
+                    guideline,
+                    passenger,
+                    &state.current_weather,
+                    &state.live_exceptions,
+                )
+                .filter(|exc| exc.breaking_safer)
+                {
+                    return GuidelineEvaluationResult {
+                        is_safe: true,
+                        consequences: Vec::new(),
+                        message: format!(
+                            "Breaking \"{}\" answered a need that had already eased. \
+                             No harm done tonight.",
+                            guideline.title
+                        ),
+                        satisfied_exception: Some(exc.id.clone()),
+                        dormant: true,
+                    };
+                }
+                // No exception at all: breaking is dangerous.
                 GuidelineEvaluationResult {
                     is_safe: false,
                     consequences: guideline.break_consequences.clone(),
                     message: format!("Breaking \"{}\" was dangerous", guideline.title),
                     satisfied_exception: None,
+                    dormant: false,
                 }
             }
         }
+    }
+
+    /// The exception on `guideline` that matches `passenger` and its
+    /// conditions but lost tonight's liveness roll — authored, applicable,
+    /// asleep.
+    fn find_dormant_exception(
+        guideline: &Guideline,
+        passenger: &Passenger,
+        weather: &WeatherCondition,
+        live_exceptions: &HashSet<String>,
+    ) -> Option<GuidelineException> {
+        guideline
+            .exceptions
+            .iter()
+            .find(|exception| {
+                Self::passenger_matches_exception(passenger, exception)
+                    && !live_exceptions.contains(&exception.id)
+                    && Self::check_exception_conditions(exception, weather, passenger)
+            })
+            .cloned()
     }
 
     /// Find active exception for passenger

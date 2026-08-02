@@ -5,7 +5,10 @@ param(
     [ValidateRange(0, 3)]
     [int]$AlmanacLevel = 0,
     [int]$DelayMs = 150,
-    [switch]$Release
+    [switch]$Release,
+    # The bot plays itself and reports on stdout, so the game window is noise —
+    # it is hidden by default. Pass -Visible to watch the bot play.
+    [switch]$Visible
 )
 
 $ErrorActionPreference = "Stop"
@@ -13,6 +16,8 @@ $ProjectRoot = Split-Path -Parent $PSScriptRoot
 
 Push-Location $ProjectRoot
 try {
+    $env:NIGHTMARE_SHIFT_HEADLESS = if ($Visible) { "0" } else { "1" }
+
     $cargoArgs = @("run")
     if ($Release) {
         $cargoArgs += "--release"
@@ -31,5 +36,6 @@ try {
     exit $LASTEXITCODE
 }
 finally {
+    Remove-Item Env:NIGHTMARE_SHIFT_HEADLESS -ErrorAction SilentlyContinue
     Pop-Location
 }

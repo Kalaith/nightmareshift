@@ -57,13 +57,27 @@ pub struct PlaytestBot {
     unlock_all_skills: bool,
     /// Specific skill ids to unlock, for isolating one effect.
     named_skills: Vec<String>,
+    /// Start from empty stats and never write the save. Lifetime shift count
+    /// drives `suggested_difficulty`, so a measurement that loads the real
+    /// save inherits whatever difficulty the file has accumulated — and then
+    /// pollutes it further with every shift it plays. Sweeps set this.
+    fresh_stats: bool,
     /// Leg index the bot last spent a soothing cab action on.
     soothed_at_leg: Option<usize>,
     /// Rotates the blind guess at which action settles an unstudied fare.
     soothe_cursor: usize,
+    /// Ride count when the last *blind* guess was made. One desperation
+    /// gamble per ride: pressing a fresh forbidden control every leg chains
+    /// ~0.5 death rolls, which no player does after the first spike.
+    guessed_at_ride: Option<u32>,
 }
 
 impl PlaytestBot {
+    /// Whether this run is isolated from the on-disk save (no load, no write).
+    pub fn wants_fresh_stats(&self) -> bool {
+        self.fresh_stats
+    }
+
     pub fn next_action(
         &mut self,
         screen: Screen,

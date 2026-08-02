@@ -577,17 +577,24 @@ impl RideService {
     /// Meltdown was the only game over with neither a probability roll nor a
     /// warning leg — rule breaks roll 0.3–0.7 and guideline misreads roll
     /// their consequence, but the stage flipping killed on the spot. The
-    /// first crossing now drags the passenger back under the threshold,
-    /// announces itself, and burns the one-per-ride `brink_reached` flag;
-    /// the player has a leg to soothe, trade, or arrive. The second
-    /// crossing is final.
+    /// first crossing of the *shift* now drags the passenger back under the
+    /// threshold, announces itself, and burns the night's one
+    /// `brink_spent` charge; the player has a leg to soothe, trade, or
+    /// arrive. Any later crossing that night is final. (This started as a
+    /// per-ride grace and measured too kind: with one absorb per passenger,
+    /// baseline night 1 went 15/15 and the progression tiers stopped
+    /// mattering. One per shift keeps the warning without the armor.)
     fn hold_at_the_brink(state: &mut GameState, current_time: f64) -> bool {
+        if state.brink_spent {
+            return false;
+        }
         let Some(mut need_state) = state.current_passenger_need_state.clone() else {
             return false;
         };
         if need_state.brink_reached {
             return false;
         }
+        state.brink_spent = true;
         need_state.brink_reached = true;
         need_state.level = need_state.profile.thresholds.meltdown.saturating_sub(1);
         need_state.stage =

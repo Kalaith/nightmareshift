@@ -83,6 +83,9 @@ function Measure-Cell {
     ) + $ExtraArgs
 
     $env:NIGHTMARE_SHIFT_BOT = "1"
+    # Four cells x many shifts is a lot of windows to have flashing up; the bot
+    # needs no display, so run it hidden.
+    $env:NIGHTMARE_SHIFT_HEADLESS = "1"
     $output = & cargo @cargoArgs 2>&1 | ForEach-Object { $_.ToString() }
     if ($LASTEXITCODE -ne 0) {
         throw "Bot run failed for '$Label' with exit code $LASTEXITCODE"
@@ -128,7 +131,7 @@ try {
 }
 finally {
     Pop-Location
-    Remove-Item Env:\NIGHTMARE_SHIFT_BOT -ErrorAction SilentlyContinue
+    Remove-Item Env:\NIGHTMARE_SHIFT_BOT, Env:\NIGHTMARE_SHIFT_HEADLESS -ErrorAction SilentlyContinue
     if ($HadSave) {
         Copy-Item -LiteralPath $BackupPath -Destination $SavePath -Force
         Write-Output "[MEASURE] Restored save from backup"

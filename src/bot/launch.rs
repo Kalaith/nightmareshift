@@ -63,6 +63,11 @@ impl PlaytestBot {
             // effect — is the fare multiplier really the 1.21 it multiplies
             // out to? — needs a named subset, because everything the other
             // nineteen nodes do lands in the same numbers.
+            let fresh_stats = args.iter().any(|arg| arg == "--bot-fresh-stats")
+                || std::env::var("NIGHTMARE_SHIFT_BOT_FRESH_STATS")
+                    .map(|value| value == "1" || value.eq_ignore_ascii_case("true"))
+                    .unwrap_or(false);
+
             let named_skills: Vec<String> = parse_string_arg(&args, "--bot-skills")
                 .or_else(|| std::env::var("NIGHTMARE_SHIFT_BOT_SKILLS").ok())
                 .map(|value| {
@@ -91,18 +96,21 @@ impl PlaytestBot {
                 almanac_level,
                 unlock_all_skills,
                 named_skills,
+                fresh_stats,
                 soothed_at_leg: None,
                 soothe_cursor: 0,
+                guessed_at_ride: None,
             };
 
             eprintln!(
-                "[BOT] Enabled: strategy={:?}, shifts={}, delay={}ms, almanac_level={}, all_skills={}, skills={:?}",
+                "[BOT] Enabled: strategy={:?}, shifts={}, delay={}ms, almanac_level={}, all_skills={}, skills={:?}, fresh_stats={}",
                 bot.strategy,
                 bot.max_shifts,
                 delay_ms,
                 bot.almanac_level,
                 bot.unlock_all_skills,
-                bot.named_skills
+                bot.named_skills,
+                bot.fresh_stats
             );
             Some(bot)
         }

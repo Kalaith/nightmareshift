@@ -21,6 +21,11 @@ const DEFAULT_WINDOW_WIDTH: i32 = 1920;
 const DEFAULT_WINDOW_HEIGHT: i32 = 1080;
 
 fn window_conf() -> Conf {
+    // Hide the window for capture runs, and for bot runs launched with
+    // NIGHTMARE_SHIFT_HEADLESS=1. Armed here (not in main) so the window never
+    // flashes onto the desktop while the game loads.
+    capture::headless::arm("NIGHTMARE_SHIFT");
+
     // Built by hand (not capture::capture_window_conf) to keep sample_count: 0
     // and the always-off high_dpi that this game already relied on.
     Conf {

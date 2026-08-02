@@ -606,6 +606,7 @@ impl Game {
     fn relieve_need_for_exception(
         &mut self,
         satisfied: Option<&str>,
+        dormant: bool,
         passenger: &Passenger,
         current_time: f64,
     ) {
@@ -619,7 +620,11 @@ impl Game {
             return;
         }
 
-        let relief = need.profile.need_change.exception_relief;
+        // A dormant exception pays half: the read was right, but tonight the
+        // need had less to give back — the weaker fallback the sweep asked
+        // after, instead of the all-or-nothing liveness cliff.
+        let full = need.profile.need_change.exception_relief;
+        let relief = if dormant { full / 2 } else { full };
         if relief <= 0 {
             return;
         }
@@ -683,6 +688,7 @@ impl Game {
 
             self.relieve_need_for_exception(
                 result.satisfied_exception.as_deref(),
+                result.dormant,
                 &passenger,
                 current_time,
             );

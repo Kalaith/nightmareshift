@@ -1,46 +1,61 @@
-"config","seed","outcome","rides","earned","quota","fuel","time","legs","reason"
-"baseline","1","GameOver","1","20","150","61","294","4","The passenger's need became uncontrollable."
-"baseline","2","Success","4","201","150","47","315","8","completed"
-"baseline","3","Success","4","250","150","28","298","8","completed"
-"baseline","4","Success","5","237","150","36","201","10","completed"
-"baseline","5","GameOver","2","83","150","44","344","6","The passenger's need became uncontrollable."
-"baseline","6","GameOver","0","0","150","78","404","2","The passenger's need became uncontrollable."
-"baseline","7","Success","4","264","150","14","186","8","completed"
-"baseline","8","GameOver","0","0","150","94","448","2","The passenger's need became uncontrollable."
-"baseline","9","Success","4","235","150","24","265","8","completed"
-"baseline","10","GameOver","0","0","150","76","414","2","The passenger's need became uncontrollable."
-"baseline","11","GameOver","1","34","150","39","268","4","The passenger's need became uncontrollable."
-"baseline","12","Success","4","208","150","33","308","8","completed"
-"baseline","13","GameOver","2","52","150","45","107","5","Hidden Rule Violated!"
-"baseline","14","GameOver","0","0","150","76","418","2","The passenger's need became uncontrollable."
-"baseline","15","Success","4","203","150","51","326","8","completed"
-"studied","1","GameOver","1","20","150","61","294","4","The passenger's need became uncontrollable."
-"studied","2","Success","4","230","150","35","307","8","completed"
-"studied","3","Success","4","250","150","28","298","8","completed"
-"studied","4","Success","5","237","150","36","201","10","completed"
-"studied","5","GameOver","2","95","150","44","344","6","The passenger's need became uncontrollable."
-"studied","6","GameOver","0","0","150","78","404","2","The passenger's need became uncontrollable."
-"studied","7","Success","3","212","150","17","258","6","completed"
-"studied","8","GameOver","0","0","150","94","448","2","The passenger's need became uncontrollable."
-"studied","9","Success","4","251","150","24","265","8","completed"
-"studied","10","Success","2","212","150","54","362","4","completed"
-"studied","11","GameOver","1","34","150","39","268","4","The passenger's need became uncontrollable."
-"studied","12","Success","4","208","150","33","308","8","completed"
-"studied","13","GameOver","2","52","150","45","107","5","Hidden Rule Violated!"
-"studied","14","GameOver","0","0","150","76","418","2","The passenger's need became uncontrollable."
-"studied","15","Success","4","203","150","51","326","8","completed"
-"mastered","1","Success","4","218","150","47","297","8","completed"
-"mastered","2","Success","4","203","150","39","247","8","completed"
-"mastered","3","Success","3","209","150","47","264","6","completed"
-"mastered","4","Success","3","232","150","58","308","6","completed"
-"mastered","5","GameOver","0","0","150","94","456","2","The passenger's need became uncontrollable."
-"mastered","6","Success","3","208","150","64","288","6","completed"
-"mastered","7","Success","3","229","150","46","296","6","completed"
-"mastered","8","Success","4","248","150","47","144","8","completed"
-"mastered","9","Success","2","228","150","79","404","4","completed"
-"mastered","10","Success","1","221","150","82","414","2","completed"
-"mastered","11","Success","3","266","150","48","226","6","completed"
-"mastered","12","Success","1","227","150","88","397","2","completed"
-"mastered","13","GameOver","2","120","150","60","219","6","The passenger's need became uncontrollable."
-"mastered","14","Success","3","229","150","59","332","6","completed"
-"mastered","15","Success","3","292","150","56","317","6","completed"
+tier,seed,outcome,rides,earnings,fuel,time,reason
+baseline,1,GameOver,2,42,35,321,You cleaned the windshield and gave the thing behind the smear a clear look back. You wiped the glass clear and met what had been pressed against it.
+baseline,2,GameOver,7,78,39,17,You could not make the next leg. The shift ends where it stands.
+baseline,3,GameOver,4,75,29,124,The passenger's need became uncontrollable.
+baseline,4,Success,6,241,6,136,completed
+baseline,5,GameOver,1,15,55,360,The passenger's need became uncontrollable.
+baseline,6,GameOver,2,49,40,344,Dispatch routes exist for a reason. The shadows were waiting off-grid.
+baseline,7,GameOver,2,44,51,325,You changed air that wasn't yours to move. It moved back. You forced the air and something reached through the vents to answer.
+baseline,8,GameOver,1,39,51,221,The passenger's need became uncontrollable.
+baseline,9,GameOver,3,77,36,201,Breaking the silence invited a chorus of voices you cannot silence. The song acted as a beacon for the wrong audience.
+baseline,10,GameOver,3,73,27,131,You cleaned the windshield and gave the thing behind the smear a clear look back. You wiped the glass clear and met what had been pressed against it.
+baseline,11,GameOver,0,0,79,427,Wrong choice regarding "Keep All Windows Sealed" - misread the passenger
+baseline,12,GameOver,1,38,73,402,You changed air that wasn't yours to move. It moved back. You forced the air and something reached through the vents to answer.
+baseline,13,GameOver,4,111,42,106,You drove into blindness on purpose. Something in it had been waiting for exactly that. You killed the lights and the dark poured into the space they held.
+baseline,14,GameOver,1,14,53,321,The passenger's need became uncontrollable.
+baseline,15,Success,7,210,12,30,completed
+comfort,1,GameOver,7,84,17,9,You could not make the next leg. The shift ends where it stands.
+comfort,2,GameOver,7,80,42,20,You could not make the next leg. The shift ends where it stands.
+comfort,3,GameOver,0,0,83,405,Wrong choice regarding "Never Take Unscheduled Shortcuts" - misread the passenger
+comfort,4,Success,4,239,11,249,completed
+comfort,5,GameOver,2,42,50,329,Dispatch routes exist for a reason. The shadows were waiting off-grid.
+comfort,6,GameOver,2,44,54,351,Dispatch routes exist for a reason. The shadows were waiting off-grid.
+comfort,7,GameOver,7,93,37,0,You could not make the next leg. The shift ends where it stands.
+comfort,8,GameOver,2,70,29,138,Dispatch routes exist for a reason. The shadows were waiting off-grid.
+comfort,9,GameOver,5,84,42,90,Hidden Rule Violated!
+comfort,10,GameOver,4,92,37,31,You could not make the next leg. The shift ends where it stands.
+comfort,11,GameOver,0,0,79,427,Wrong choice regarding "Keep All Windows Sealed" - misread the passenger
+comfort,12,Success,7,205,35,100,completed
+comfort,13,GameOver,5,128,6,9,You could not make the next leg. The shift ends where it stands.
+comfort,14,GameOver,2,34,36,275,Dispatch routes exist for a reason. The shadows were waiting off-grid.
+comfort,15,Success,7,209,5,50,completed
+studied,1,Success,5,200,26,185,completed
+studied,2,Success,4,212,0,201,completed
+studied,3,Success,5,231,41,141,completed
+studied,4,Success,6,216,38,159,completed
+studied,5,Success,6,207,31,116,completed
+studied,6,Success,5,236,14,137,completed
+studied,7,Success,5,206,37,178,completed
+studied,8,GameOver,3,112,43,87,Hidden Rule Violated!
+studied,9,Success,5,203,28,86,completed
+studied,10,GameOver,5,123,46,25,You could not make the next leg. The shift ends where it stands.
+studied,11,Success,5,246,6,172,completed
+studied,12,Success,5,219,14,268,completed
+studied,13,GameOver,2,62,13,184,The passenger's need became uncontrollable.
+studied,14,Success,5,237,14,79,completed
+studied,15,Success,5,226,10,181,completed
+mastered,1,Success,4,211,4,193,completed
+mastered,2,Success,3,216,41,254,completed
+mastered,3,Success,2,214,46,276,completed
+mastered,4,GameOver,1,35,78,404,Hidden Rule Violated!
+mastered,5,Success,5,217,29,138,completed
+mastered,6,Success,4,238,23,206,completed
+mastered,7,Success,4,232,31,211,completed
+mastered,8,Success,4,201,20,196,completed
+mastered,9,GameOver,1,41,84,412,Hidden Rule Violated!
+mastered,10,Success,3,203,32,298,completed
+mastered,11,Success,4,246,1,78,completed
+mastered,12,Success,3,233,41,258,completed
+mastered,13,Success,5,225,19,53,completed
+mastered,14,Success,4,235,28,271,completed
+mastered,15,Success,4,212,38,274,completed
