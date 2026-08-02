@@ -10,6 +10,7 @@ use crate::engine::*;
 use crate::screens::Screen;
 use crate::state::*;
 use macroquad::prelude::*;
+use macroquad_toolkit::rng;
 
 /// How much of the night has been worked, when the wall clock is unavailable.
 ///
@@ -30,6 +31,10 @@ impl Game {
     pub fn start_game(&mut self) {
         self.game_state.night = 1;
         self.game_state.run_complete = false;
+        // Each run falls in its own month, so the seasonal spawn weights,
+        // the winter hazard bonus, and the winter conditions branch rotate
+        // into play across runs instead of being locked to October.
+        self.game_state.campaign_month = rng::gen_range(1u32, 13);
         self.begin_night();
     }
 
@@ -92,7 +97,7 @@ impl Game {
 
             // Initialize weather
             self.game_state.season =
-                WeatherService::get_current_season(WeatherService::DEFAULT_MONTH);
+                WeatherService::get_current_season(self.game_state.campaign_month);
             self.game_state.current_weather =
                 WeatherService::generate_initial_weather(&self.game_state.season, current_time);
             self.game_state.time_of_day = WeatherService::time_of_day_after(0);

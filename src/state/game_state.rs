@@ -427,6 +427,10 @@ pub struct GameState {
     pub current_weather: WeatherCondition,
     pub time_of_day: TimeOfDay,
     pub season: Season,
+    /// The month this run falls in, rolled once per run by `start_game` so
+    /// the seasonal spawn weights and winter conditions rotate into play.
+    /// Kept across the run's nights; each night derives `season` from it.
+    pub campaign_month: u32,
     pub environmental_hazards: Vec<EnvironmentalHazard>,
 
     // Persistence
@@ -504,6 +508,7 @@ impl GameState {
             current_weather: WeatherCondition::default(),
             time_of_day: TimeOfDay::default(),
             season: Season::default(),
+            campaign_month: DEFAULT_MONTH,
             environmental_hazards: Vec::new(),
             passenger_reputation: HashMap::new(),
             minimum_earnings: constants.minimum_earnings,

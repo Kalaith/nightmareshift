@@ -404,6 +404,19 @@ pub fn draw_briefing(
         );
         side_y = weather_text_bottom.max(weather_panel_top + WEATHER_PANEL_H) + 18.0;
 
+        // The season line: computed every run and previously shown nowhere,
+        // though it steers spawn weights and hazard chances.
+        side_y = draw_wrapped_text(
+            &game_state.season.description,
+            conditions_inner.x,
+            side_y,
+            conditions_inner.w,
+            fonts::SIZE_SM,
+            18.0,
+            colors::TEXT_MUTED,
+            2,
+        ) + 14.0;
+
         let weather_rule_ids = crate::engine::WeatherService::get_weather_triggered_rules(
             &game_state.current_weather,
             &game_state.time_of_day,

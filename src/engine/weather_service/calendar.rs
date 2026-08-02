@@ -10,9 +10,6 @@ impl WeatherService {
     /// runs 18:00 to 02:00 — dusk, through night, into the small hours.
     pub const SHIFT_START_HOUR: u32 = 18;
 
-    /// The campaign's month, pending a real calendar: October, mid-fall.
-    pub const DEFAULT_MONTH: u32 = 10;
-
     /// Get time of day from hour
     pub fn get_time_of_day(hour: u32) -> TimeOfDay {
         let (phase, description, ambient_light, supernatural_activity) = match hour {

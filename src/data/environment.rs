@@ -181,6 +181,11 @@ impl Default for Season {
     }
 }
 
+/// The month a campaign falls in before a run rolls its own: October,
+/// mid-fall. Kept beside [`Season`] because it is season data, not engine
+/// tuning.
+pub const DEFAULT_MONTH: u32 = 10;
+
 /// Environmental hazard types
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
