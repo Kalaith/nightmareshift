@@ -9,7 +9,6 @@ use super::Game;
 use crate::engine::*;
 use crate::screens::Screen;
 use crate::state::*;
-use crate::ui::layout;
 use macroquad::prelude::*;
 
 /// How much of the night has been worked, when the wall clock is unavailable.
@@ -92,11 +91,11 @@ impl Game {
             self.game_state.current_guidelines = data.guidelines.clone();
 
             // Initialize weather
-            self.game_state.season = WeatherService::get_current_season(layout::DEFAULT_MONTH);
+            self.game_state.season =
+                WeatherService::get_current_season(WeatherService::DEFAULT_MONTH);
             self.game_state.current_weather =
                 WeatherService::generate_initial_weather(&self.game_state.season, current_time);
-            self.game_state.time_of_day =
-                WeatherService::get_time_of_day(layout::DEFAULT_START_HOUR);
+            self.game_state.time_of_day = WeatherService::time_of_day_after(0);
             self.game_state.environmental_hazards = WeatherService::generate_hazards(
                 &self.game_state.current_weather,
                 &self.game_state.time_of_day,

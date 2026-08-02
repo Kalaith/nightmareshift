@@ -510,16 +510,26 @@ impl Game {
             GuidelineEngine::update_detection(&mut self.game_state, current_time);
 
             // Dynamic weather updates
-            if let Some(shift_start) = self.game_state.shift_start_time {
+            if self.game_state.shift_start_time.is_some() {
                 self.game_state.current_weather = WeatherService::update_weather(
                     &self.game_state.current_weather,
                     &self.game_state.season,
                     current_time,
                 );
 
-                // Update time of day based on elapsed time
-                self.game_state.time_of_day =
-                    WeatherService::update_time_of_day(shift_start, current_time);
+                // The in-fiction clock advances with the shift's own
+                // minutes, which routes spend, rather than wall time.
+                let minutes_gone = self
+                    .game_data
+                    .as_ref()
+                    .map(|data| {
+                        data.constants
+                            .game_constants
+                            .initial_time
+                            .saturating_sub(self.game_state.time_remaining)
+                    })
+                    .unwrap_or(0);
+                self.game_state.time_of_day = WeatherService::time_of_day_after(minutes_gone);
                 self.sync_weather_rules();
 
                 self.game_state.environmental_hazards.retain(|hazard| {

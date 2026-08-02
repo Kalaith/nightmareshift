@@ -6,7 +6,6 @@ Code and data that exist but never reach the player. Verified against the source
 
 ### Simulation outputs that go nowhere
 
-- Time-of-day is frozen at Dusk. `weather_service/calendar.rs:52` hardcodes start hour 18 and derives elapsed time from real wall-clock hours, so `Night`/`LateNight` never occur in play — permanently disabling weather rule 104, the `PoliceCheckpoint` hazard, the night route-risk bonus and Scenic-latenight penalty, the low-ambient-light headlight fuel penalty, and night-weighted passenger spawns. The `DEFAULT_START_HOUR = 20` seeded in `shift.rs` is overwritten on the first frame (and lives in `ui/core.rs` despite being a sim constant).
 - Season is a constant Fall (`DEFAULT_MONTH = 10`), so the spring/summer/winter passenger spawn weights, the winter hazard-chance bonus, and the winter conditions branch never fire; the `Temperature` enum and `Season.description` are computed but displayed nowhere.
 - The false-tell system is doubly dead: its gate requires `rides_completed > 20` but a 480-minute/100-fuel shift caps out around 12–13 rides, and even if it opened, the merge dedupe rejects the cloned tell it tries to insert (`guideline_engine.rs:86-103`, `343-365`).
 - ~150 authored `Consequence.description` strings in `shiftRulesData.json`/`guidelineData.json` ("You resisted the passenger's pull…") never reach a screen — the shown message is built from the guideline title instead.

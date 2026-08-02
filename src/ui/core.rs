@@ -47,10 +47,6 @@ pub mod spacing {
 pub mod layout {
     // Status bar
     pub const STATUS_BAR_HEIGHT: f32 = 72.0;
-
-    // Game timing defaults
-    pub const DEFAULT_START_HOUR: u32 = 20; // 8 PM
-    pub const DEFAULT_MONTH: u32 = 10; // October
 }
 
 /// Font sizes

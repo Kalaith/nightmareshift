@@ -6,6 +6,13 @@ use crate::data::*;
 use super::WeatherService;
 
 impl WeatherService {
+    /// The hour the night shift clocks on. An eight-hour shift from here
+    /// runs 18:00 to 02:00 — dusk, through night, into the small hours.
+    pub const SHIFT_START_HOUR: u32 = 18;
+
+    /// The campaign's month, pending a real calendar: October, mid-fall.
+    pub const DEFAULT_MONTH: u32 = 10;
+
     /// Get time of day from hour
     pub fn get_time_of_day(hour: u32) -> TimeOfDay {
         let (phase, description, ambient_light, supernatural_activity) = match hour {
@@ -46,12 +53,15 @@ impl WeatherService {
         }
     }
 
-    /// Update time of day based on shift progress
-    pub fn update_time_of_day(shift_start_time: f64, current_time: f64) -> TimeOfDay {
-        let elapsed_hours = (current_time - shift_start_time) / 3600.0;
-        let start_hour = 18; // Shift starts at 6 PM
-        let current_hour = ((start_hour as f64 + elapsed_hours) % 24.0) as u32;
-        Self::get_time_of_day(current_hour)
+    /// Time of day after `minutes_elapsed` on the shift clock.
+    ///
+    /// The clock runs on shift minutes — the ones routes spend — not
+    /// wall-clock seconds. The old version divided real elapsed seconds by
+    /// 3600, so a player needed two hours at the keyboard to see 20:00:
+    /// Night and Latenight, and everything keyed to them, never happened.
+    pub fn time_of_day_after(minutes_elapsed: u32) -> TimeOfDay {
+        let hour = (Self::SHIFT_START_HOUR + minutes_elapsed / 60) % 24;
+        Self::get_time_of_day(hour)
     }
 
     /// Get current season from month
@@ -147,5 +157,44 @@ impl WeatherService {
         }
 
         triggered
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::data::loader::load_constants;
+
+    /// The shift clock must actually reach the dark. It used to run on wall
+    /// time — one real hour per fiction hour — so Night, Latenight, and
+    /// everything keyed to them (rule 104, the checkpoint hazard, the night
+    /// risk bonus, night spawn weights) sat unreachable behind a two-hour
+    /// play session.
+    #[test]
+    fn a_full_shift_reaches_night_and_the_small_hours() {
+        assert_eq!(
+            WeatherService::time_of_day_after(0).phase,
+            TimePhase::Dusk,
+            "the shift clocks on at dusk"
+        );
+        assert_eq!(
+            WeatherService::time_of_day_after(120).phase,
+            TimePhase::Night,
+            "two shift-hours in, it is night"
+        );
+        assert_eq!(
+            WeatherService::time_of_day_after(360).phase,
+            TimePhase::Latenight,
+            "six shift-hours in, it is the small hours"
+        );
+
+        // And the authored shift length spans all of that: the full clock
+        // must end in Latenight, or the phases above are theoretical again.
+        let initial = load_constants().game_constants.initial_time;
+        assert_eq!(
+            WeatherService::time_of_day_after(initial).phase,
+            TimePhase::Latenight,
+            "a spent shift clock ({initial} minutes) should end deep in the night"
+        );
     }
 }
