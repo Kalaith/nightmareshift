@@ -19,7 +19,7 @@
 
 ## Determinism & testing
 
-- Build seeded/daily-run modes on the now-complete determinism seam: every gameplay draw goes through the serializable `GameState.rng` (visual effects stay global by design; `the_same_seed_builds_the_same_night` holds the property). What remains is product surface — a seed entry/daily-challenge UI, and wiring a fixed seed into `start_game`.
+- Build the daily-challenge/seed-entry UI on the finished determinism seam. The developer half ships: `--seed N` / `NIGHTMARE_SHIFT_SEED` re-arm the stream at every run start (briefing shows "Seeded run: N"), and two same-seed bot runs produce byte-identical action logs. Known caveat for *human-paced* replay: hazard regeneration (60 real seconds) and weather turnover (real-minute durations) draw on wall-clock schedules, so very long shifts can interleave extra draws — moving those to sim-time is part of the mid-run save work below.
 - Wire the playtest bot into CI as a runtime smoke gate — it already exits 2 when stuck.
 - Use the bot's almanac sweep as a balance harness to validate the fuel/fare/upgrade economy before tuning.
 

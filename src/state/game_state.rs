@@ -441,10 +441,11 @@ pub struct GameState {
     /// the seasonal spawn weights and winter conditions rotate into play.
     /// Kept across the run's nights; each night derives `season` from it.
     pub campaign_month: u32,
-    /// Whether a false tell has been planted for the current decision.
-    /// Detection runs every frame, so without this latch an open false-tell
-    /// gate would stack a new lie every few frames until the panel was all
-    /// fiction. Cleared wherever `detected_tells` is.
+    /// Whether the false-tell question is settled for the current decision
+    /// window — set after the gate's single roll, planted or not. Detection
+    /// runs every frame, so without this latch the gate would re-roll each
+    /// frame (making its authored odds meaningless) and stack lies until
+    /// the panel was all fiction. Cleared wherever `detected_tells` is.
     pub false_tell_planted: bool,
     /// Exceptions that won their authored per-ride probability roll for the
     /// current passenger. Rolled once when the passenger is presented, so

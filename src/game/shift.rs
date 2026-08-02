@@ -30,6 +30,12 @@ impl Game {
     pub fn start_game(&mut self) {
         self.game_state.night = 1;
         self.game_state.run_complete = false;
+        // A fixed seed re-arms at every run start, so retrying a seeded run
+        // deals the same campaign draw-for-draw — month, rules, weather,
+        // fares, all of it.
+        if let Some(seed) = self.run_seed() {
+            self.game_state.rng = macroquad_toolkit::rng::SeededRng::new(seed);
+        }
         // Deal the saved standings out as this run's working copy.
         self.game_state.passenger_reputation = self.player_stats.passenger_reputation.clone();
         // Each run falls in its own month, so the seasonal spawn weights,

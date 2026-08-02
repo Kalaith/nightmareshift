@@ -157,6 +157,7 @@ pub fn draw_briefing(
     game_state: &GameState,
     game_data: Option<&GameData>,
     player_stats: &crate::state::PlayerStats,
+    run_seed: Option<u64>,
 ) -> UiAction {
     draw_noir_city_background();
 
@@ -547,6 +548,18 @@ pub fn draw_briefing(
         ) {
             return UiAction::StartGame;
         }
+        // A seeded run says so, or a replayed night would look like an
+        // impossible coincidence.
+        if let Some(seed) = run_seed {
+            draw_small_caps(
+                &format!("Seeded run: {seed}"),
+                screen_w - margin - 220.0,
+                screen_h - 40.0,
+                fonts::SIZE_XS,
+                colors::ACCENT_SKY,
+            );
+        }
+
         // The night can still be walked away from: nothing is committed
         // until the shift starts.
         let back_rect = UiRect::new(margin, screen_h - 62.0, 220.0, 48.0);

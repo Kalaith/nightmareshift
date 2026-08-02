@@ -75,6 +75,31 @@ pub struct Game {
     /// quarantine already ran by the time this is set; the notice is the
     /// player's only way to learn the old record still exists.
     save_notice: Option<String>,
+    /// A fixed seed from `--seed N` / `NIGHTMARE_SHIFT_SEED`, applied at
+    /// every run start so the whole campaign replays draw-for-draw. The
+    /// developer half of seeded runs; the daily-challenge UI can feed the
+    /// same field later.
+    run_seed: Option<u64>,
+}
+
+/// The launch-time seed, if one was asked for. Native only: the web build
+/// has no argv, and its seeded-run surface will come with the daily UI.
+#[cfg(not(target_arch = "wasm32"))]
+fn seed_from_launch() -> Option<u64> {
+    let args: Vec<String> = std::env::args().collect();
+    args.windows(2)
+        .find(|pair| pair[0] == "--seed")
+        .and_then(|pair| pair[1].parse().ok())
+        .or_else(|| {
+            std::env::var("NIGHTMARE_SHIFT_SEED")
+                .ok()
+                .and_then(|value| value.parse().ok())
+        })
+}
+
+#[cfg(target_arch = "wasm32")]
+fn seed_from_launch() -> Option<u64> {
+    None
 }
 
 impl Game {
@@ -129,7 +154,13 @@ impl Game {
             capture_mode: false,
             data_error,
             save_notice,
+            run_seed: seed_from_launch(),
         }
+    }
+
+    /// The active fixed seed, for the briefing to display.
+    pub(crate) fn run_seed(&self) -> Option<u64> {
+        self.run_seed
     }
 
     /// Save player stats

@@ -52,6 +52,7 @@ impl Game {
                 &self.game_state,
                 self.game_data.as_ref(),
                 &self.player_stats,
+                self.run_seed(),
             ),
             Screen::Game => self.draw_game_phase(),
             Screen::GameOver => {

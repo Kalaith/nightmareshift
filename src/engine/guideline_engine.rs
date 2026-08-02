@@ -47,7 +47,14 @@ impl GuidelineEngine {
         live
     }
 
-    /// Analyze passenger for active tells based on guidelines
+    /// Analyze passenger for active tells based on guidelines.
+    ///
+    /// `already_detected` carries the descriptions the merge would discard
+    /// anyway. Skipping them here is not an optimisation: this runs every
+    /// frame, each skipped tell is a notice roll not drawn, and a draw per
+    /// frame ties the gameplay stream to the frame rate — the exact leak
+    /// the seeded-run verification caught. The first roll for a tell was
+    /// always the one that counted; now it is the only one made.
     pub fn analyze_passenger(
         rng: &mut macroquad_toolkit::rng::SeededRng,
         passenger: &Passenger,
@@ -55,6 +62,7 @@ impl GuidelineEngine {
         player_trust: f32,
         guidelines: &[Guideline],
         live_exceptions: &HashSet<String>,
+        already_detected: &HashSet<String>,
         current_time: f64,
     ) -> Vec<DetectedTell> {
         let mut detected = Vec::new();
@@ -79,6 +87,9 @@ impl GuidelineEngine {
 
                 // Add detected tells
                 for tell in &exception.tells {
+                    if already_detected.contains(&tell.description) {
+                        continue;
+                    }
                     let player_noticed =
                         Self::calculate_detection_probability(rng, tell, passenger, player_trust);
                     detected.push(DetectedTell {
@@ -110,6 +121,12 @@ impl GuidelineEngine {
 
                 let live_exceptions = state.live_exceptions.clone();
                 let decision_history = state.decision_history.clone();
+                let already_detected: HashSet<String> = state
+                    .detected_tells
+                    .iter()
+                    .filter(|tell| tell.passenger_id == passenger.id)
+                    .map(|tell| tell.tell.description.clone())
+                    .collect();
                 let mut new_tells = Self::analyze_passenger(
                     &mut state.rng,
                     &passenger,
@@ -117,25 +134,32 @@ impl GuidelineEngine {
                     player_trust,
                     &guidelines,
                     &live_exceptions,
+                    &already_detected,
                     current_time,
                 );
 
                 // Introduce a false tell for experienced players — at most
-                // one per decision, or the panel fills with fiction.
-                if !state.false_tell_planted
-                    && Self::should_introduce_false_tells(&mut state.rng, &decision_history, stats)
-                {
-                    if let Some(false_tell) = Self::conjure_false_tell(
-                        &mut state.rng,
-                        &passenger,
-                        &weather,
-                        &guidelines,
-                        &live_exceptions,
-                        current_time,
-                    ) {
-                        new_tells.push(false_tell);
-                        state.false_tell_planted = true;
+                // one per decision window, and the gate rolls exactly once.
+                // A failed roll used to retry every frame, which made the
+                // authored 30/50% odds effectively 100% and tied the number
+                // of stream draws to the frame rate. Eligibility cannot
+                // change inside a window (the decision record only moves at
+                // ride end), so one roll settles the question.
+                if !state.false_tell_planted {
+                    if Self::should_introduce_false_tells(&mut state.rng, &decision_history, stats)
+                    {
+                        if let Some(false_tell) = Self::conjure_false_tell(
+                            &mut state.rng,
+                            &passenger,
+                            &weather,
+                            &guidelines,
+                            &live_exceptions,
+                            current_time,
+                        ) {
+                            new_tells.push(false_tell);
+                        }
                     }
+                    state.false_tell_planted = true;
                 }
 
                 // Merge
