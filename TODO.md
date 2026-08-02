@@ -20,8 +20,8 @@
 ## Determinism & testing
 
 - Build the daily-challenge/seed-entry UI on the finished determinism seam. The developer half ships: `--seed N` / `NIGHTMARE_SHIFT_SEED` re-arm the stream at every run start (briefing shows "Seeded run: N"), and two same-seed bot runs produce byte-identical action logs. Known caveat for *human-paced* replay: hazard regeneration (60 real seconds) and weather turnover (real-minute durations) draw on wall-clock schedules, so very long shifts can interleave extra draws — moving those to sim-time is part of the mid-run save work below.
-- Wire the playtest bot into CI as a runtime smoke gate — it already exits 2 when stuck.
-- Use the bot's almanac sweep as a balance harness to validate the fuel/fare/upgrade economy before tuning.
+- Wire the playtest bot into CI as a runtime smoke gate — it already exits 2 when stuck. (Blocked on infrastructure: `rust-ci.yml` is centrally managed in `rust_management` and runs headless, so the macroquad window needs an xvfb/software-GL story before this can land.)
+- Act on the balance sweep findings in `docs/balance_sweep.md` — the harness is built and reproducible (45 seeded shifts across three tiers). Headline: 88% of deaths are passenger meltdown, almanac Lv.2 barely buys survival because exception liveness can roll relief unreachable, and the full tree takes night 1 from 47% to 87%. Tuning decisions are yours; rerun the sweep with the same seeds to diff any change.
 
 ## Persistence
 
