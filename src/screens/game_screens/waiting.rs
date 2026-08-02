@@ -108,7 +108,18 @@ pub fn draw_waiting(
             2,
         );
 
-        if fuel_pct < game_state.max_fuel {
+        if game_state.last_fare_night {
+            // Every station is closed to this fare; what is in the tank is
+            // the night's whole budget.
+            let refuel_y = inner.y + inner.h - 112.0;
+            draw_small_caps(
+                "No station serves this fare.",
+                inner.x,
+                refuel_y,
+                fonts::SIZE_SM,
+                colors::ACCENT_DANGER,
+            );
+        } else if fuel_pct < game_state.max_fuel {
             let refuel_y = inner.y + inner.h - 112.0;
             draw_small_caps(
                 &data.localization.ui.game.waiting.refuel_title,

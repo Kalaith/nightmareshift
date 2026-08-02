@@ -266,6 +266,11 @@ fn one_u32() -> u32 {
 /// final fare. The endgame gates on this id, so it is named once here.
 pub const DEATH_PASSENGER_ID: u32 = 16;
 
+/// Rule 20, "Let the Cold Be" — the rule whose guideline (1013) owns Death's
+/// own exception. The Last Fare forces it into the night's rules so his ride
+/// is always played against his rule, with its relief reachable.
+pub const DEATHS_RULE_ID: u32 = 20;
+
 /// A supernatural passenger in the game
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Passenger {

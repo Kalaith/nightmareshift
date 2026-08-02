@@ -45,6 +45,17 @@ impl RideService {
             };
             let presented = Self::present_passenger(state, death, current_time);
             if presented {
+                // He does not board calm. The ride starts at the warning
+                // threshold, so the whole delivery is played against a need
+                // that is already moving — the pressure the first
+                // measurement of this night showed it lacked.
+                if let Some(need) = state.current_passenger_need_state.as_mut() {
+                    let restless = need.profile.thresholds.warning.max(need.level);
+                    need.level = restless.min(100);
+                    need.stage =
+                        PassengerNeedState::calculate_stage(need.level, &need.profile.thresholds);
+                    need.stability = 1.0 - (need.level as f32 / 100.0);
+                }
                 state.current_dialogue = Some(CurrentDialogue {
                     text: "The radio is silent. The kerb holds a single figure, \
                            patient as the end of the night."

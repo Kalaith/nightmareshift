@@ -114,12 +114,18 @@ impl Game {
                 }
             }
             UiAction::RefuelFull => {
-                if self.screen == Screen::Game && self.game_state.game_phase == GamePhase::Waiting {
+                if self.screen == Screen::Game
+                    && self.game_state.game_phase == GamePhase::Waiting
+                    && !self.game_state.last_fare_night
+                {
                     self.refuel_full();
                 }
             }
             UiAction::RefuelPartial => {
-                if self.screen == Screen::Game && self.game_state.game_phase == GamePhase::Waiting {
+                if self.screen == Screen::Game
+                    && self.game_state.game_phase == GamePhase::Waiting
+                    && !self.game_state.last_fare_night
+                {
                     self.refuel_partial();
                 }
             }

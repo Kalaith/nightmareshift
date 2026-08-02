@@ -127,6 +127,32 @@ impl Game {
                 current_time,
             );
             self.game_state.time_of_day = WeatherService::time_of_day_after(0);
+
+            // The Last Fare is authored, not rolled: a heavy storm (whose
+            // hazards and weather rules follow from it), Death's own rule on
+            // the board so his ride is played against it, and a tank at 40
+            // with every station closed — the night is one delivery, and the
+            // city makes it cost.
+            if self.game_state.last_fare_night {
+                self.game_state.current_weather =
+                    WeatherService::last_fare_storm(&self.game_state.season, current_time);
+                if let Some(rule) = data
+                    .rules
+                    .iter()
+                    .find(|rule| rule.id == crate::data::DEATHS_RULE_ID)
+                {
+                    if !self
+                        .game_state
+                        .current_rules
+                        .iter()
+                        .any(|in_force| in_force.id == rule.id)
+                    {
+                        self.game_state.current_rules.push(rule.clone());
+                    }
+                }
+                self.game_state.fuel = 40.0_f32.min(self.game_state.max_fuel);
+            }
+
             self.game_state.environmental_hazards = WeatherService::generate_hazards(
                 &mut self.game_state.rng,
                 &self.game_state.current_weather,

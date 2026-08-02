@@ -86,7 +86,9 @@ First sweep, for the diff (45 runs, three tiers, unisolated save):
 - One night, one strategy, 15 seeds per tier: enough to rank tiers and
   causes of death, not to resolve differences under ~3 wins.
 - Later nights (rising quota and difficulty) are unmeasured; The Last Fare
-  (night 6) is measured only anecdotally — seeds 2, 5, 7, 8 deliver Death
-  with 82–94% fuel left, which is why TODO calls it gentle.
+  (night 6) is measured only anecdotally. After its authored-pressure pass
+  (forced heavy storm, Death's rule in force, 40-fuel tank with refueling
+  closed, Death boarding at his warning threshold), the seeds that reach it
+  deliver with 24–34% fuel left, against 82–94% before.
 - Rerun with the same seeds and `--bot-fresh-stats` after any tuning to
   diff the exact same nights.

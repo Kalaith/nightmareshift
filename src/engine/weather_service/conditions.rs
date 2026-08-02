@@ -47,6 +47,23 @@ impl WeatherService {
         }
     }
 
+    /// The Last Fare's sky: a heavy thunderstorm, no roll. Death's ride is
+    /// driven against the weather he favours, with the storm's authored
+    /// effects, visibility, and the weather rules it triggers all in force.
+    pub fn last_fare_storm(season: &Season, current_time: f64) -> WeatherCondition {
+        let weather_type = WeatherType::Thunderstorm;
+        let intensity = WeatherIntensity::Heavy;
+        WeatherCondition {
+            weather_type,
+            intensity,
+            visibility: Self::calculate_visibility(weather_type, intensity),
+            description: "The storm arrived with the fare, and it is not leaving first".to_string(),
+            effects: Self::get_weather_effects(weather_type, intensity),
+            duration: Self::get_weather_duration(weather_type, intensity, season),
+            start_time: current_time,
+        }
+    }
+
     /// Create a weather condition
     fn create_weather_condition(
         rng: &mut macroquad_toolkit::rng::SeededRng,
