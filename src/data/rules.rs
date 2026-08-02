@@ -147,13 +147,14 @@ impl Rule {
 }
 
 /// A guideline exception condition
+// The JSON also authors a `description` per condition; it is a note for the
+// data author, read by nothing, and not deserialized.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ExceptionCondition {
     #[serde(rename = "type")]
     pub condition_type: String,
     pub value: serde_json::Value,
     pub operator: Option<String>,
-    pub description: String,
 }
 
 /// A guideline exception that inverts normal rule behavior
@@ -172,7 +173,9 @@ pub struct GuidelineException {
     pub breaking_safer: bool,
     #[serde(default)]
     pub description: String,
-    #[serde(default)]
+    /// Chance this exception is live for a given ride, rolled once per
+    /// passenger by `roll_exception_liveness`. Unauthored means always.
+    #[serde(default = "default_probability")]
     pub probability: f32,
     #[serde(rename = "requiredStage")]
     pub required_stage: Option<String>,
@@ -184,12 +187,13 @@ pub struct Guideline {
     pub id: u32,
     pub title: String,
     pub description: String,
+    /// How hard this read is, shown on the decision screen.
     #[serde(default)]
     pub difficulty: Difficulty,
-    #[serde(default)]
-    pub visible: bool,
-    // `type`, `isGuideline` and `defaultSafety` are authored on all eighteen
-    // guidelines and read by nothing. They are redundant rather than missing:
+    // `visible`, `type`, `isGuideline` and `defaultSafety` are authored on
+    // guidelines and read by nothing. `visible` has no surface to act on —
+    // there is no guideline list to hide an entry from; guidelines reach the
+    // player through tells and the decision screen. The rest are redundant:
     // whether an exception is reachable is decided by which *rule* was drawn
     // for the shift, via `related_guideline_id`, so a guideline's own type
     // selects nothing. `isGuideline` is true on all eighteen and

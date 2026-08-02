@@ -2,6 +2,7 @@
 
 use crate::data::*;
 use crate::state::*;
+use std::collections::HashSet;
 
 /// Result of guideline evaluation
 #[derive(Debug, Clone)]
@@ -19,12 +20,39 @@ pub struct GuidelineEvaluationResult {
 pub struct GuidelineEngine;
 
 impl GuidelineEngine {
+    /// Roll which of the guidelines' exceptions are live for this passenger.
+    ///
+    /// Every exception authors a `probability` (0.3–0.6 across the data) and
+    /// for the life of the port none was ever rolled — every matching
+    /// exception was always in play, so the night was more predictable than
+    /// the data asked it to be. Rolled once per presented passenger and kept
+    /// on the state, because the tell system, the decision judge, and the
+    /// bot must all see the same answer.
+    pub fn roll_exception_liveness(
+        passenger: &Passenger,
+        guidelines: &[Guideline],
+    ) -> HashSet<String> {
+        let mut live = HashSet::new();
+        for guideline in guidelines {
+            for exception in &guideline.exceptions {
+                if !Self::passenger_matches_exception(passenger, exception) {
+                    continue;
+                }
+                if macroquad_toolkit::rng::rand() < exception.probability.clamp(0.0, 1.0) {
+                    live.insert(exception.id.clone());
+                }
+            }
+        }
+        live
+    }
+
     /// Analyze passenger for active tells based on guidelines
     pub fn analyze_passenger(
         passenger: &Passenger,
         weather: &WeatherCondition,
         player_trust: f32,
         guidelines: &[Guideline],
+        live_exceptions: &HashSet<String>,
         current_time: f64,
     ) -> Vec<DetectedTell> {
         let mut detected = Vec::new();
@@ -33,6 +61,12 @@ impl GuidelineEngine {
             for exception in &guideline.exceptions {
                 // Check if passenger matches exception
                 if !Self::passenger_matches_exception(passenger, exception) {
+                    continue;
+                }
+
+                // The ride's liveness roll gates everything downstream: a
+                // rolled-out exception emits no tells and satisfies nothing.
+                if !live_exceptions.contains(&exception.id) {
                     continue;
                 }
 
@@ -72,20 +106,26 @@ impl GuidelineEngine {
                 let player_trust = state.player_trust;
                 let guidelines = state.current_guidelines.clone();
 
+                let live_exceptions = state.live_exceptions.clone();
                 let mut new_tells = Self::analyze_passenger(
                     &passenger,
                     &weather,
                     player_trust,
                     &guidelines,
+                    &live_exceptions,
                     current_time,
                 );
 
                 // Introduce a false tell for experienced players — at most
                 // one per decision, or the panel fills with fiction.
                 if !state.false_tell_planted && Self::should_introduce_false_tells(state, stats) {
-                    if let Some(false_tell) =
-                        Self::conjure_false_tell(&passenger, &weather, &guidelines, current_time)
-                    {
+                    if let Some(false_tell) = Self::conjure_false_tell(
+                        &passenger,
+                        &weather,
+                        &guidelines,
+                        &live_exceptions,
+                        current_time,
+                    ) {
                         new_tells.push(false_tell);
                         state.false_tell_planted = true;
                     }
@@ -117,6 +157,7 @@ impl GuidelineEngine {
         passenger: &Passenger,
         weather: &WeatherCondition,
         guidelines: &[Guideline],
+        live_exceptions: &HashSet<String>,
         current_time: f64,
     ) -> Option<DetectedTell> {
         let candidates: Vec<_> = guidelines
@@ -128,8 +169,12 @@ impl GuidelineEngine {
                     .map(move |exception| (guideline, exception))
             })
             .filter(|(_, exception)| {
+                // Dormant means any leg of liveness fails — including an
+                // exception that matched but lost its ride roll, which makes
+                // the most plausible bait of all.
                 exception.breaking_safer
                     && !(Self::passenger_matches_exception(passenger, exception)
+                        && live_exceptions.contains(&exception.id)
                         && Self::check_exception_conditions(exception, weather, passenger))
             })
             .flat_map(|(guideline, exception)| {
@@ -281,8 +326,12 @@ impl GuidelineEngine {
         state: &GameState,
     ) -> GuidelineEvaluationResult {
         // Find active exception
-        let active_exception =
-            Self::find_active_exception(guideline, passenger, &state.current_weather);
+        let active_exception = Self::find_active_exception(
+            guideline,
+            passenger,
+            &state.current_weather,
+            &state.live_exceptions,
+        );
 
         match (active_exception, action) {
             (Some(exc), GuidelineAction::Break) if exc.breaking_safer => {
@@ -355,9 +404,11 @@ impl GuidelineEngine {
         guideline: &Guideline,
         passenger: &Passenger,
         weather: &WeatherCondition,
+        live_exceptions: &HashSet<String>,
     ) -> Option<GuidelineException> {
         for exception in &guideline.exceptions {
             if Self::passenger_matches_exception(passenger, exception)
+                && live_exceptions.contains(&exception.id)
                 && Self::check_exception_conditions(exception, weather, passenger)
             {
                 return Some(exception.clone());

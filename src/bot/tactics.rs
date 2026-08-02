@@ -118,6 +118,7 @@ impl PlaytestBot {
                 guideline,
                 passenger,
                 &state.current_weather,
+                &state.live_exceptions,
             ) {
                 Some(exception) if exception.breaking_safer => UiAction::BreakGuideline,
                 _ => UiAction::FollowGuideline,

@@ -100,6 +100,12 @@ impl RideService {
             PassengerStateMachine::initialize(&passenger, current_time);
         // Select dialogue once and store it
         state.current_passenger_dialogue = passenger.random_dialogue().map(|s| s.to_string());
+        // Roll which authored exceptions are in play for this fare, once,
+        // here — everything that asks afterwards must get one answer.
+        state.live_exceptions = crate::engine::GuidelineEngine::roll_exception_liveness(
+            &passenger,
+            &state.current_guidelines,
+        );
         state.current_passenger = Some(passenger);
         state.game_phase = GamePhase::RideRequest;
         true

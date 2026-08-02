@@ -446,6 +446,12 @@ pub struct GameState {
     /// gate would stack a new lie every few frames until the panel was all
     /// fiction. Cleared wherever `detected_tells` is.
     pub false_tell_planted: bool,
+    /// Exceptions that won their authored per-ride probability roll for the
+    /// current passenger. Rolled once when the passenger is presented, so
+    /// the tell system, the decision judge, and the bot all agree on which
+    /// exceptions are in play tonight — rolling at each ask would let them
+    /// disagree frame to frame.
+    pub live_exceptions: std::collections::HashSet<String>,
     pub environmental_hazards: Vec<EnvironmentalHazard>,
 
     // Persistence
@@ -529,6 +535,7 @@ impl GameState {
             season: Season::default(),
             campaign_month: DEFAULT_MONTH,
             false_tell_planted: false,
+            live_exceptions: std::collections::HashSet::new(),
             environmental_hazards: Vec::new(),
             passenger_reputation: HashMap::new(),
             minimum_earnings: constants.minimum_earnings,
@@ -575,6 +582,7 @@ impl GameState {
         self.current_passenger_need_state = None;
         self.detected_tells.clear();
         self.false_tell_planted = false;
+        self.live_exceptions.clear();
         self.route_history.clear();
         self.consecutive_route_streak = None;
         self.environmental_hazards.clear();

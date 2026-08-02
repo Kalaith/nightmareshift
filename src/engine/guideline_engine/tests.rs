@@ -141,12 +141,23 @@ fn deception_and_trust_required_agree() {
 fn a_conjured_tell_points_at_a_dormant_breaking_safer_exception() {
     let guidelines = load_guidelines();
     let weather = WeatherCondition::default();
+    // Every exception treated as having won its ride roll, so dormancy here
+    // means a failed match or condition and the assertions stay exact.
+    let all_live: std::collections::HashSet<String> = guidelines
+        .iter()
+        .flat_map(|g| g.exceptions.iter())
+        .map(|e| e.id.clone())
+        .collect();
     let mut conjured = 0;
     for passenger in load_passengers() {
         for _ in 0..10 {
-            let Some(tell) =
-                super::GuidelineEngine::conjure_false_tell(&passenger, &weather, &guidelines, 0.0)
-            else {
+            let Some(tell) = super::GuidelineEngine::conjure_false_tell(
+                &passenger,
+                &weather,
+                &guidelines,
+                &all_live,
+                0.0,
+            ) else {
                 continue;
             };
             conjured += 1;
@@ -176,6 +187,24 @@ fn a_conjured_tell_points_at_a_dormant_breaking_safer_exception() {
         }
     }
     assert!(conjured > 0, "no passenger ever yields a false tell");
+}
+
+/// Every exception must author a probability the ride roll can win. The
+/// serde default is 1.0 (always live), so this guards the one authorable
+/// mistake left: an explicit 0.0, which would make the exception — and
+/// every tell and relief hanging off it — permanently dormant.
+#[test]
+fn every_exception_authors_a_rollable_probability() {
+    for guideline in load_guidelines() {
+        for exception in &guideline.exceptions {
+            assert!(
+                exception.probability > 0.0 && exception.probability <= 1.0,
+                "exception {:?} authors probability {} and can never be live",
+                exception.id,
+                exception.probability
+            );
+        }
+    }
 }
 
 /// The false-tell gate opens only for a seasoned, currently-accurate

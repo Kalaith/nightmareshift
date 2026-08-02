@@ -5,8 +5,8 @@ use macroquad::prelude::*;
 use crate::data::{self, GameData};
 use crate::state::GameState;
 use crate::ui::{
-    colors, draw_cockpit_background, draw_glass_button, draw_glass_panel, draw_wrapped_text, fonts,
-    layout, spacing, UiAction, UiRect,
+    colors, draw_cockpit_background, draw_glass_button, draw_glass_panel, draw_small_caps,
+    draw_wrapped_text, fonts, layout, spacing, UiAction, UiRect,
 };
 use macroquad_toolkit::ui::draw_ui_text;
 
@@ -95,6 +95,24 @@ pub fn draw_guideline_decision(
             );
             y += 35.0;
 
+            // How hard this read is. Five difficulty tiers are authored
+            // across the guidelines and decided nothing until shown here.
+            let (difficulty_label, difficulty_color) = match guideline.difficulty {
+                data::Difficulty::Easy => ("An easy read", colors::FUEL_GOOD),
+                data::Difficulty::Medium => ("A fair read", colors::TEXT_MUTED),
+                data::Difficulty::Hard => ("A hard read", colors::ACCENT_WARNING),
+                data::Difficulty::Expert => ("An expert read", colors::ACCENT_WARNING),
+                data::Difficulty::Nightmare => ("A nightmare read", colors::FUEL_CRITICAL),
+            };
+            draw_small_caps(
+                difficulty_label,
+                inner.x,
+                y + 12.0,
+                fonts::SIZE_XS,
+                difficulty_color,
+            );
+            y += 22.0;
+
             // Description (truncated)
             let desc_preview = if guideline.description.len() > 60 {
                 format!("{}...", &guideline.description[..60])
@@ -149,6 +167,7 @@ pub fn draw_guideline_decision(
                         guideline,
                         passenger,
                         &game_state.current_weather,
+                        &game_state.live_exceptions,
                     );
                     let (verdict, colour) = match &active {
                         Some(exception) if exception.breaking_safer => (
