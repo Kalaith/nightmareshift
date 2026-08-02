@@ -408,7 +408,7 @@ impl Game {
                 self.game_state.rides_completed = 4;
                 self.game_state.time_remaining = 233;
                 self.game_state.fuel = 61.0;
-                self.show_pause_menu = true;
+                self.overlays.pause = true;
             }
             // The menu with the delete button already armed, so the warning
             // state is visible without a click.
@@ -463,7 +463,7 @@ impl Game {
                     spent.durability = Some(1);
                     self.game_state.inventory.push(spent);
                 }
-                self.show_inventory = true;
+                self.overlays.inventory = true;
             }
             // The rules panel mid-ride, so each rule's authored reason for
             // existing is visible in the capture.
@@ -471,7 +471,7 @@ impl Game {
                 self.start_game();
                 self.start_shift();
                 self.spawn_passenger();
-                self.show_rules = true;
+                self.overlays.rules = true;
             }
             // A trade offer with a mixed inventory: an item this passenger
             // wants, one they do not, and one that cannot be traded at all.

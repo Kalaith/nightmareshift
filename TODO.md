@@ -51,10 +51,6 @@
 - Route the ~145 hardcoded UI strings through `en.json` — the entire pause menu, dossier module, briefing panel headers, driving-screen risk labels, and skill-tree/leaderboard/almanac labels all bypass the localization struct (~90 keys) today.
 - Add a language selector and one non-English locale to prove the pipeline, with a font strategy covering the target scripts.
 
-## Code health
-
-- Separate meta-screen state from shift state — `show_rules`, `show_inventory` and `show_pause_menu` still sit on the `Game` struct beside simulation state, so pause, upgrades and results can leak into route simulation.
-
 ## Packaging & release
 
 - Compress and resize the 16 portraits (~19 MB) and ship them once — they are embedded via `include_bytes!` *and* duplicated in `assets.zip`, which is the single biggest download-size win.

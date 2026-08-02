@@ -57,6 +57,9 @@ impl Game {
             // night counter, which is owned by start_game/advance_night.
             self.game_state
                 .reset_for_new_shift(current_time, &data.constants.game_constants);
+            // A night starts with a clear windshield: no overlay opened over
+            // a previous screen may survive into this one.
+            self.overlays.close_all();
 
             // Difficulty escalates with the night within the run, layered on top
             // of the player's lifetime experience, and drives the rule count.

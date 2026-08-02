@@ -22,15 +22,32 @@ enum DeleteDecision {
     Erase,
 }
 
+/// The overlays a shift can stack on the game screen: the rules binder,
+/// the inventory, and the pause menu. Meta-screen state, fenced off from
+/// the simulation fields around it — an open binder is not part of the
+/// night, and must never survive into the next one.
+#[derive(Debug, Default)]
+pub(crate) struct GameOverlays {
+    pub rules: bool,
+    pub inventory: bool,
+    pub pause: bool,
+}
+
+impl GameOverlays {
+    /// Shut everything, at the boundaries where a stale overlay would leak
+    /// into a fresh shift or trail the player back to the menu.
+    fn close_all(&mut self) {
+        *self = Self::default();
+    }
+}
+
 /// Main game structure
 pub struct Game {
     screen: Screen,
     game_data: Option<GameData>,
     game_state: GameState,
     player_stats: PlayerStats,
-    show_rules: bool,
-    show_inventory: bool,
-    show_pause_menu: bool,
+    overlays: GameOverlays,
     transition: ScreenFade,
     particles: WeatherParticles,
     screen_shake: ScreenShake,
@@ -92,9 +109,7 @@ impl Game {
             game_data,
             game_state,
             player_stats,
-            show_rules: false,
-            show_inventory: false,
-            show_pause_menu: false,
+            overlays: GameOverlays::default(),
             transition: ScreenFade::new(0.3),
             particles: WeatherParticles::new(),
             screen_shake: ScreenShake::new(15.0),
@@ -294,7 +309,7 @@ impl Game {
             return;
         };
         if ItemService::use_item(&mut self.game_state, idx, &constants, get_time()) {
-            self.show_inventory = false;
+            self.overlays.inventory = false;
         }
     }
 
@@ -511,7 +526,7 @@ impl Game {
             // start forward instead, holding whatever is left on the clock.
             let mut guideline_timed_out = false;
             if self.game_state.game_phase == GamePhase::GuidelineDecision {
-                if self.show_pause_menu {
+                if self.overlays.pause {
                     if let Some(start_time) = self.game_state.guideline_decision_start_time {
                         self.game_state.guideline_decision_start_time =
                             Some(start_time + dt as f64);
@@ -592,9 +607,9 @@ impl Game {
     fn active_overlay(&self) -> Overlay {
         if self.screen != Screen::Game {
             Overlay::None
-        } else if self.show_pause_menu {
+        } else if self.overlays.pause {
             Overlay::Pause
-        } else if self.show_rules || self.show_inventory {
+        } else if self.overlays.rules || self.overlays.inventory {
             Overlay::Panel
         } else {
             Overlay::None

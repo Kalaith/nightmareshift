@@ -78,9 +78,12 @@ impl Game {
                     || self.screen == Screen::Almanac
                     || self.screen == Screen::Leaderboard
                     || self.screen == Screen::Briefing
-                    || (self.screen == Screen::Game && self.show_pause_menu)
+                    || (self.screen == Screen::Game && self.overlays.pause)
                 {
-                    self.show_pause_menu = false;
+                    // All of them, not just the pause menu: an open binder
+                    // used to trail the player to the menu and reappear
+                    // over the next shift.
+                    self.overlays.close_all();
                     self.return_to_menu();
                 }
             }
@@ -119,21 +122,21 @@ impl Game {
             }
             UiAction::ToggleRules => {
                 if self.screen == Screen::Game {
-                    self.show_rules = !self.show_rules;
+                    self.overlays.rules = !self.overlays.rules;
                 }
             }
             UiAction::ToggleInventory => {
                 if self.screen == Screen::Game {
-                    self.show_inventory = !self.show_inventory;
+                    self.overlays.inventory = !self.overlays.inventory;
                 }
             }
             UiAction::TogglePauseMenu => {
                 if self.screen == Screen::Game {
-                    self.show_pause_menu = !self.show_pause_menu;
+                    self.overlays.pause = !self.overlays.pause;
                     // Close other overlays when opening pause menu
-                    if self.show_pause_menu {
-                        self.show_rules = false;
-                        self.show_inventory = false;
+                    if self.overlays.pause {
+                        self.overlays.rules = false;
+                        self.overlays.inventory = false;
                     }
                 }
             }

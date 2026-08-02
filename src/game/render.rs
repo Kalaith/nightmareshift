@@ -77,13 +77,13 @@ impl Game {
 
         if self.screen == Screen::Game {
             let game_data_ref = self.game_data.as_ref();
-            if self.show_rules {
+            if self.overlays.rules {
                 let rules_action = game_screens::draw_rules_panel(&self.game_state, game_data_ref);
                 if rules_action != UiAction::None {
                     return rules_action;
                 }
             }
-            if self.show_inventory {
+            if self.overlays.inventory {
                 let inventory_action =
                     game_screens::draw_inventory_modal(&self.game_state, game_data_ref);
                 if inventory_action != UiAction::None {
@@ -138,7 +138,7 @@ impl Game {
             draw_glitch_effect(glitch_intensity * 0.5);
         }
 
-        if self.show_pause_menu && self.screen == Screen::Game {
+        if self.overlays.pause && self.screen == Screen::Game {
             if let Some(pause_action) = self.draw_pause_menu() {
                 return pause_action;
             }
