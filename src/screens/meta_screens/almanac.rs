@@ -24,13 +24,18 @@ fn card_height_for(
         70.0
     };
     let expanded_extra = if is_selected && entry.encountered {
-        match entry.knowledge_level {
-            _ if story_known => 180.0,
-            0 => 60.0,  // Just basic info
-            1 => 100.0, // Description + traits
-            2 => 160.0, // + route preferences
-            _ => 180.0, // + backstory
-        }
+        // Every tier leads with the almanac's own line about what this
+        // level of study amounts to, hence the extra headroom over the
+        // per-level content below it.
+        let level_line = 26.0;
+        level_line
+            + match entry.knowledge_level {
+                _ if story_known => 180.0,
+                0 => 60.0,  // Just basic info
+                1 => 100.0, // Description + traits
+                2 => 160.0, // + route preferences
+                _ => 180.0, // + backstory
+            }
     } else {
         0.0
     };
@@ -299,6 +304,24 @@ pub fn draw_almanac(
                 // Expanded details when selected
                 if is_selected && entry.encountered {
                     let mut details_y = card_y + 78.0;
+
+                    // What this tier of study amounts to, in the almanac's
+                    // own words — authored per level, shown nowhere before.
+                    if let Some(level) = data.almanac.get_level(entry.knowledge_level) {
+                        if !level.description.is_empty() {
+                            details_y = draw_wrapped_text(
+                                &level.description,
+                                text_x,
+                                details_y,
+                                card_width - 92.0,
+                                fonts::SIZE_XS,
+                                15.0,
+                                colors::CAB_YELLOW,
+                                2,
+                            );
+                            details_y += 10.0;
+                        }
+                    }
 
                     // Level 0+: Basic description
                     details_y = draw_wrapped_text(

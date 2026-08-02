@@ -7,7 +7,6 @@ Code and data that exist but never reach the player. Verified against the source
 ### Dead data (authored JSON → nothing)
 
 - `Guideline.visible` and `Guideline.difficulty` are deserialized but never read (five authored difficulty tiers decide nothing); `exceptions[].probability` is never rolled — `check_exception_conditions` is fully deterministic; `ExceptionCondition.description` is unread.
-- `Location.description` (all 24 locations), `AlmanacLevel.description`, and `EventTemplate.id` are loaded and never consumed.
 - `skillTreeData.json`: `effect.type` distinguishes `stat_boost`/`mechanic_unlock`/`passive_bonus` but dispatch is entirely on `effect.target`; `effect.value` is discarded for the five passive ability unlocks; `third_eye_1`'s text promises a per-ride reveal but the roll happens once per shift.
 - `tells[].type`: only `verbal` is ever branched on; the 20 behavioral/visual/environmental tells are treated identically to each other.
 

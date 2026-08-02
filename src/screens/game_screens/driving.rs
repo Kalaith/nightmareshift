@@ -125,6 +125,18 @@ pub fn draw_driving(
                 fonts::SIZE_XS,
                 colors::TEXT_MUTED,
             );
+
+            // Where that road ends, as the location file paints it. All 24
+            // locations author this line; it was loaded and never drawn.
+            if let Some(location) = data.get_location(target) {
+                draw_ui_text(
+                    &location.description,
+                    header_inner.x + left_w * 0.54,
+                    header_inner.y + 68.0,
+                    fonts::SIZE_XS,
+                    colors::TEXT_MUTED,
+                );
+            }
         }
 
         let r = &data.localization.ui.game.driving.routes;
