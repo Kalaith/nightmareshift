@@ -36,6 +36,10 @@ fn window_conf() -> Conf {
 
 #[macroquad::main(window_conf)]
 async fn main() {
+    // First thing, before any data loads: a native panic leaves
+    // crash_log.txt beside the save file instead of only a vanished window.
+    macroquad_toolkit::crash::install_crash_log("nightmare_shift");
+
     let mut game = Game::new();
 
     // Screenshot harness: when NIGHTMARE_SHIFT_CAPTURE_PATH is set, seed a

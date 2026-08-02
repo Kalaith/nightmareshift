@@ -54,9 +54,8 @@
 ## Packaging & release
 
 - Compress and resize the 16 portraits (~19 MB) and ship them once — they are embedded via `include_bytes!` *and* duplicated in `assets.zip`, which is the single biggest download-size win.
-- Add `[profile.release]` to `Cargo.toml` (lto, opt-level, strip); it is absent entirely, unlike sibling projects.
 - Windows executable polish: icon and version metadata via `build.rs`, plus an installer and code signing.
-- Crash reporting — a panic hook writing a log with opt-in upload. Native players currently have no feedback channel at all.
+- Crash-report upload (opt-in), gated on the privacy-policy decision below. The local half is done: `macroquad_toolkit::crash::install_crash_log` writes every native panic to `crash_log.txt` beside the save file. (A per-project `[profile.release]` was also once listed here; dropped — profiles come from the workspace root, a member's is ignored with a warning, and no sibling carries one.)
 - Steam/itch integration for the existing internal achievements, cloud saves, and a DRM-free pipeline; release automation in CI, which builds but publishes nothing.
 - Web shell: real download-progress UI, responsive canvas (fixed at 1920×1080 today), mobile detection.
 
