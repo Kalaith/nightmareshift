@@ -107,7 +107,7 @@ $sessionGate = $blind.Count -ge 5 -and $experienced.Count -ge 3
 $lines = @(
     "# Human playtest gate report",
     "",
-    "Generated: $(Get-Date -Format 'yyyy-MM-dd HH:mm zzz')",
+    "Generated deterministically from the two committed CSV evidence files.",
     "",
     "## First three runs",
     "",

@@ -1,6 +1,6 @@
 # Human playtest gate report
 
-Generated: 2026-08-05 14:51 +10:00
+Generated deterministically from the two committed CSV evidence files.
 
 ## First three runs
 
