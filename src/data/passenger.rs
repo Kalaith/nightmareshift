@@ -116,9 +116,10 @@ pub struct PassengerTell {
     pub description: String,
     #[serde(rename = "triggerPhrase")]
     pub trigger_phrase: Option<String>,
-    // `animationCue` and `audioCue` are authored on the tells and read by
-    // nothing, because this game has neither an animation system nor any
-    // audio at all. A tell reaches the player as text.
+    #[serde(rename = "audioCue", default)]
+    pub audio_cue: Option<String>,
+    #[serde(rename = "animationCue", default)]
+    pub animation_cue: Option<String>,
     #[serde(default)]
     pub reliability: f32,
 }

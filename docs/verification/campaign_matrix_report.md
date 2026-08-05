@@ -1,6 +1,6 @@
 # Fixed-seed campaign matrix
 
-Seeds: 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15. Generated: 2026-08-05 13:12 +10:00.
+Seeds: 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15. Generated: 2026-08-05 13:48 +10:00.
 
 | Tier | Campaigns | Complete | Reach N2/N3/N4/N5/N6 | Earnings | Time left | Highest fare share |
 | --- | ---: | ---: | --- | --- | --- | --- |
@@ -50,3 +50,14 @@ Seeds: 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15. Generated: 2026-08-05 
 | almanac-2 | 47 | 136 | 223 | 93 | 44.7% |
 | almanac-3 | 31 | 136 | 184 | 59 | 44.9% |
 | almanac-3-all-skills | 26 | 138 | 266 | 87 | 51.5% |
+
+## Resource interventions
+
+| Tier | Refuel stops / cost | Comfort relief | Normal relief | Ward interventions | Brink saves |
+| --- | --- | ---: | ---: | ---: | ---: |
+| baseline | 25 / $300 | 0 | 176 | 3 | 11 |
+| comfort | 41 / $492 | 1168 | 232 | 1 | 1 |
+| almanac-1 | 34 / $408 | 0 | 216 | 5 | 12 |
+| almanac-2 | 71 / $852 | 0 | 188 | 13 | 18 |
+| almanac-3 | 51 / $612 | 0 | 124 | 13 | 15 |
+| almanac-3-all-skills | 45 / $405 | 1980 | 104 | 15 | 0 |

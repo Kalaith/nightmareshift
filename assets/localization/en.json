@@ -100,7 +100,7 @@
         "weatherWarning": "⚠️ {} weather!",
         "routes": {
           "normal": "Normal Route",
-          "normalDesc": "Safe and reliable",
+          "normalDesc": "Steady: -4 need, lowest fuel",
           "shortcut": "Shortcut",
           "shortcutDesc": "Faster, riskier",
           "scenic": "Scenic Route",

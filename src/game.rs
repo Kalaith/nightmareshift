@@ -6,6 +6,7 @@ mod render;
 mod rules;
 mod shift;
 
+use crate::audio::AudioMixer;
 use crate::bot::{PlaytestBot, PlaytestDirective};
 use crate::data::{ActionType, GameData, RouteType, Rule, RuleType};
 use crate::engine::*;
@@ -89,6 +90,7 @@ pub struct Game {
     /// Where Help & Options returns: the menu, or a still-paused shift.
     help_return_screen: Screen,
     tutorial_active: bool,
+    audio: AudioMixer,
 }
 
 /// The launch-time seed, if one was asked for. Native only: the web build
@@ -120,7 +122,7 @@ fn seed_from_launch() -> Option<u64> {
 
 impl Game {
     /// Create a new game instance
-    pub fn new() -> Self {
+    pub async fn new() -> Self {
         let current_time = get_time();
 
         // The data is embedded at compile time, so a failure here is a
@@ -158,6 +160,7 @@ impl Game {
             .map(|data| data.constants.game_constants.clone())
             .unwrap_or_default();
         let game_state = GameState::new(current_time, &constants);
+        let audio = AudioMixer::load().await;
         macroquad::window::set_fullscreen(player_stats.accessibility.fullscreen);
 
         Self {
@@ -185,6 +188,7 @@ impl Game {
             seed_entry: None,
             help_return_screen: Screen::MainMenu,
             tutorial_active: false,
+            audio,
         }
     }
 
@@ -359,6 +363,8 @@ impl Game {
             if self.game_state.earnings >= cost {
                 self.game_state.fuel = self.game_state.max_fuel;
                 self.game_state.earnings -= cost;
+                self.game_state.telemetry.refuel_stops += 1;
+                self.game_state.telemetry.refuel_cost_paid += cost;
             }
         }
     }
@@ -377,6 +383,8 @@ impl Game {
                 self.game_state.fuel =
                     (self.game_state.fuel + amount).min(self.game_state.max_fuel);
                 self.game_state.earnings -= cost;
+                self.game_state.telemetry.refuel_stops += 1;
+                self.game_state.telemetry.refuel_cost_paid += cost;
             }
         }
     }
@@ -691,6 +699,11 @@ impl Game {
             // Update items (curses, deterioration)
             ItemService::update_items(&mut self.game_state, current_time);
         }
+        self.audio.sync(
+            self.screen,
+            &mut self.game_state,
+            &self.player_stats.accessibility,
+        );
     }
 
     /// Which modal overlay is eating input this frame, if any. The pause

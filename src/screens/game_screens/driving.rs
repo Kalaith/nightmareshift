@@ -244,11 +244,11 @@ pub fn draw_driving(
                             PreferenceLevel::Dislikes => colors::ACCENT_WARNING,
                             PreferenceLevel::Fears => colors::FUEL_CRITICAL,
                         };
-                        Some((format!("Client {}", pref_label), pref_color))
+                        Some((format!("Known: client {}", pref_label), pref_color))
                     }
                 })
             } else {
-                None
+                Some(("Preference unknown".to_string(), colors::TEXT_MUTED))
             };
 
             let route_detail = if reveal_preference_reasons {
@@ -432,21 +432,25 @@ pub fn draw_driving(
                     colors::TEXT_SECONDARY,
                 );
                 draw_small_caps(
-                    &format!("Duration  {} min", time_cost),
+                    &format!("Known floor  {} min", time_cost),
                     card.x + card.w - COST_COLUMN_W,
                     card.y + 25.0,
                     fonts::SIZE_XS,
                     colors::TEXT_MUTED,
                 );
                 draw_small_caps(
-                    &format!("Fuel  -{}%", fuel_cost),
+                    &format!("Known floor  -{}%", fuel_cost),
                     card.x + card.w - COST_COLUMN_W,
                     card.y + 41.0,
                     fonts::SIZE_XS,
                     colors::TEXT_MUTED,
                 );
                 draw_small_caps(
-                    &format!("Hazards  {}", risk_label),
+                    &format!(
+                        "{} hazards  {}",
+                        if route_risk_known { "Known" } else { "Unknown" },
+                        risk_label
+                    ),
                     card.x + card.w - COST_COLUMN_W,
                     card.y + 57.0,
                     fonts::SIZE_XS,

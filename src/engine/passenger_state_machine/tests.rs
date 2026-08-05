@@ -448,6 +448,8 @@ fn only_verbal_tells_are_spoken() {
             intensity: TellIntensity::Obvious,
             description: "Fidgets".to_string(),
             trigger_phrase: Some("should not be said".to_string()),
+            audio_cue: None,
+            animation_cue: None,
             reliability: 1.0,
         },
         exception_id: None,
@@ -461,6 +463,8 @@ fn only_verbal_tells_are_spoken() {
             intensity: TellIntensity::Moderate,
             description: "Asks about the tide".to_string(),
             trigger_phrase: Some("Tide is wrong".to_string()),
+            audio_cue: None,
+            animation_cue: None,
             reliability: 1.0,
         },
         exception_id: None,
@@ -468,4 +472,21 @@ fn only_verbal_tells_are_spoken() {
     };
     let spoken = PassengerStateMachine::spoken_tell(&[verbal]).expect("verbal tell speaks");
     assert!(spoken.contains("Tide is wrong"));
+}
+
+#[test]
+fn authored_audio_cues_survive_loading_for_caption_and_playback() {
+    let passenger_cues = crate::data::loader::load_passengers()
+        .into_iter()
+        .flat_map(|passenger| passenger.tells)
+        .filter(|tell| tell.audio_cue.is_some())
+        .count();
+    let guideline_cues = crate::data::loader::load_guidelines()
+        .into_iter()
+        .flat_map(|guideline| guideline.exceptions)
+        .flat_map(|exception| exception.tells)
+        .filter(|tell| tell.audio_cue.is_some())
+        .count();
+    assert!(passenger_cues > 0, "passenger audio cues were discarded");
+    assert!(guideline_cues > 0, "guideline audio cues were discarded");
 }

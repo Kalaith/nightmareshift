@@ -184,6 +184,20 @@ impl RideService {
         // still be sitting on the next drop-off summary.
         state.trade_outcome = None;
         state.violations_at_ride_start = state.rules_violated;
+        state.ride_baseline = Some(RideBaseline {
+            fuel: state.fuel,
+            time: state.time_remaining,
+            need: state
+                .current_passenger_need_state
+                .as_ref()
+                .map(|need| need.level)
+                .unwrap_or(0),
+            rules_violated: state.rules_violated,
+            comfort_relief: state.telemetry.comfort_relief,
+            normal_route_relief: state.telemetry.normal_route_relief,
+            ward_interventions: state.telemetry.ward_interventions,
+            brink_saves: state.telemetry.brink_saves,
+        });
 
         // Three passengers rewrite the night as they get in.
         let change = state
@@ -367,6 +381,29 @@ impl RideService {
                 fare_earned: fare,
                 items_received,
                 backstory_unlocked,
+                impact: state
+                    .ride_baseline
+                    .take()
+                    .map(|start| {
+                        let need_end = state
+                            .current_passenger_need_state
+                            .as_ref()
+                            .map(|need| need.level)
+                            .unwrap_or(start.need);
+                        RideImpact {
+                            fuel_spent: (start.fuel - state.fuel).max(0.0).round() as u32,
+                            time_spent: start.time.saturating_sub(state.time_remaining),
+                            need_delta: need_end as i32 - start.need as i32,
+                            rules_violated: state.rules_violated - start.rules_violated,
+                            comfort_relief: state.telemetry.comfort_relief - start.comfort_relief,
+                            normal_route_relief: state.telemetry.normal_route_relief
+                                - start.normal_route_relief,
+                            ward_interventions: state.telemetry.ward_interventions
+                                - start.ward_interventions,
+                            brink_saves: state.telemetry.brink_saves - start.brink_saves,
+                        }
+                    })
+                    .unwrap_or_default(),
             });
 
             state.game_phase = GamePhase::DropOff;

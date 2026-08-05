@@ -1,7 +1,9 @@
 //! Core game state structure.
 
 use crate::data::*;
-use crate::state::FareContribution;
+use crate::state::{
+    AudioEvent, FareContribution, MetaPayout, RideBaseline, RideCompletion, ShiftTelemetry,
+};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
@@ -313,23 +315,6 @@ pub struct RouteStreak {
     pub count: u32,
 }
 
-/// What a finished shift paid into the meta-progression currencies.
-#[derive(Debug, Clone, Copy, Default)]
-pub struct MetaPayout {
-    pub bank: u32,
-    pub lore: u32,
-    /// Extra bank paid for finishing the whole run, separate from the night.
-    pub run_bonus_bank: u32,
-    pub run_bonus_lore: u32,
-}
-
-impl MetaPayout {
-    /// True when the run-completion bonus was part of this payout.
-    pub fn completed_a_run(&self) -> bool {
-        self.run_bonus_bank > 0 || self.run_bonus_lore > 0
-    }
-}
-
 /// A rule imposed for a limited number of rides.
 #[derive(Debug, Clone)]
 pub struct TemporaryRuleState {
@@ -354,15 +339,6 @@ pub struct GuidelineDecision {
 pub enum GuidelineAction {
     Follow,
     Break,
-}
-
-/// Ride completion data for display
-#[derive(Debug, Clone)]
-pub struct RideCompletion {
-    pub passenger: Passenger,
-    pub fare_earned: u32,
-    pub items_received: Vec<InventoryItem>,
-    pub backstory_unlocked: Option<(String, String)>, // (name, backstory)
 }
 
 /// Dialogue display
@@ -414,6 +390,8 @@ pub struct GameState {
     pub rides_completed: u32,
     pub rules_violated: u32,
     pub fare_contributions: Vec<FareContribution>,
+    pub telemetry: ShiftTelemetry,
+    pub ride_baseline: Option<RideBaseline>,
 
     // Current shift
     pub current_rules: Vec<Rule>,
@@ -506,6 +484,8 @@ pub struct GameState {
     pub consequence_notes: Vec<String>,
     pub last_ride_completion: Option<RideCompletion>,
     pub game_over_reason: Option<String>,
+    pub pending_audio: Option<AudioEvent>,
+    pub last_audio_caption: Option<AudioEvent>,
 
     // Guideline decision state
     pub active_guideline: Option<Guideline>,
@@ -546,6 +526,8 @@ impl GameState {
             rides_completed: 0,
             rules_violated: 0,
             fare_contributions: Vec::new(),
+            telemetry: ShiftTelemetry::default(),
+            ride_baseline: None,
             current_rules: Vec::new(),
             hidden_rules: Vec::new(),
             revealed_hidden_rules: Vec::new(),
@@ -590,6 +572,8 @@ impl GameState {
             consequence_notes: Vec::new(),
             last_ride_completion: None,
             game_over_reason: None,
+            pending_audio: None,
+            last_audio_caption: None,
             active_guideline: None,
             guideline_decision_start_time: None,
             guideline_time_remaining: 30.0,
@@ -612,6 +596,8 @@ impl GameState {
         self.rides_completed = 0;
         self.rules_violated = 0;
         self.fare_contributions.clear();
+        self.telemetry = ShiftTelemetry::default();
+        self.ride_baseline = None;
         self.current_rules.clear();
         self.hidden_rules.clear();
         self.revealed_hidden_rules.clear();
@@ -644,6 +630,8 @@ impl GameState {
         self.consequence_notes.clear();
         self.last_ride_completion = None;
         self.game_over_reason = None;
+        self.pending_audio = None;
+        self.last_audio_caption = None;
         self.active_guideline = None;
         self.guideline_decision_start_time = None;
         self.guideline_time_remaining = 30.0;
@@ -658,6 +646,17 @@ impl GameState {
     /// Check if time is running out
     pub fn is_time_critical(&self, constants: &ConstantsData) -> bool {
         self.time_remaining <= constants.timing.critical_time_threshold
+    }
+
+    /// Queue an informational sound and retain its visual equivalent.
+    pub fn queue_audio(&mut self, cue: &str, caption: impl Into<String>, timestamp: f64) {
+        let event = AudioEvent {
+            cue: cue.to_string(),
+            caption: caption.into(),
+            timestamp,
+        };
+        self.pending_audio = Some(event.clone());
+        self.last_audio_caption = Some(event);
     }
 
     /// Announce, once per shift, that the night is nearly over.

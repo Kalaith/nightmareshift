@@ -87,6 +87,9 @@ try {
                         Earnings = [int]$row.earnings; Quota = [int]$row.quota
                         FuelEnd = [double]$row.fuel_end; TimeEnd = [int]$row.time_end
                         WardsEnd = [int]$row.wards_end; FailureCause = $row.failure_cause
+                        RefuelStops = [int]$row.refuel_stops; RefuelCost = [int]$row.refuel_cost
+                        ComfortRelief = [int]$row.comfort_relief; NormalRelief = [int]$row.normal_relief
+                        WardInterventions = [int]$row.ward_interventions; BrinkSaves = [int]$row.brink_saves
                         Reason = $row.reason; HighestFareShare = $highestShare
                         Routes = (@($row.routes) -join ';')
                         Fares = (@($row.fares | ForEach-Object { "$($_.passenger_id):$($_.fare)" }) -join ';')
@@ -143,6 +146,22 @@ try {
         $total = [Math]::Max(1, $routes.Count)
         $shares = @('Normal','Shortcut','Scenic','Police') | ForEach-Object { [Math]::Round(100 * $counts[$_] / $total, 1) }
         $report.Add("| $($tier.Name) | $($counts.Normal) | $($counts.Shortcut) | $($counts.Scenic) | $($counts.Police) | $(($shares | Measure-Object -Maximum).Maximum)% |")
+    }
+
+    $report.Add("")
+    $report.Add("## Resource interventions")
+    $report.Add("")
+    $report.Add("| Tier | Refuel stops / cost | Comfort relief | Normal relief | Ward interventions | Brink saves |")
+    $report.Add("| --- | --- | ---: | ---: | ---: | ---: |")
+    foreach ($tier in $tiers) {
+        $rows = @($records | Where-Object Tier -eq $tier.Name)
+        $refuels = ($rows | Measure-Object RefuelStops -Sum).Sum
+        $refuelCost = ($rows | Measure-Object RefuelCost -Sum).Sum
+        $comfort = ($rows | Measure-Object ComfortRelief -Sum).Sum
+        $normal = ($rows | Measure-Object NormalRelief -Sum).Sum
+        $wards = ($rows | Measure-Object WardInterventions -Sum).Sum
+        $brinks = ($rows | Measure-Object BrinkSaves -Sum).Sum
+        $report.Add("| $($tier.Name) | $refuels / `$$refuelCost | $comfort | $normal | $wards | $brinks |")
     }
 
     $reportPath = Join-Path $outputRoot "campaign_matrix_report.md"

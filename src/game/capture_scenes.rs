@@ -541,6 +541,16 @@ impl Game {
                             fare_earned: passenger.fare,
                             items_received: Vec::new(),
                             backstory_unlocked: None,
+                            impact: RideImpact {
+                                fuel_spent: 14,
+                                time_spent: 51,
+                                need_delta: -9,
+                                rules_violated: 0,
+                                comfort_relief: 14,
+                                normal_route_relief: 4,
+                                ward_interventions: 1,
+                                brink_saves: 0,
+                            },
                         });
                         self.game_state.pending_trade = Some((passenger.name.clone(), offered));
                         self.game_state.game_phase = GamePhase::DropOff;
@@ -599,6 +609,38 @@ impl Game {
                 self.player_stats.accessibility.reduced_motion = true;
                 self.player_stats.accessibility.brightness_percent = 115;
                 self.change_screen(Screen::HelpOptions);
+            }
+            "reaction_violation" => {
+                self.begin_capture_scene("driving");
+                self.game_state.queue_audio(
+                    "violation",
+                    "[Rule violation: Keep All Windows Sealed]",
+                    get_time() + 10.0,
+                );
+            }
+            "reaction_ward" => {
+                self.begin_capture_scene("driving");
+                self.game_state.queue_audio(
+                    "ward",
+                    "[Blessed Medallion absorbs the violation]",
+                    get_time() + 10.0,
+                );
+            }
+            "reaction_brink" => {
+                self.begin_capture_scene("driving");
+                self.game_state.queue_audio(
+                    "brink",
+                    "[Heartbeat: the passenger reaches the brink]",
+                    get_time() + 10.0,
+                );
+            }
+            "reaction_meltdown" => {
+                self.begin_capture_scene("driving");
+                self.game_state.queue_audio(
+                    "meltdown",
+                    "[Cabin distortion: passenger meltdown]",
+                    get_time() + 10.0,
+                );
             }
             _ => {
                 // Default: main menu. The boot flow lands here automatically

@@ -157,6 +157,9 @@ impl Game {
             }
         }
 
+        self.draw_audio_reaction();
+        self.draw_audio_caption();
+
         self.transition.draw();
 
         // Brightness is a final presentation transform. Darkening uses a
@@ -355,5 +358,77 @@ impl Game {
         );
 
         None
+    }
+
+    fn draw_audio_reaction(&self) {
+        let Some(event) = self.game_state.last_audio_caption.as_ref() else {
+            return;
+        };
+        let age = (get_time() - event.timestamp).max(0.0) as f32;
+        if age > 0.9 {
+            return;
+        }
+        let fade = if reduced_motion() {
+            0.55
+        } else {
+            (1.0 - age / 0.9).max(0.0)
+        };
+        let (color, thickness) = match event.cue.as_str() {
+            "violation" => (colors::ACCENT_DANGER, 9.0),
+            "ward" => (colors::ACCENT_SKY, 8.0),
+            "brink" => (colors::ACCENT_WARNING, 11.0),
+            "meltdown" => (Color::new(0.75, 0.02, 0.05, 1.0), 16.0),
+            "success" => (colors::FUEL_GOOD, 7.0),
+            _ => (Color::new(0.65, 0.25, 0.78, 1.0), 6.0),
+        };
+        draw_rectangle_lines(
+            thickness / 2.0,
+            thickness / 2.0,
+            screen_width() - thickness,
+            screen_height() - thickness,
+            thickness,
+            Color::new(color.r, color.g, color.b, fade * 0.72),
+        );
+        if event.cue == "meltdown" {
+            draw_rectangle(
+                0.0,
+                0.0,
+                screen_width(),
+                screen_height(),
+                Color::new(0.12, 0.0, 0.015, fade * 0.35),
+            );
+        }
+    }
+
+    fn draw_audio_caption(&self) {
+        if !self.player_stats.accessibility.captions {
+            return;
+        }
+        let Some(event) = self.game_state.last_audio_caption.as_ref() else {
+            return;
+        };
+        if get_time() - event.timestamp > 3.4 {
+            return;
+        }
+        let width = (measure_ui_text(&event.caption, None, fonts::SIZE_SM as u16, 1.0).width
+            + 44.0)
+            .min(screen_width() - 40.0);
+        let rect = UiRect::centered_x(screen_width(), screen_height() - 106.0, width, 42.0);
+        draw_rectangle(
+            rect.x,
+            rect.y,
+            rect.w,
+            rect.h,
+            Color::new(0.0, 0.0, 0.0, 0.88),
+        );
+        draw_rectangle_lines(rect.x, rect.y, rect.w, rect.h, 2.0, colors::TEXT_PRIMARY);
+        let text_width = measure_ui_text(&event.caption, None, fonts::SIZE_SM as u16, 1.0).width;
+        draw_ui_text(
+            &event.caption,
+            rect.x + (rect.w - text_width) / 2.0,
+            rect.y + 27.0,
+            fonts::SIZE_SM,
+            colors::TEXT_PRIMARY,
+        );
     }
 }

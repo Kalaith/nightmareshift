@@ -307,6 +307,11 @@ impl Game {
             .max(1);
 
         if actually_successful {
+            self.game_state.queue_audio(
+                "success",
+                "[Dispatch chime: quota cleared and the shift is survived]",
+                get_time(),
+            );
             // Add survival bonus
             if let Some(ref data) = self.game_data {
                 self.game_state.earnings += data.constants.game_constants.survival_bonus;
@@ -323,6 +328,18 @@ impl Game {
             self.game_state.game_phase = GamePhase::Success;
             self.screen = Screen::Success;
         } else {
+            if self
+                .game_state
+                .game_over_reason
+                .as_deref()
+                .is_some_and(|reason| reason.contains("uncontrollable"))
+            {
+                self.game_state.queue_audio(
+                    "meltdown",
+                    "[Cabin distortion: passenger meltdown]",
+                    get_time(),
+                );
+            }
             if self.game_state.game_over_reason.is_none() {
                 self.game_state.game_over_reason = Some(if self.game_state.last_fare_night {
                     "Dawn broke with the last fare uncollected. The city does not \

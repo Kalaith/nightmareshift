@@ -329,6 +329,49 @@ impl CompletionSummary {
             draw_ui_text(&fare_text, right_x, y, fonts::SIZE_LG, colors::ACCENT_GOLD);
             y += 35.0;
 
+            let impact = completion.impact;
+            let need = if impact.need_delta > 0 {
+                format!("+{}", impact.need_delta)
+            } else {
+                impact.need_delta.to_string()
+            };
+            draw_small_caps(
+                &format!(
+                    "LEG  FUEL -{}  |  TIME -{}m  |  NEED {}  |  RULES +{}",
+                    impact.fuel_spent, impact.time_spent, need, impact.rules_violated
+                ),
+                right_x,
+                y,
+                fonts::SIZE_XS,
+                if impact.rules_violated > 0 {
+                    colors::ACCENT_DANGER
+                } else {
+                    colors::TEXT_SECONDARY
+                },
+            );
+            y += 22.0;
+
+            let prevented = [
+                ("comfort", impact.comfort_relief),
+                ("steady road", impact.normal_route_relief),
+                ("ward", impact.ward_interventions),
+                ("brink", impact.brink_saves),
+            ]
+            .into_iter()
+            .filter(|(_, value)| *value > 0)
+            .map(|(label, value)| format!("{label} {value}"))
+            .collect::<Vec<_>>();
+            if !prevented.is_empty() {
+                draw_small_caps(
+                    &format!("PREVENTED  {}", prevented.join("  |  ")),
+                    right_x,
+                    y,
+                    fonts::SIZE_XS,
+                    colors::FUEL_GOOD,
+                );
+                y += 22.0;
+            }
+
             if !completion.items_received.is_empty() {
                 draw_ui_text(
                     &data.localization.ui.game.completion.items,

@@ -5,6 +5,7 @@
 
 #![allow(clippy::too_many_arguments)]
 
+mod audio;
 mod bot;
 mod data;
 mod engine;
@@ -45,7 +46,7 @@ async fn main() {
     // crash_log.txt beside the save file instead of only a vanished window.
     macroquad_toolkit::crash::install_crash_log("nightmare_shift");
 
-    let mut game = Game::new();
+    let mut game = Game::new().await;
 
     // Screenshot harness: when NIGHTMARE_SHIFT_CAPTURE_PATH is set, seed a
     // scene, simulate deterministic frames, write a PNG, and exit.

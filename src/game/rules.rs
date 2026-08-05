@@ -132,8 +132,10 @@ impl Game {
         self.game_state
             .comfort_soothed_actions
             .push(action_key.to_string());
+        let before = need.level;
         let triggered =
             PassengerStateMachine::apply_stress_delta(&mut need, &passenger, -relief, current_time);
+        self.game_state.telemetry.comfort_relief += before.saturating_sub(need.level);
         self.game_state.current_passenger_need_state = Some(need);
         PassengerStateMachine::merge_detected_tells(
             &mut self.game_state.rng,
@@ -179,6 +181,11 @@ impl Game {
 
         if result.violation {
             self.game_state.rules_violated += 1;
+            self.game_state.queue_audio(
+                "violation",
+                format!("[Rule violation: {rule_title}]"),
+                current_time,
+            );
             self.game_state.adjust_player_trust(-0.1);
 
             let message = result
@@ -202,6 +209,12 @@ impl Game {
             };
 
             if let Some(ward_label) = forgiven_by {
+                self.game_state.telemetry.ward_interventions += 1;
+                self.game_state.queue_audio(
+                    "ward",
+                    format!("[{ward_label} absorbs the {rule_title} violation]"),
+                    current_time,
+                );
                 self.game_state.current_dialogue = Some(CurrentDialogue {
                     text: format!(
                         "The {} absorbs the {} violation. {}",

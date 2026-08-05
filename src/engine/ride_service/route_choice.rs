@@ -72,6 +72,11 @@ impl RideService {
             && !Self::absorb_meltdown_with_protection(state, current_time)
             && !Self::hold_at_the_brink(state, current_time)
         {
+            state.queue_audio(
+                "meltdown",
+                "[Cabin distortion intensifies into a passenger meltdown]",
+                current_time,
+            );
             return RouteOutcome::GameOver(
                 "The passenger's need became uncontrollable.".to_string(),
             );
@@ -212,6 +217,11 @@ impl RideService {
 
         Self::apply_rule_need_adjustment(state, &violation, macroquad::prelude::get_time());
         state.rules_violated += 1;
+        state.queue_audio(
+            "violation",
+            format!("[Rule violation: {rule_title}]"),
+            macroquad::prelude::get_time(),
+        );
         state.adjust_player_trust(-0.08);
 
         let message = violation
@@ -232,6 +242,12 @@ impl RideService {
         };
 
         if let Some(ward_name) = forgiven_by {
+            state.telemetry.ward_interventions += 1;
+            state.queue_audio(
+                "ward",
+                format!("[Ward absorbs the {rule_title} violation]"),
+                macroquad::prelude::get_time(),
+            );
             let ward_label = ward_name.unwrap_or_else(|| "ward".to_string());
             state.current_dialogue = Some(CurrentDialogue {
                 text: format!(
@@ -419,13 +435,26 @@ impl RideService {
             // still dislike it; the route softens the leg rather than erasing
             // authored identity.
             if route == RouteType::Normal && normal_route_need_relief > 0 {
+                let before = need_state.level;
                 let relief_tells = PassengerStateMachine::apply_stress_delta(
                     &mut need_state,
                     &passenger,
                     -(normal_route_need_relief as i32),
                     current_time,
                 );
+                state.telemetry.normal_route_relief += before.saturating_sub(need_state.level);
                 triggered_tells.extend(relief_tells);
+            }
+
+            if let Some(tell) = triggered_tells
+                .iter()
+                .find(|tell| tell.tell.audio_cue.is_some())
+            {
+                state.queue_audio(
+                    tell.tell.audio_cue.as_deref().unwrap_or("warning"),
+                    format!("[Passenger cue: {}]", tell.tell.description),
+                    current_time,
+                );
             }
 
             let weather_stress: i32 = state
@@ -552,6 +581,12 @@ impl RideService {
                 None => return false,
             }
         };
+        state.telemetry.ward_interventions += 1;
+        state.queue_audio(
+            "ward",
+            "[A ward flares and forces the supernatural pressure back]",
+            current_time,
+        );
 
         if let (Some(mut need_state), Some(passenger)) = (
             state.current_passenger_need_state.clone(),
@@ -613,6 +648,12 @@ impl RideService {
             return false;
         }
         state.brink_spent = true;
+        state.telemetry.brink_saves += 1;
+        state.queue_audio(
+            "brink",
+            "[Heartbeat: the passenger reaches the brink]",
+            current_time,
+        );
         need_state.brink_reached = true;
         need_state.level = need_state.profile.thresholds.meltdown.saturating_sub(1);
         need_state.stage =

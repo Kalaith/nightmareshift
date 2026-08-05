@@ -313,7 +313,7 @@ impl PlaytestBot {
         let reason = state.game_over_reason.as_deref().unwrap_or("completed");
         let tier = self.progression_tier();
         eprintln!(
-            "[BOT_JSON] {{\"run\":{},\"seed\":{},\"night\":{},\"campaign_complete\":{},\"tier\":{},\"modifier\":{},\"rides\":{},\"earnings\":{},\"quota\":{},\"fuel_end\":{:.1},\"time_end\":{},\"wards_end\":{},\"failure_cause\":{},\"reason\":{},\"fares\":[{}],\"routes\":[{}]}}",
+            "[BOT_JSON] {{\"run\":{},\"seed\":{},\"night\":{},\"campaign_complete\":{},\"tier\":{},\"modifier\":{},\"rides\":{},\"earnings\":{},\"quota\":{},\"fuel_end\":{:.1},\"time_end\":{},\"wards_end\":{},\"refuel_stops\":{},\"refuel_cost\":{},\"comfort_relief\":{},\"normal_relief\":{},\"ward_interventions\":{},\"brink_saves\":{},\"failure_cause\":{},\"reason\":{},\"fares\":[{}],\"routes\":[{}]}}",
             self.completed_campaigns + 1,
             self.configured_seed.unwrap_or(0),
             state.night,
@@ -326,6 +326,12 @@ impl PlaytestBot {
             state.fuel,
             state.time_remaining,
             state.wards_in_hand(),
+            state.telemetry.refuel_stops,
+            state.telemetry.refuel_cost_paid,
+            state.telemetry.comfort_relief,
+            state.telemetry.normal_route_relief,
+            state.telemetry.ward_interventions,
+            state.telemetry.brink_saves,
             json_string(failure_cause(reason, screen, state.rules_violated)),
             json_string(reason),
             fares,
