@@ -12,12 +12,6 @@ use crate::ui::{
 
 use super::scene::{draw_bottom_taxi_scene, pulsing_warning_color};
 
-/// Right-hand columns of a route card, measured in from its right edge. The
-/// costs sit outermost; the risk tags take the band to their left and are cut to
-/// fit it, so the two cannot overlap however long a tag's description runs.
-const COST_COLUMN_W: f32 = 154.0;
-const TAG_COLUMN_W: f32 = 430.0;
-
 /// Draw the driving/route selection screen
 pub fn draw_driving(
     game_state: &GameState,
@@ -41,6 +35,9 @@ pub fn draw_driving(
         let gap = 18.0;
         let passenger_w = (screen_width() * 0.17).clamp(260.0, 330.0);
         let left_w = screen_width() - margin * 2.0 - gap - passenger_w;
+        let narrow_cards = left_w < 760.0;
+        let cost_column_w = if narrow_cards { 150.0 } else { 154.0 };
+        let tag_column_w = if narrow_cards { 325.0 } else { 430.0 };
         let left_x = margin;
         let right_x = left_x + left_w + gap;
         let content_bottom = scene_rect.y - 22.0;
@@ -244,7 +241,14 @@ pub fn draw_driving(
                             PreferenceLevel::Dislikes => colors::ACCENT_WARNING,
                             PreferenceLevel::Fears => colors::FUEL_CRITICAL,
                         };
-                        Some((format!("Known: client {}", pref_label), pref_color))
+                        Some((
+                            if narrow_cards {
+                                format!("Known: {}", pref_label)
+                            } else {
+                                format!("Known: client {}", pref_label)
+                            },
+                            pref_color,
+                        ))
                     }
                 })
             } else {
@@ -433,14 +437,14 @@ pub fn draw_driving(
                 );
                 draw_small_caps(
                     &format!("Known floor  {} min", time_cost),
-                    card.x + card.w - COST_COLUMN_W,
+                    card.x + card.w - cost_column_w,
                     card.y + 25.0,
                     fonts::SIZE_XS,
                     colors::TEXT_MUTED,
                 );
                 draw_small_caps(
                     &format!("Known floor  -{}%", fuel_cost),
-                    card.x + card.w - COST_COLUMN_W,
+                    card.x + card.w - cost_column_w,
                     card.y + 41.0,
                     fonts::SIZE_XS,
                     colors::TEXT_MUTED,
@@ -451,14 +455,14 @@ pub fn draw_driving(
                         if route_risk_known { "Known" } else { "Unknown" },
                         risk_label
                     ),
-                    card.x + card.w - COST_COLUMN_W,
+                    card.x + card.w - cost_column_w,
                     card.y + 57.0,
                     fonts::SIZE_XS,
                     risk_color,
                 );
                 draw_ui_icon(
                     UiIcon::Risk,
-                    card.x + card.w - COST_COLUMN_W - 10.0,
+                    card.x + card.w - cost_column_w - 10.0,
                     card.y + 54.0,
                     12.0,
                     risk_color,
@@ -509,8 +513,9 @@ pub fn draw_driving(
             //
             // The tags now have their own band ending short of the costs, and
             // are cut to that width rather than to a character count.
-            let cost_x = card.x + card.w - COST_COLUMN_W;
-            let tag_x = (card.x + card.w - TAG_COLUMN_W).max(card.x + 250.0);
+            let cost_x = card.x + card.w - cost_column_w;
+            let tag_min_x = if narrow_cards { 285.0 } else { 250.0 };
+            let tag_x = (card.x + card.w - tag_column_w).max(card.x + tag_min_x);
             let tag_w = (cost_x - tag_x - 20.0).max(60.0);
             let tag_y = card.y + 25.0;
             for (tag_idx, tag) in risk_tags.iter().enumerate() {

@@ -3,10 +3,12 @@
 pub mod backgrounds;
 pub mod components;
 pub mod core;
+mod prewarm;
 
 pub use backgrounds::*;
 pub use components::*;
 pub use core::*;
+pub use prewarm::*;
 
 /// Actions triggered by UI interactions
 #[derive(Debug, Clone, PartialEq, Eq)]

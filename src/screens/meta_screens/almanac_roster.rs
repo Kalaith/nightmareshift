@@ -297,7 +297,7 @@ pub fn draw_almanac(
         colors::ACCENT_GOLD,
     );
     draw_small_caps(
-        "Rides and witnessed tells are earned knowledge; lore study is labeled separately.",
+        "Earned: rides and tells  •  Bought: lore study",
         header.x + header.w * 0.48,
         header.y + 48.0,
         fonts::SIZE_XS,

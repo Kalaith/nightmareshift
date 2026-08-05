@@ -163,7 +163,13 @@ impl Game {
             .unwrap_or_default();
         let game_state = GameState::new(current_time, &constants);
         let audio = AudioMixer::load().await;
-        macroquad::window::set_fullscreen(player_stats.accessibility.fullscreen);
+        crate::ui::prewarm_ui_glyphs();
+        // Asking the browser to *exit* fullscreen during startup throws when
+        // the document is not active. Off is already the platform default;
+        // only request a transition when the persisted setting is on.
+        if player_stats.accessibility.fullscreen {
+            macroquad::window::set_fullscreen(true);
+        }
 
         Self {
             screen: Screen::Loading,

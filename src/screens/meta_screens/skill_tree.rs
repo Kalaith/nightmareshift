@@ -287,7 +287,7 @@ pub fn draw_skill_tree(
             colors::CAB_YELLOW,
         );
         draw_small_caps(
-            "Scroll to inspect upgrades. Purchase buttons appear when requirements are met.",
+            "Choose a category, then inspect the selected upgrade.",
             header_inner.x + header_inner.w * 0.52,
             header_inner.y + 22.0,
             fonts::SIZE_XS,

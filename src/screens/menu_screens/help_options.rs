@@ -83,19 +83,22 @@ pub fn draw_help_options(stats: &PlayerStats, tutorial_active: bool) -> UiAction
         ("4  Use the cab", "E eye contact  M music  W window  Y wipers  H lights off  A climate  S stop. Open Rules (R) for touch/mouse buttons."),
         ("5  Finish the night", "Drop-off itemizes the fare and consequences. Refuelling spends earnings, so bank the quota before dawn when one more fare is unsafe."),
     ];
+    let dense_help = stats.accessibility.text_scale_percent > 100 && help.w < 500.0;
+    let section_gap = if dense_help { 5.0 } else { 14.0 };
+    let body_line_height = if dense_help { 15.0 } else { 16.0 };
     let mut y = inner.y + 92.0;
     for (title, body) in sections {
         draw_small_caps(title, inner.x, y, fonts::SIZE_SM, colors::ACCENT_GOLD);
         y = draw_wrapped_text(
             body,
             inner.x,
-            y + 22.0,
+            y + if dense_help { 19.0 } else { 22.0 },
             inner.w,
             fonts::SIZE_XS,
-            16.0,
+            body_line_height,
             colors::TEXT_SECONDARY,
             if help.w < 500.0 { 4 } else { 3 },
-        ) + 14.0;
+        ) + section_gap;
     }
 
     let options = UiRect::new(

@@ -105,7 +105,9 @@ if (Test-Path $indexPath) {
     # plain IndexOf reads that comment as storage.js loading first.
     $order = @{}
     foreach ($name in @("sapp_jsutils.js", "storage.js")) {
-        $pattern = '<script[^>]*src="[^"]*' + [regex]::Escape($name) + '"'
+        # Published runtime URLs carry a cache-busting query string. Match the
+        # script filename plus an optional query before the closing quote.
+        $pattern = '<script[^>]*src="[^"]*' + [regex]::Escape($name) + '(?:\?[^"]*)?"'
         $tag = [regex]::Match($index, $pattern)
         if ($tag.Success) { $order[$name] = $tag.Index } else { $order[$name] = -1 }
     }

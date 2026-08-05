@@ -211,8 +211,14 @@ pub fn draw_briefing(
             .get((game_state.night as usize).saturating_sub(1))
             .or_else(|| data.localization.ui.briefing.premise.last())
         {
-            draw_small_caps(
+            let premise_width = header_inner.w * 0.56;
+            let premise = macroquad_toolkit::ui::truncate_text_to_width(
                 premise,
+                premise_width,
+                fonts::SIZE_SM,
+            );
+            draw_small_caps(
+                &premise,
                 header_inner.x + header_inner.w * 0.42,
                 header_inner.y + 58.0,
                 fonts::SIZE_SM,
@@ -220,7 +226,12 @@ pub fn draw_briefing(
             );
         }
 
-        let top_h = ((content_bottom - content_top) * 0.58).clamp(360.0, 520.0);
+        let available_h = content_bottom - content_top;
+        let top_h = if screen_w < 1100.0 {
+            (available_h - gap - 82.0).clamp(390.0, 520.0)
+        } else {
+            (available_h * 0.58).clamp(360.0, 520.0)
+        };
         let scene_h = content_bottom - content_top - top_h - gap;
         let left_w = ((screen_w - margin * 2.0 - gap) * 0.62).clamp(560.0, 1050.0);
         let right_w = screen_w - margin * 2.0 - gap - left_w;
@@ -558,7 +569,11 @@ pub fn draw_briefing(
             }
         }
 
-        draw_briefing_taxi_scene(scene_panel);
+        if scene_panel.h >= 120.0 {
+            draw_briefing_taxi_scene(scene_panel);
+        } else {
+            draw_glass_panel(scene_panel, colors::BORDER_DIM);
+        }
 
         let btn_rect = UiRect::new(screen_w / 2.0 - 170.0, screen_h - 62.0, 340.0, 48.0);
         if draw_glass_button(
