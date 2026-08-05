@@ -7,8 +7,9 @@ use crate::ui::{
     colors, draw_glass_button, draw_glass_panel, draw_noir_city_background, draw_small_caps,
     draw_wrapped_text, fonts, UiAction, UiRect,
 };
+use crate::ui::{draw_ui_text, measure_ui_text};
 use macroquad::prelude::*;
-use macroquad_toolkit::ui::{draw_ui_text, measure_ui_text, ScrollArea};
+use macroquad_toolkit::ui::ScrollArea;
 
 fn skill_category_label(category: &str, data: &GameData) -> String {
     let loc_cats = &data.localization.ui.meta.skill_tree.categories;

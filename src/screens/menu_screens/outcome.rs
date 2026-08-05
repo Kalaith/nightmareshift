@@ -8,7 +8,7 @@ use crate::ui::{
     colors, draw_glass_button, draw_glass_panel, draw_noir_city_background, draw_wrapped_text,
     fonts, spacing, UiAction, UiRect,
 };
-use macroquad_toolkit::ui::{draw_ui_text, measure_ui_text};
+use crate::ui::{draw_ui_text, measure_ui_text};
 
 /// Draw the game over screen
 pub fn draw_game_over(game_state: &GameState, game_data: Option<&GameData>) -> UiAction {

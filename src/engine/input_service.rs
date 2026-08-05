@@ -158,6 +158,42 @@ impl InputService {
             {
                 actions.push(UiAction::ReturnToMenu);
             }
+            Screen::HelpOptions => {
+                if is_key_pressed(KeyCode::Escape) {
+                    actions.push(UiAction::ReturnToMenu);
+                }
+                if is_key_pressed(KeyCode::T) {
+                    actions.push(UiAction::CycleTextScale);
+                }
+                if is_key_pressed(KeyCode::H) {
+                    actions.push(UiAction::ToggleHighContrast);
+                }
+                if is_key_pressed(KeyCode::R) {
+                    actions.push(UiAction::ToggleReducedMotion);
+                }
+                if is_key_pressed(KeyCode::B) {
+                    actions.push(UiAction::CycleBrightness);
+                }
+                if is_key_pressed(KeyCode::C) {
+                    actions.push(UiAction::ToggleCaptions);
+                }
+                if is_key_pressed(KeyCode::F) {
+                    actions.push(UiAction::ToggleFullscreen);
+                }
+                for (action, (top, keypad)) in [
+                    UiAction::CycleMasterVolume,
+                    UiAction::CycleAmbienceVolume,
+                    UiAction::CycleMusicVolume,
+                    UiAction::CycleEffectsVolume,
+                ]
+                .into_iter()
+                .zip(Self::number_keys())
+                {
+                    if is_key_pressed(top) || is_key_pressed(keypad) {
+                        actions.push(action);
+                    }
+                }
+            }
             _ => {}
         }
 

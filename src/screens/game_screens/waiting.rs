@@ -4,11 +4,12 @@ use macroquad::prelude::*;
 
 use crate::data::GameData;
 use crate::state::GameState;
+use crate::ui::draw_ui_text;
 use crate::ui::{
     colors, draw_cockpit_background, draw_glass_button, draw_glass_panel, draw_small_caps,
     draw_wrapped_text, fonts, get_fuel_color, layout, spacing, UiAction, UiRect,
 };
-use macroquad_toolkit::ui::{draw_ui_text, format_clock};
+use macroquad_toolkit::ui::format_clock;
 
 use super::scene::{draw_bottom_taxi_scene, draw_metric_tile};
 

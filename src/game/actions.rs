@@ -7,6 +7,15 @@ use crate::screens::Screen;
 use crate::state::*;
 use crate::ui::UiAction;
 
+fn cycle_volume(value: u8) -> u8 {
+    match value {
+        0..=25 => 50,
+        26..=50 => 80,
+        51..=80 => 100,
+        _ => 0,
+    }
+}
+
 impl Game {
     /// Handle UI actions from draw phase
     pub fn handle_ui_action(&mut self, action: UiAction) {
@@ -93,7 +102,17 @@ impl Game {
                 }
             }
             UiAction::ReturnToMenu => {
-                if self.screen == Screen::GameOver
+                if self.screen == Screen::HelpOptions {
+                    if self.tutorial_active {
+                        self.player_stats.tutorial_completed = true;
+                        self.tutorial_active = false;
+                        self.save_stats();
+                    }
+                    self.screen = self.help_return_screen;
+                    if self.screen == Screen::MainMenu {
+                        self.overlays.close_all();
+                    }
+                } else if self.screen == Screen::GameOver
                     || self.screen == Screen::Success
                     || self.screen == Screen::SkillTree
                     || self.screen == Screen::Almanac
@@ -208,6 +227,62 @@ impl Game {
             }
             UiAction::OpenLeaderboard => {
                 self.change_screen(Screen::Leaderboard);
+            }
+            UiAction::OpenHelpOptions => {
+                self.help_return_screen = if self.screen == Screen::Game {
+                    Screen::Game
+                } else {
+                    Screen::MainMenu
+                };
+                self.screen = Screen::HelpOptions;
+            }
+            UiAction::CycleTextScale => {
+                self.player_stats.accessibility.cycle_text_scale();
+                self.save_stats();
+            }
+            UiAction::ToggleHighContrast => {
+                self.player_stats.accessibility.high_contrast =
+                    !self.player_stats.accessibility.high_contrast;
+                self.save_stats();
+            }
+            UiAction::ToggleReducedMotion => {
+                self.player_stats.accessibility.reduced_motion =
+                    !self.player_stats.accessibility.reduced_motion;
+                self.save_stats();
+            }
+            UiAction::CycleBrightness => {
+                self.player_stats.accessibility.cycle_brightness();
+                self.save_stats();
+            }
+            UiAction::ToggleCaptions => {
+                self.player_stats.accessibility.captions =
+                    !self.player_stats.accessibility.captions;
+                self.save_stats();
+            }
+            UiAction::ToggleFullscreen => {
+                self.player_stats.accessibility.fullscreen =
+                    !self.player_stats.accessibility.fullscreen;
+                macroquad::window::set_fullscreen(self.player_stats.accessibility.fullscreen);
+                self.save_stats();
+            }
+            UiAction::CycleMasterVolume => {
+                self.player_stats.accessibility.cycle_master_volume();
+                self.save_stats();
+            }
+            UiAction::CycleAmbienceVolume => {
+                self.player_stats.accessibility.ambience_volume =
+                    cycle_volume(self.player_stats.accessibility.ambience_volume);
+                self.save_stats();
+            }
+            UiAction::CycleMusicVolume => {
+                self.player_stats.accessibility.music_volume =
+                    cycle_volume(self.player_stats.accessibility.music_volume);
+                self.save_stats();
+            }
+            UiAction::CycleEffectsVolume => {
+                self.player_stats.accessibility.effects_volume =
+                    cycle_volume(self.player_stats.accessibility.effects_volume);
+                self.save_stats();
             }
             UiAction::DeleteSave => self.arm_or_delete_save(),
             UiAction::PurchaseSkill(skill_id) => {

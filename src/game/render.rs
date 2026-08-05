@@ -8,15 +8,21 @@ use crate::engine::{
 use crate::screens::{game_screens, menu_screens, meta_screens, Screen};
 use crate::ui::StatusBar;
 use crate::ui::*;
-use macroquad_toolkit::ui::{draw_ui_text, format_clock};
+use macroquad_toolkit::ui::format_clock;
 
 impl Game {
     pub fn draw(&mut self) -> UiAction {
+        set_presentation(&self.player_stats.accessibility);
+        begin_ui_frame();
         // The shake displaces visuals only: hit-testing stays in unshaken
         // screen space, so buttons drift up to max_offset px for the shake's
         // duration. Zoom mirrors VirtualUi::camera() — positive Y, no
         // viewport — which reproduces macroquad's default screen mapping.
-        let shake_offset = self.screen_shake.offset();
+        let shake_offset = if reduced_motion() {
+            Vec2::ZERO
+        } else {
+            self.screen_shake.offset()
+        };
         let shaking = shake_offset != Vec2::ZERO;
         if shaking {
             set_camera(&Camera2D {
@@ -77,9 +83,12 @@ impl Game {
             Screen::Leaderboard => {
                 meta_screens::draw_leaderboard(&self.player_stats, self.game_data.as_ref())
             }
+            Screen::HelpOptions => {
+                menu_screens::draw_help_options(&self.player_stats, self.tutorial_active)
+            }
         };
 
-        if self.screen == Screen::Game {
+        if self.screen == Screen::Game && !reduced_motion() {
             let game_data_ref = self.game_data.as_ref();
             if self.overlays.rules {
                 let rules_action = game_screens::draw_rules_panel(&self.game_state, game_data_ref);
@@ -150,6 +159,28 @@ impl Game {
 
         self.transition.draw();
 
+        // Brightness is a final presentation transform. Darkening uses a
+        // black veil; brightening a restrained warm veil so semantic colours
+        // remain distinguishable instead of washing to white.
+        let brightness = brightness();
+        if brightness < 1.0 {
+            draw_rectangle(
+                0.0,
+                0.0,
+                screen_width(),
+                screen_height(),
+                Color::new(0.0, 0.0, 0.0, 1.0 - brightness),
+            );
+        } else if brightness > 1.0 {
+            draw_rectangle(
+                0.0,
+                0.0,
+                screen_width(),
+                screen_height(),
+                Color::new(0.95, 0.78, 0.45, (brightness - 1.0) * 0.18),
+            );
+        }
+
         // An open modal swallows the screen beneath it: the underlying
         // screen still drew (and computed) its action, but dispatching it
         // would let a click behind the rules panel pick a route or refuel.
@@ -197,9 +228,9 @@ impl Game {
 
         let panel = UiRect::centered_x(
             screen_width(),
-            (screen_height() - 400.0) / 2.0,
+            (screen_height() - 460.0) / 2.0,
             screen_width().min(520.0),
-            400.0,
+            460.0,
         );
         draw_glass_panel(panel, colors::BORDER);
         let inner = panel.inset(spacing::PADDING_LG);
@@ -276,13 +307,22 @@ impl Game {
             return Some(UiAction::TogglePauseMenu);
         }
 
+        if draw_glass_button(
+            UiRect::new(inner.x, action_y + 62.0, inner.w, 48.0),
+            "Help & Options",
+            colors::ACCENT_SKY,
+            true,
+        ) {
+            return Some(UiAction::OpenHelpOptions);
+        }
+
         // Walking out mid-shift calls `return_to_menu` and nothing else: no
         // `end_shift`, so the night pays no bank, no lore, no leaderboard
         // entry and no stats. That is a defensible way for abandoning a run
         // to work, but the button said only "Return to Menu" and the player
         // had no way to know what it cost.
         if draw_glass_button(
-            UiRect::new(inner.x, action_y + 62.0, inner.w, 48.0),
+            UiRect::new(inner.x, action_y + 124.0, inner.w, 48.0),
             "Abandon Night",
             colors::ACCENT_DANGER,
             true,
@@ -301,7 +341,7 @@ impl Game {
         draw_small_caps(
             &forfeit,
             inner.x,
-            action_y + 132.0,
+            action_y + 194.0,
             fonts::SIZE_XS,
             colors::TEXT_MUTED,
         );

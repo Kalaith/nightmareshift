@@ -4,11 +4,11 @@ use macroquad::prelude::*;
 
 use crate::data::{self, GameData, Rarity};
 use crate::state::GameState;
+use crate::ui::draw_ui_text;
 use crate::ui::{
     colors, draw_glass_button, draw_glass_panel, draw_small_caps, draw_wrapped_text, fonts,
     spacing, UiAction, UiRect,
 };
-use macroquad_toolkit::ui::draw_ui_text;
 
 /// Draw the inventory modal
 pub fn draw_inventory_modal(game_state: &GameState, game_data: Option<&GameData>) -> UiAction {

@@ -142,7 +142,9 @@ impl PlaytestBot {
                     UiAction::TryAgain
                 }
             }
-            Screen::SkillTree | Screen::Almanac | Screen::Leaderboard => UiAction::ReturnToMenu,
+            Screen::SkillTree | Screen::Almanac | Screen::Leaderboard | Screen::HelpOptions => {
+                UiAction::ReturnToMenu
+            }
         };
 
         if action == UiAction::None {

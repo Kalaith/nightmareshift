@@ -6,8 +6,9 @@ use crate::ui::{
     colors, draw_glass_button, draw_glass_panel, draw_noir_city_background, draw_small_caps,
     draw_wrapped_text, fonts, UiAction, UiRect,
 };
+use crate::ui::{draw_ui_text, measure_ui_text};
 use macroquad::prelude::*;
-use macroquad_toolkit::ui::{draw_ui_text, measure_ui_text, ScrollArea};
+use macroquad_toolkit::ui::ScrollArea;
 
 /// Height (in unscrolled content-space) a single almanac card occupies,
 /// mirroring the sizing rules the draw loop below applies.

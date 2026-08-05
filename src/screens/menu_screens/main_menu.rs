@@ -4,11 +4,11 @@ use macroquad::prelude::*;
 
 use crate::data::GameData;
 use crate::state::{Persistence, PlayerStats};
+use crate::ui::draw_ui_text;
 use crate::ui::{
     colors, draw_glass_panel, draw_noir_city_background, draw_small_caps, draw_wrapped_text, fonts,
     UiAction, UiRect,
 };
-use macroquad_toolkit::ui::draw_ui_text;
 
 use super::widgets::draw_menu_command;
 
@@ -209,7 +209,7 @@ pub fn draw_main_menu(
         let menu_w = (screen_width() * 0.36).clamp(230.0, 380.0);
         let menu_h = (62.0 * menu_scale).clamp(38.0, 62.0);
         let gap = (12.0 * menu_scale).clamp(6.0, 12.0);
-        let menu_items = if Persistence::save_exists() { 7.0 } else { 6.0 };
+        let menu_items = if Persistence::save_exists() { 8.0 } else { 7.0 };
         let total_menu_h = menu_h * menu_items + gap * (menu_items - 1.0);
         let right_margin = 46.0 * menu_scale;
         let taxi_right = screen_width() * 0.36;
@@ -334,6 +334,17 @@ pub fn draw_main_menu(
             return UiAction::OpenLeaderboard;
         }
 
+        if draw_menu_command(
+            UiRect::new(menu_x, menu_y + (menu_h + gap) * 6.0, menu_w, menu_h),
+            "book",
+            "Help & Options",
+            "Controls, tutorial, accessibility",
+            colors::ACCENT_SKY,
+            menu_scale,
+        ) {
+            return UiAction::OpenHelpOptions;
+        }
+
         // Deleting a save was one click from the menu, and it takes the bank
         // balance, every lore fragment, every almanac level, every unlocked
         // skill, the leaderboard and the achievements with it. The first
@@ -350,7 +361,7 @@ pub fn draw_main_menu(
                 ("Delete Save", "Reset Progress", colors::ACCENT_DANGER)
             };
             if draw_menu_command(
-                UiRect::new(menu_x, menu_y + (menu_h + gap) * 6.0, menu_w, menu_h),
+                UiRect::new(menu_x, menu_y + (menu_h + gap) * 7.0, menu_w, menu_h),
                 "delete",
                 label,
                 detail,

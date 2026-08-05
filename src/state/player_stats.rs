@@ -87,6 +87,100 @@ pub struct FinishedShift {
     pub survived: bool,
 }
 
+/// Player-facing presentation and accessibility preferences.
+///
+/// These live with the save so native and web builds use the same persistence
+/// path as every other durable player choice. Defaults preserve the original
+/// presentation while captions remain on: authored sound cues may add
+/// atmosphere, but required information is never audio-only.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AccessibilitySettings {
+    #[serde(default = "default_text_scale")]
+    pub text_scale_percent: u16,
+    #[serde(default)]
+    pub high_contrast: bool,
+    #[serde(default)]
+    pub reduced_motion: bool,
+    #[serde(default = "default_brightness")]
+    pub brightness_percent: u16,
+    #[serde(default = "default_true")]
+    pub captions: bool,
+    #[serde(default)]
+    pub fullscreen: bool,
+    #[serde(default = "default_volume")]
+    pub master_volume: u8,
+    #[serde(default = "default_volume")]
+    pub ambience_volume: u8,
+    #[serde(default = "default_volume")]
+    pub music_volume: u8,
+    #[serde(default = "default_volume")]
+    pub effects_volume: u8,
+}
+
+impl Default for AccessibilitySettings {
+    fn default() -> Self {
+        Self {
+            text_scale_percent: default_text_scale(),
+            high_contrast: false,
+            reduced_motion: false,
+            brightness_percent: default_brightness(),
+            captions: true,
+            fullscreen: false,
+            master_volume: default_volume(),
+            ambience_volume: default_volume(),
+            music_volume: default_volume(),
+            effects_volume: default_volume(),
+        }
+    }
+}
+
+fn default_text_scale() -> u16 {
+    100
+}
+
+fn default_brightness() -> u16 {
+    100
+}
+
+fn default_volume() -> u8 {
+    80
+}
+
+fn default_true() -> bool {
+    true
+}
+
+impl AccessibilitySettings {
+    pub fn text_scale(&self) -> f32 {
+        self.text_scale_percent.clamp(100, 125) as f32 / 100.0
+    }
+
+    pub fn cycle_text_scale(&mut self) {
+        self.text_scale_percent = match self.text_scale_percent {
+            0..=100 => 115,
+            101..=115 => 125,
+            _ => 100,
+        };
+    }
+
+    pub fn cycle_brightness(&mut self) {
+        self.brightness_percent = match self.brightness_percent {
+            0..=90 => 100,
+            91..=100 => 115,
+            _ => 90,
+        };
+    }
+
+    pub fn cycle_master_volume(&mut self) {
+        self.master_volume = match self.master_volume {
+            0..=25 => 50,
+            26..=50 => 80,
+            51..=80 => 100,
+            _ => 0,
+        };
+    }
+}
+
 impl FinishedShift {
     pub fn of(shift: &crate::state::GameState, survived: bool) -> Self {
         Self {
@@ -147,6 +241,12 @@ pub struct PlayerStats {
     /// Times Death himself was delivered on The Last Fare — the true ending.
     #[serde(default)]
     pub death_deliveries: u32,
+    /// Persistent presentation, input-equivalent, and audio preferences.
+    #[serde(default)]
+    pub accessibility: AccessibilitySettings,
+    /// The first-run handbook has been acknowledged at least once.
+    #[serde(default)]
+    pub tutorial_completed: bool,
     /// Unlocked achievements
     #[serde(default, deserialize_with = "deserialize_achievements")]
     pub achievements: Achievements,

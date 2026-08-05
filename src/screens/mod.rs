@@ -21,4 +21,5 @@ pub enum Screen {
     SkillTree,
     Almanac,
     Leaderboard,
+    HelpOptions,
 }

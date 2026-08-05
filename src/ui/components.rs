@@ -4,7 +4,6 @@ use super::*;
 use crate::data::*;
 use crate::state::*;
 use macroquad::prelude::*;
-use macroquad_toolkit::ui::draw_ui_text;
 
 /// Status bar component at top of screen
 pub struct StatusBar;

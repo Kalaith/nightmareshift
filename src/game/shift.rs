@@ -193,6 +193,16 @@ impl Game {
             self.transition.begin_scene();
             self.game_state.game_phase = GamePhase::Briefing;
             self.screen = Screen::Briefing;
+            if night == 1
+                && self.player_stats.total_shifts_completed == 0
+                && !self.player_stats.tutorial_completed
+                && self.playtest_bot.is_none()
+                && !self.capture_mode
+            {
+                self.help_return_screen = Screen::Briefing;
+                self.tutorial_active = true;
+                self.screen = Screen::HelpOptions;
+            }
         }
     }
 

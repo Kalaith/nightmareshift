@@ -26,6 +26,9 @@
 .EXAMPLE
     ./scripts/capture_ui.ps1
     ./scripts/capture_ui.ps1 -Frames 60 -SkipBuild
+
+    The shared wrapper also accepts viewport dimensions when called directly;
+    final review captures use 1920x1080, 1600x900, 1366x768 and 1100x720.
 #>
 param(
     [string[]]$Scenes = @("mainmenu", "briefing", "gameplay"),

@@ -86,6 +86,9 @@ pub struct Game {
     menu_seed: Option<u64>,
     /// The seed-entry modal's in-progress digits, when it is open.
     seed_entry: Option<String>,
+    /// Where Help & Options returns: the menu, or a still-paused shift.
+    help_return_screen: Screen,
+    tutorial_active: bool,
 }
 
 /// The launch-time seed, if one was asked for. Native only: the web build
@@ -155,6 +158,7 @@ impl Game {
             .map(|data| data.constants.game_constants.clone())
             .unwrap_or_default();
         let game_state = GameState::new(current_time, &constants);
+        macroquad::window::set_fullscreen(player_stats.accessibility.fullscreen);
 
         Self {
             screen: Screen::Loading,
@@ -179,6 +183,8 @@ impl Game {
             run_seed: seed_from_launch(),
             menu_seed: None,
             seed_entry: None,
+            help_return_screen: Screen::MainMenu,
+            tutorial_active: false,
         }
     }
 
@@ -452,9 +458,11 @@ impl Game {
             Screen::Briefing => GamePhase::Briefing,
             Screen::GameOver => GamePhase::GameOver,
             Screen::Success => GamePhase::Success,
-            Screen::Game | Screen::SkillTree | Screen::Almanac | Screen::Leaderboard => {
-                self.game_state.game_phase
-            }
+            Screen::Game
+            | Screen::SkillTree
+            | Screen::Almanac
+            | Screen::Leaderboard
+            | Screen::HelpOptions => self.game_state.game_phase,
         };
         if new_screen != Screen::Game {
             self.particles.clear();
@@ -547,8 +555,13 @@ impl Game {
 
         // Update effects
         self.transition.update(dt);
-        self.screen_shake.update(dt);
-        self.particles.update(dt);
+        if self.player_stats.accessibility.reduced_motion {
+            self.screen_shake.clear();
+            self.particles.clear();
+        } else {
+            self.screen_shake.update(dt);
+            self.particles.update(dt);
+        }
 
         // Spawn weather particles during game
         if self.screen == Screen::Game {

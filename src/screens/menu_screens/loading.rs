@@ -4,7 +4,7 @@ use macroquad::prelude::*;
 
 use crate::data::GameData;
 use crate::ui::{colors, draw_noir_city_background, UiAction};
-use macroquad_toolkit::ui::{draw_ui_text, measure_ui_text};
+use crate::ui::{draw_ui_text, measure_ui_text};
 
 /// Draw the loading screen. With a `data_error` the screen never advances,
 /// so this is where a build with broken structural data explains itself

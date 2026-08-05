@@ -2,11 +2,140 @@
 
 use macroquad::prelude::*;
 use macroquad_toolkit::ui::button;
-use macroquad_toolkit::ui::{draw_ui_text, measure_ui_text};
-use std::{cell::RefCell, collections::HashMap};
+use std::{cell::Cell, cell::RefCell, collections::HashMap};
 
 thread_local! {
     static PASSENGER_PORTRAITS: RefCell<HashMap<u32, Texture2D>> = RefCell::new(HashMap::new());
+    static PRESENTATION: Cell<Presentation> = const { Cell::new(Presentation::DEFAULT) };
+    static BUTTON_CURSOR: Cell<usize> = const { Cell::new(0) };
+    static BUTTON_COUNT: Cell<usize> = const { Cell::new(1) };
+    static FOCUS_INDEX: Cell<usize> = const { Cell::new(0) };
+    static FOCUS_VISIBLE: Cell<bool> = const { Cell::new(false) };
+}
+
+#[derive(Debug, Clone, Copy)]
+struct Presentation {
+    text_scale: f32,
+    high_contrast: bool,
+    reduced_motion: bool,
+    brightness: f32,
+}
+
+impl Presentation {
+    const DEFAULT: Self = Self {
+        text_scale: 1.0,
+        high_contrast: false,
+        reduced_motion: false,
+        brightness: 1.0,
+    };
+}
+
+/// Apply the persisted presentation settings before drawing a frame.
+pub fn set_presentation(settings: &crate::state::AccessibilitySettings) {
+    PRESENTATION.with(|value| {
+        value.set(Presentation {
+            text_scale: settings.text_scale(),
+            high_contrast: settings.high_contrast,
+            reduced_motion: settings.reduced_motion,
+            brightness: settings.brightness_percent.clamp(80, 120) as f32 / 100.0,
+        });
+    });
+}
+
+pub fn reduced_motion() -> bool {
+    PRESENTATION.with(|value| value.get().reduced_motion)
+}
+
+pub fn brightness() -> f32 {
+    PRESENTATION.with(|value| value.get().brightness)
+}
+
+/// Reset sequential keyboard focus before a frame's components are drawn.
+/// Every shared button registers itself in draw order, which makes Tab and
+/// arrow navigation available on all screens without parallel per-screen
+/// focus tables that can drift from the visible layout.
+pub fn begin_ui_frame() {
+    let last_count = BUTTON_CURSOR.with(|cursor| {
+        let count = cursor.get();
+        cursor.set(0);
+        count
+    });
+    if last_count > 0 {
+        BUTTON_COUNT.with(|count| count.set(last_count));
+        FOCUS_INDEX.with(|focus| focus.set(focus.get().min(last_count - 1)));
+    }
+    let forward = is_key_pressed(KeyCode::Tab)
+        && !is_key_down(KeyCode::LeftShift)
+        && !is_key_down(KeyCode::RightShift)
+        || is_key_pressed(KeyCode::Down)
+        || is_key_pressed(KeyCode::Right);
+    let backward = (is_key_pressed(KeyCode::Tab)
+        && (is_key_down(KeyCode::LeftShift) || is_key_down(KeyCode::RightShift)))
+        || is_key_pressed(KeyCode::Up)
+        || is_key_pressed(KeyCode::Left);
+    if forward || backward {
+        FOCUS_VISIBLE.with(|visible| visible.set(true));
+        let count = BUTTON_COUNT.with(|value| value.get().max(1));
+        FOCUS_INDEX.with(|focus| {
+            focus.set(if backward {
+                (focus.get() + count - 1) % count
+            } else {
+                (focus.get() + 1) % count
+            });
+        });
+    }
+}
+
+fn register_button() -> (usize, bool) {
+    let index = BUTTON_CURSOR.with(|cursor| {
+        let index = cursor.get();
+        cursor.set(index + 1);
+        index
+    });
+    BUTTON_COUNT.with(|count| count.set(count.get().max(index + 1)));
+    let focused = FOCUS_VISIBLE.with(|visible| visible.get())
+        && FOCUS_INDEX.with(|focus| focus.get() == index);
+    (index, focused)
+}
+
+fn accessible_color(color: Color) -> Color {
+    PRESENTATION.with(|value| {
+        if !value.get().high_contrast || color.a < 0.5 {
+            return color;
+        }
+        let luminance = color.r * 0.2126 + color.g * 0.7152 + color.b * 0.0722;
+        if luminance >= 0.58 {
+            color
+        } else {
+            let lift = 0.72 / luminance.max(0.12);
+            Color::new(
+                (color.r * lift).min(1.0),
+                (color.g * lift).min(1.0),
+                (color.b * lift).min(1.0),
+                color.a,
+            )
+        }
+    })
+}
+
+pub fn draw_ui_text(text: &str, x: f32, y: f32, size: f32, color: Color) {
+    let scale = PRESENTATION.with(|value| value.get().text_scale);
+    macroquad_toolkit::ui::draw_ui_text(text, x, y, size * scale, accessible_color(color));
+}
+
+pub fn measure_ui_text(
+    text: &str,
+    font: Option<&Font>,
+    font_size: u16,
+    font_scale: f32,
+) -> TextDimensions {
+    let scale = PRESENTATION.with(|value| value.get().text_scale);
+    macroquad_toolkit::ui::measure_ui_text(
+        text,
+        font,
+        (font_size as f32 * scale).round() as u16,
+        font_scale,
+    )
 }
 
 /// Theme colors for the game.
@@ -78,7 +207,10 @@ pub fn draw_small_caps(text: &str, x: f32, y: f32, size: f32, color: Color) {
 }
 
 pub fn draw_glass_button(rect: UiRect, label: &str, accent: Color, enabled: bool) -> bool {
-    let clicked = enabled && button(rect.x, rect.y, rect.w, rect.h, "");
+    let (_, focused) = register_button();
+    let keyboard_pressed =
+        focused && (is_key_pressed(KeyCode::Enter) || is_key_pressed(KeyCode::KpEnter));
+    let clicked = enabled && (button(rect.x, rect.y, rect.w, rect.h, "") || keyboard_pressed);
     let hovered = enabled && rect.contains_mouse();
     let bg = if hovered {
         colors::GLASS_LIGHT
@@ -92,6 +224,16 @@ pub fn draw_glass_button(rect: UiRect, label: &str, accent: Color, enabled: bool
         .with_top_highlight(1.0, Color::new(1.0, 1.0, 1.0, 0.10))
         .with_border(1.0, border);
     macroquad_toolkit::ui::draw_surface(rect.rect(), &surface);
+    if focused {
+        draw_rectangle_lines(
+            rect.x - 2.0,
+            rect.y - 2.0,
+            rect.w + 4.0,
+            rect.h + 4.0,
+            3.0,
+            colors::TEXT_PRIMARY,
+        );
+    }
 
     let text_color = if enabled {
         colors::TEXT_PRIMARY
@@ -119,13 +261,18 @@ pub fn draw_wrapped_text(
     color: Color,
     max_lines: usize,
 ) -> f32 {
-    let mut lines = macroquad_toolkit::ui::wrap_text(text, max_width, size);
+    let scale = PRESENTATION.with(|value| value.get().text_scale);
+    // The shared wrapper measures/draws scaled glyphs, so wrapping must use
+    // the corresponding unscaled width. Otherwise 125% text chooses the same
+    // line breaks as 100% and spills across the next panel.
+    let logical_width = max_width / scale.max(1.0);
+    let mut lines = macroquad_toolkit::ui::wrap_text(text, logical_width, size);
     if max_lines > 0 && lines.len() > max_lines {
         lines.truncate(max_lines);
         if let Some(last) = lines.last_mut() {
             *last = macroquad_toolkit::ui::truncate_text_to_width(
                 &format!("{last}..."),
-                max_width,
+                logical_width,
                 size,
             );
         }
@@ -133,7 +280,7 @@ pub fn draw_wrapped_text(
 
     for line in lines {
         draw_ui_text(&line, x, y, size, color);
-        y += line_height;
+        y += line_height * scale;
     }
 
     y

@@ -2,12 +2,12 @@
 
 use crate::data::GameData;
 use crate::state::PlayerStats;
+use crate::ui::draw_ui_text;
 use crate::ui::{
     colors, draw_glass_button, draw_glass_panel, draw_noir_city_background, draw_small_caps,
     draw_wrapped_text, fonts, UiAction, UiRect,
 };
 use macroquad::prelude::*;
-use macroquad_toolkit::ui::draw_ui_text;
 
 /// Draw the leaderboard and achievements screen
 pub fn draw_leaderboard(player_stats: &PlayerStats, game_data: Option<&GameData>) -> UiAction {

@@ -3,10 +3,10 @@
 
 use macroquad::prelude::*;
 
+use crate::ui::draw_ui_text;
 use crate::ui::{colors, draw_glass_panel, draw_small_caps, fonts, UiRect};
 use macroquad_toolkit::colors::with_alpha;
 use macroquad_toolkit::math::pulse01;
-use macroquad_toolkit::ui::draw_ui_text;
 
 /// Get a pulsing color for warning text (slow, gentle pulse)
 pub(super) fn pulsing_warning_color() -> Color {

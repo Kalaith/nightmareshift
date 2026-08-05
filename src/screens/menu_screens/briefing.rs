@@ -4,11 +4,12 @@ use macroquad::prelude::*;
 
 use crate::data::GameData;
 use crate::state::GameState;
+use crate::ui::draw_ui_text;
 use crate::ui::{
     colors, draw_glass_button, draw_glass_panel, draw_noir_city_background, draw_small_caps,
     draw_wrapped_text, fonts, UiAction, UiRect,
 };
-use macroquad_toolkit::ui::{draw_ui_text, format_clock};
+use macroquad_toolkit::ui::format_clock;
 
 fn draw_briefing_taxi_scene(rect: UiRect) {
     draw_rectangle(

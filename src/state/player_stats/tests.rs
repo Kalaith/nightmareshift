@@ -323,3 +323,34 @@ fn missing_achievements_field_defaults_empty() {
     let reloaded: PlayerStats = serde_json::from_value(value).expect("defaults apply");
     assert_eq!(reloaded.achievements.len(), 0);
 }
+
+#[test]
+fn old_saves_receive_accessible_presentation_defaults() {
+    let stats = PlayerStats::new();
+    let mut value = serde_json::to_value(&stats).unwrap();
+    value.as_object_mut().unwrap().remove("accessibility");
+
+    let reloaded: PlayerStats = serde_json::from_value(value).expect("defaults apply");
+    assert_eq!(reloaded.accessibility.text_scale_percent, 100);
+    assert!(reloaded.accessibility.captions);
+    assert_eq!(reloaded.accessibility.master_volume, 80);
+}
+
+#[test]
+fn presentation_cycles_stay_inside_supported_values() {
+    let mut settings = AccessibilitySettings::default();
+    let mut text = Vec::new();
+    let mut brightness = Vec::new();
+    let mut volume = Vec::new();
+    for _ in 0..4 {
+        text.push(settings.text_scale_percent);
+        brightness.push(settings.brightness_percent);
+        volume.push(settings.master_volume);
+        settings.cycle_text_scale();
+        settings.cycle_brightness();
+        settings.cycle_master_volume();
+    }
+    assert_eq!(text, vec![100, 115, 125, 100]);
+    assert_eq!(brightness, vec![100, 115, 90, 100]);
+    assert_eq!(volume, vec![80, 100, 0, 50]);
+}

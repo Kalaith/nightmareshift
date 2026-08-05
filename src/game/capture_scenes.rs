@@ -590,6 +590,16 @@ impl Game {
                 }
                 self.spawn_passenger();
             }
+            "help_options" => {
+                self.change_screen(Screen::HelpOptions);
+            }
+            "help_options_accessible" => {
+                self.player_stats.accessibility.text_scale_percent = 125;
+                self.player_stats.accessibility.high_contrast = true;
+                self.player_stats.accessibility.reduced_motion = true;
+                self.player_stats.accessibility.brightness_percent = 115;
+                self.change_screen(Screen::HelpOptions);
+            }
             _ => {
                 // Default: main menu. The boot flow lands here automatically
                 // after a couple of loading frames (see `update`), so no
