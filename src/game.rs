@@ -57,6 +57,8 @@ pub struct Game {
     last_hazard_update: f64,
     playtest_bot: Option<PlaytestBot>,
     skill_tree_scroll: ScrollArea,
+    skill_tree_category: usize,
+    skill_tree_selected: Option<String>,
     almanac_scroll: ScrollArea,
     almanac_selected: Option<u32>,
     /// When the menu's delete button is armed until, if it is. A first click
@@ -177,6 +179,8 @@ impl Game {
             last_hazard_update: current_time,
             playtest_bot,
             skill_tree_scroll: ScrollArea::new(),
+            skill_tree_category: 0,
+            skill_tree_selected: None,
             almanac_scroll: ScrollArea::new(),
             almanac_selected: None,
             delete_armed_until: None,

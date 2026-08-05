@@ -1,8 +1,10 @@
 //! UI component modules.
 
+pub mod backgrounds;
 pub mod components;
 pub mod core;
 
+pub use backgrounds::*;
 pub use components::*;
 pub use core::*;
 

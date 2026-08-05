@@ -6,6 +6,7 @@ use std::{cell::Cell, cell::RefCell, collections::HashMap};
 
 thread_local! {
     static PASSENGER_PORTRAITS: RefCell<HashMap<u32, Texture2D>> = RefCell::new(HashMap::new());
+    static COCKPIT_BACKGROUND: RefCell<Option<Texture2D>> = const { RefCell::new(None) };
     static PRESENTATION: Cell<Presentation> = const { Cell::new(Presentation::DEFAULT) };
     static BUTTON_CURSOR: Cell<usize> = const { Cell::new(0) };
     static BUTTON_COUNT: Cell<usize> = const { Cell::new(1) };
@@ -286,8 +287,211 @@ pub fn draw_wrapped_text(
     y
 }
 
-pub fn draw_stat_block(icon: &str, value: &str, label: &str, x: f32, y: f32, color: Color) {
-    draw_ui_text(icon, x, y + 22.0, fonts::SIZE_XL, color);
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum UiIcon {
+    Fuel,
+    Time,
+    Fare,
+    Risk,
+    Weather,
+    Rules,
+    Inventory,
+    Wards,
+    Lore,
+    Cab,
+    Rides,
+}
+
+/// Small code-native icon atlas; it avoids platform-dependent emoji glyphs
+/// while keeping the same symbols available to every responsive layout.
+pub fn draw_ui_icon(icon: UiIcon, cx: f32, cy: f32, size: f32, color: Color) {
+    let s = size / 24.0;
+    let stroke = (1.8 * s).max(1.0);
+    match icon {
+        UiIcon::Fuel => {
+            draw_rectangle_lines(
+                cx - 8.0 * s,
+                cy - 10.0 * s,
+                12.0 * s,
+                20.0 * s,
+                stroke,
+                color,
+            );
+            draw_line(
+                cx - 6.0 * s,
+                cy - 5.0 * s,
+                cx + 2.0 * s,
+                cy - 5.0 * s,
+                stroke,
+                color,
+            );
+            draw_line(
+                cx + 4.0 * s,
+                cy - 7.0 * s,
+                cx + 9.0 * s,
+                cy - 2.0 * s,
+                stroke,
+                color,
+            );
+            draw_line(
+                cx + 9.0 * s,
+                cy - 2.0 * s,
+                cx + 9.0 * s,
+                cy + 8.0 * s,
+                stroke,
+                color,
+            );
+        }
+        UiIcon::Time => {
+            draw_circle_lines(cx, cy, 10.0 * s, stroke, color);
+            draw_line(cx, cy, cx, cy - 6.0 * s, stroke, color);
+            draw_line(cx, cy, cx + 5.0 * s, cy + 3.0 * s, stroke, color);
+        }
+        UiIcon::Fare => {
+            draw_circle_lines(cx, cy, 10.0 * s, stroke, color);
+            draw_line(cx, cy - 7.0 * s, cx, cy + 7.0 * s, stroke, color);
+            draw_line(
+                cx - 4.0 * s,
+                cy - 4.0 * s,
+                cx + 4.0 * s,
+                cy - 4.0 * s,
+                stroke,
+                color,
+            );
+            draw_line(
+                cx - 4.0 * s,
+                cy + 4.0 * s,
+                cx + 4.0 * s,
+                cy + 4.0 * s,
+                stroke,
+                color,
+            );
+        }
+        UiIcon::Risk => {
+            draw_triangle_lines(
+                Vec2::new(cx, cy - 11.0 * s),
+                Vec2::new(cx - 11.0 * s, cy + 9.0 * s),
+                Vec2::new(cx + 11.0 * s, cy + 9.0 * s),
+                stroke,
+                color,
+            );
+            draw_line(cx, cy - 4.0 * s, cx, cy + 3.0 * s, stroke, color);
+            draw_circle(cx, cy + 6.0 * s, 1.4 * s, color);
+        }
+        UiIcon::Weather => {
+            draw_circle_lines(cx - 4.0 * s, cy, 6.0 * s, stroke, color);
+            draw_circle_lines(cx + 3.0 * s, cy - 3.0 * s, 7.0 * s, stroke, color);
+            draw_line(
+                cx - 9.0 * s,
+                cy + 5.0 * s,
+                cx + 10.0 * s,
+                cy + 5.0 * s,
+                stroke,
+                color,
+            );
+            draw_line(
+                cx - 4.0 * s,
+                cy + 8.0 * s,
+                cx - 6.0 * s,
+                cy + 12.0 * s,
+                stroke,
+                color,
+            );
+            draw_line(
+                cx + 4.0 * s,
+                cy + 8.0 * s,
+                cx + 2.0 * s,
+                cy + 12.0 * s,
+                stroke,
+                color,
+            );
+        }
+        UiIcon::Rules => {
+            draw_rectangle_lines(
+                cx - 8.0 * s,
+                cy - 10.0 * s,
+                16.0 * s,
+                20.0 * s,
+                stroke,
+                color,
+            );
+            for row in [-5.0, 0.0, 5.0] {
+                draw_line(
+                    cx - 4.0 * s,
+                    cy + row * s,
+                    cx + 5.0 * s,
+                    cy + row * s,
+                    stroke,
+                    color,
+                );
+            }
+        }
+        UiIcon::Inventory => {
+            draw_rectangle_lines(
+                cx - 9.0 * s,
+                cy - 5.0 * s,
+                18.0 * s,
+                14.0 * s,
+                stroke,
+                color,
+            );
+            draw_arc(cx, cy - 5.0 * s, 8, 180.0, 180.0, 5.0 * s, stroke, color);
+        }
+        UiIcon::Wards => {
+            draw_triangle_lines(
+                Vec2::new(cx, cy + 11.0 * s),
+                Vec2::new(cx - 9.0 * s, cy - 8.0 * s),
+                Vec2::new(cx + 9.0 * s, cy - 8.0 * s),
+                stroke,
+                color,
+            );
+            draw_line(cx, cy - 6.0 * s, cx, cy + 6.0 * s, stroke, color);
+        }
+        UiIcon::Lore => {
+            draw_rectangle_lines(
+                cx - 10.0 * s,
+                cy - 8.0 * s,
+                9.0 * s,
+                17.0 * s,
+                stroke,
+                color,
+            );
+            draw_rectangle_lines(cx + 1.0 * s, cy - 8.0 * s, 9.0 * s, 17.0 * s, stroke, color);
+            draw_line(cx, cy - 8.0 * s, cx, cy + 9.0 * s, stroke, color);
+        }
+        UiIcon::Cab | UiIcon::Rides => {
+            draw_rectangle_lines(
+                cx - 10.0 * s,
+                cy - 3.0 * s,
+                20.0 * s,
+                9.0 * s,
+                stroke,
+                color,
+            );
+            draw_line(
+                cx - 6.0 * s,
+                cy - 3.0 * s,
+                cx - 2.0 * s,
+                cy - 8.0 * s,
+                stroke,
+                color,
+            );
+            draw_line(
+                cx - 2.0 * s,
+                cy - 8.0 * s,
+                cx + 6.0 * s,
+                cy - 3.0 * s,
+                stroke,
+                color,
+            );
+            draw_circle(cx - 6.0 * s, cy + 7.0 * s, 2.5 * s, color);
+            draw_circle(cx + 6.0 * s, cy + 7.0 * s, 2.5 * s, color);
+        }
+    }
+}
+
+pub fn draw_stat_block(icon: UiIcon, value: &str, label: &str, x: f32, y: f32, color: Color) {
+    draw_ui_icon(icon, x + 10.0, y + 14.0, 20.0, color);
     draw_ui_text(value, x + 26.0, y + 16.0, fonts::SIZE_LG, color);
     draw_small_caps(
         label,
@@ -397,109 +601,48 @@ pub fn draw_noir_city_background() {
 }
 
 pub fn draw_cockpit_background() {
+    let texture = COCKPIT_BACKGROUND.with(|cached| {
+        let mut cached = cached.borrow_mut();
+        if cached.is_none() {
+            let texture = Texture2D::from_file_with_format(
+                include_bytes!("../../assets/ui/cockpit_background.png"),
+                Some(ImageFormat::Png),
+            );
+            texture.set_filter(FilterMode::Linear);
+            *cached = Some(texture);
+        }
+        cached.as_ref().cloned()
+    });
+
+    let Some(texture) = texture else {
+        draw_noir_city_background();
+        return;
+    };
     let w = screen_width();
     let h = screen_height();
-    clear_background(colors::BLACK);
-    draw_rectangle(0.0, 0.0, w, h, Color::new(0.018, 0.025, 0.026, 1.0));
-
-    // Windshield.
-    let horizon = h * 0.36;
-    draw_rectangle(
+    let tex_w = texture.width();
+    let tex_h = texture.height();
+    let dest_aspect = w / h.max(1.0);
+    let tex_aspect = tex_w / tex_h.max(1.0);
+    let source = if dest_aspect > tex_aspect {
+        let src_h = tex_w / dest_aspect;
+        Rect::new(0.0, (tex_h - src_h) / 2.0, tex_w, src_h)
+    } else {
+        let src_w = tex_h * dest_aspect;
+        Rect::new((tex_w - src_w) / 2.0, 0.0, src_w, tex_h)
+    };
+    draw_texture_ex(
+        &texture,
         0.0,
-        layout::STATUS_BAR_HEIGHT,
-        w,
-        h * 0.50,
-        Color::new(0.035, 0.047, 0.050, 1.0),
-    );
-    draw_rectangle(0.0, horizon, w, 5.0, Color::new(0.0, 0.0, 0.0, 0.45));
-    draw_line(
-        w * 0.24,
-        layout::STATUS_BAR_HEIGHT,
-        w * 0.14,
-        h * 0.72,
-        5.0,
-        Color::new(0.0, 0.0, 0.0, 0.45),
-    );
-    draw_line(
-        w * 0.76,
-        layout::STATUS_BAR_HEIGHT,
-        w * 0.86,
-        h * 0.72,
-        5.0,
-        Color::new(0.0, 0.0, 0.0, 0.45),
-    );
-
-    // Road.
-    draw_triangle(
-        Vec2::new(w * 0.42, horizon + 20.0),
-        Vec2::new(w * 0.58, horizon + 20.0),
-        Vec2::new(w * 0.86, h * 0.76),
-        Color::new(0.030, 0.035, 0.033, 1.0),
-    );
-    draw_triangle(
-        Vec2::new(w * 0.42, horizon + 20.0),
-        Vec2::new(w * 0.14, h * 0.76),
-        Vec2::new(w * 0.86, h * 0.76),
-        Color::new(0.035, 0.040, 0.038, 0.78),
-    );
-    draw_line(
-        w * 0.50,
-        horizon + 28.0,
-        w * 0.50,
-        h * 0.75,
-        2.0,
-        Color::new(0.8, 0.55, 0.18, 0.45),
-    );
-
-    // Dashboard.
-    draw_rectangle(
         0.0,
-        h * 0.72,
-        w,
-        h * 0.28,
-        Color::new(0.010, 0.012, 0.011, 0.96),
+        WHITE,
+        DrawTextureParams {
+            dest_size: Some(vec2(w, h)),
+            source: Some(source),
+            ..Default::default()
+        },
     );
-    draw_circle(w * 0.23, h * 0.83, 78.0, Color::new(0.0, 0.0, 0.0, 0.75));
-    draw_circle(
-        w * 0.23,
-        h * 0.83,
-        54.0,
-        Color::new(0.045, 0.050, 0.045, 1.0),
-    );
-    draw_rectangle(
-        w * 0.47,
-        h * 0.77,
-        134.0,
-        70.0,
-        Color::new(0.015, 0.035, 0.018, 0.90),
-    );
-    draw_rectangle_lines(
-        w * 0.47,
-        h * 0.77,
-        134.0,
-        70.0,
-        1.0,
-        Color::new(0.16, 0.45, 0.16, 0.60),
-    );
-
-    // Rain and light bokeh.
-    for i in 0..65 {
-        let x = ((i * 97) % 800) as f32 / 800.0 * w;
-        let y = layout::STATUS_BAR_HEIGHT + ((i * 43) % 320) as f32;
-        draw_line(
-            x,
-            y,
-            x - 7.0,
-            y + 34.0,
-            1.0,
-            Color::new(0.55, 0.62, 0.66, 0.18),
-        );
-    }
-    for i in 0..10 {
-        let x = ((i * 117 + 53) % 800) as f32 / 800.0 * w;
-        let y = layout::STATUS_BAR_HEIGHT + 35.0 + ((i * 67) % 250) as f32;
-        draw_circle(x, y, 11.0, Color::new(0.96, 0.58, 0.16, 0.18));
-    }
+    draw_rectangle(0.0, 0.0, w, h, Color::new(0.0, 0.0, 0.0, 0.30));
 }
 
 fn passenger_portrait_bytes(id: u32) -> Option<&'static [u8]> {

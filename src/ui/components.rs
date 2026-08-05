@@ -48,7 +48,7 @@ impl StatusBar {
                 .status_bar
                 .fuel
                 .replace("{}", &(state.fuel as u32).to_string());
-            draw_stat_block("F", &fuel_value, "Fuel", stat_x(0), y, fuel_color);
+            draw_stat_block(UiIcon::Fuel, &fuel_value, "Fuel", stat_x(0), y, fuel_color);
             draw_divider(divider_x(1), 18.0, 38.0);
 
             let earnings_value = data
@@ -63,7 +63,7 @@ impl StatusBar {
                 )
                 .replace("{}", &state.earnings.to_string());
             draw_stat_block(
-                "$",
+                UiIcon::Fare,
                 &earnings_value,
                 "Earnings",
                 stat_x(1),
@@ -95,7 +95,7 @@ impl StatusBar {
                 .replacen("{}", &hours.to_string(), 1)
                 .replacen("{:02}", &format!("{:02}", mins), 1)
                 .replace(&format!("{}:{:02}", hours, mins), &formatted_time);
-            draw_stat_block("T", &time_value, "Time", stat_x(2), y, time_color);
+            draw_stat_block(UiIcon::Time, &time_value, "Time", stat_x(2), y, time_color);
             draw_divider(divider_x(3), 18.0, 38.0);
 
             let rides_value = state.rides_completed.to_string();
@@ -114,7 +114,7 @@ impl StatusBar {
                 rides_label.as_str()
             };
             draw_stat_block(
-                "#",
+                UiIcon::Rides,
                 &rides_value,
                 rides_label,
                 stat_x(3),
@@ -130,7 +130,7 @@ impl StatusBar {
                 weather_name.to_string()
             };
             draw_stat_block(
-                "W",
+                UiIcon::Weather,
                 &weather_label,
                 "Weather",
                 stat_x(4),
@@ -156,7 +156,7 @@ impl StatusBar {
             if wards > 0 {
                 draw_divider(divider_x(5), 18.0, 38.0);
                 draw_stat_block(
-                    "P",
+                    UiIcon::Wards,
                     &wards.to_string(),
                     "Wards",
                     stat_x(5),

@@ -6,7 +6,7 @@ use crate::data::GameData;
 use crate::state::{Persistence, PlayerStats};
 use crate::ui::draw_ui_text;
 use crate::ui::{
-    colors, draw_glass_panel, draw_noir_city_background, draw_small_caps, draw_wrapped_text, fonts,
+    colors, draw_glass_panel, draw_small_caps, draw_title_background, draw_wrapped_text, fonts,
     UiAction, UiRect,
 };
 
@@ -25,7 +25,7 @@ pub fn draw_main_menu(
     daily_seed: u64,
     seed_entry: &mut Option<String>,
 ) -> UiAction {
-    draw_noir_city_background();
+    draw_title_background();
 
     // Default strings if data missing (shouldn't happen)
     let title_text = if let Some(d) = game_data {

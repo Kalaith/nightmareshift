@@ -73,6 +73,8 @@ impl Game {
                 &self.player_stats,
                 self.game_data.as_ref(),
                 &mut self.skill_tree_scroll,
+                &mut self.skill_tree_category,
+                &mut self.skill_tree_selected,
             ),
             Screen::Almanac => meta_screens::draw_almanac(
                 &self.player_stats,

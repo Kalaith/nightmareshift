@@ -198,6 +198,31 @@ fn draw_skill_card(
             colors::TEXT_MUTED
         },
     );
+    let effect_text = if skill.effect.effect_type == "ability_unlock" {
+        format!("Gameplay effect: unlocks {} choices", skill.effect.target)
+    } else if matches!(
+        skill.effect.target.as_str(),
+        "fuel_consumption" | "hazard_damage" | "fare_multiplier"
+    ) {
+        format!(
+            "Mechanical magnitude: {} x{:.2}",
+            skill.effect.target.replace('_', " "),
+            skill.effect.value
+        )
+    } else {
+        format!(
+            "Mechanical magnitude: {} +{}",
+            skill.effect.target.replace('_', " "),
+            skill.effect.value
+        )
+    };
+    draw_small_caps(
+        &effect_text,
+        text_x,
+        (desc_bottom + 32.0).min(rect.y + rect.h - 52.0),
+        fonts::SIZE_XS,
+        colors::ACCENT_SKY,
+    );
 
     if can_unlock {
         let buy_rect = UiRect::new(rect.x + rect.w - 116.0, rect.y + rect.h - 36.0, 96.0, 26.0);
@@ -214,40 +239,13 @@ fn draw_skill_card(
     UiAction::None
 }
 
-/// Content height (in unscrolled content-space) needed to lay out every
-/// category, mirroring the accumulation the draw loop below performs.
-/// Computed as a cheap pre-pass (no drawing) so the `ScrollArea` can clamp
-/// and draw its scrollbar correctly before the real layout pass runs.
-fn compute_content_height(
-    categories: &[&str],
-    data: &GameData,
-    wide_layout: bool,
-    card_h: f32,
-    card_gap: f32,
-) -> f32 {
-    let mut running = 0.0_f32;
-    let mut max_extent = 0.0_f32;
-    for category in categories {
-        let n = data
-            .skills
-            .iter()
-            .filter(|s| s.category == *category)
-            .count() as f32;
-        let category_h = 58.0 + n * (card_h + card_gap) + 12.0;
-        let start = if wide_layout { 0.0 } else { running };
-        max_extent = max_extent.max(start + 58.0 + n * (card_h + card_gap));
-        if !wide_layout {
-            running += category_h + 18.0;
-        }
-    }
-    max_extent
-}
-
 /// Draw the skill tree screen
 pub fn draw_skill_tree(
     player_stats: &PlayerStats,
     game_data: Option<&GameData>,
     scroll: &mut ScrollArea,
+    selected_category: &mut usize,
+    selected_skill: &mut Option<String>,
 ) -> UiAction {
     draw_noir_city_background();
 
@@ -260,7 +258,6 @@ pub fn draw_skill_tree(
         let footer_h = 66.0;
         let content_top = header_h + 26.0;
         let content_bottom = screen_h - footer_h;
-        let content_h = content_bottom - content_top;
 
         let header_rect = UiRect::new(margin, 28.0, screen_w - margin * 2.0, header_h);
         draw_glass_panel(header_rect, colors::BORDER_DIM);
@@ -325,103 +322,188 @@ pub fn draw_skill_tree(
         }
 
         let categories = ["survival", "occult", "efficiency", "comfort"];
-        let wide_layout = screen_w >= 1200.0;
-        let col_gap = 18.0;
-        let col_count = if wide_layout {
-            categories.len() as f32
-        } else {
-            1.0
-        };
-        let column_w = ((screen_w - margin * 2.0 - col_gap * (col_count - 1.0)) / col_count)
-            .clamp(260.0, 560.0);
-        let card_h = if wide_layout { 122.0 } else { 112.0 };
-        let card_gap = 10.0;
-
-        let content_height =
-            compute_content_height(&categories, data, wide_layout, card_h, card_gap);
-        let list_view = Rect::new(margin, content_top, screen_w - margin * 2.0, content_h);
-        scroll.update(list_view, content_height);
-        let scroll_offset = scroll.offset();
-
-        let mut max_content_bottom: f32 = 0.0;
-
-        for (cat_idx, category) in categories.iter().enumerate() {
-            let column_x = if wide_layout {
-                margin + cat_idx as f32 * (column_w + col_gap)
-            } else {
-                center_x - column_w / 2.0
-            };
-            let mut y = if wide_layout {
-                content_top
-            } else {
-                content_top + cat_idx as f32 * 10.0
-            } - scroll_offset;
-
-            let skills_in_category = data
-                .skills
-                .iter()
-                .filter(|s| s.category == *category)
-                .collect::<Vec<_>>();
-            let unlocked_count = skills_in_category
-                .iter()
-                .filter(|skill| player_stats.is_skill_unlocked(&skill.id))
-                .count();
-
-            let category_h = 58.0 + skills_in_category.len() as f32 * (card_h + card_gap) + 12.0;
-            if !wide_layout {
-                y += max_content_bottom.max(0.0);
-                max_content_bottom += category_h + 18.0;
-            }
-
-            if y + category_h > content_top && y < content_bottom {
-                let panel_rect =
-                    UiRect::new(column_x, y, column_w, category_h.min(content_h + 80.0));
-                draw_glass_panel(panel_rect, colors::BORDER_DIM);
-                draw_skill_category_mark(category, column_x + 28.0, y + 30.0, colors::CAB_YELLOW);
-                draw_small_caps(
-                    &skill_category_label(category, data),
-                    column_x + 56.0,
-                    y + 26.0,
-                    fonts::SIZE_LG,
-                    colors::CAB_YELLOW,
-                );
-                draw_small_caps(
-                    &format!("{}/{} unlocked", unlocked_count, skills_in_category.len()),
-                    column_x + 56.0,
-                    y + 46.0,
-                    fonts::SIZE_XS,
-                    colors::TEXT_MUTED,
-                );
-            }
-
-            y += 58.0;
-
-            // Skills in category
-            for skill in skills_in_category {
-                let is_unlocked = player_stats.is_skill_unlocked(&skill.id);
-                let can_unlock = skill.can_unlock(&player_stats.unlocked_skills)
-                    && !is_unlocked
-                    && player_stats.bank_balance >= skill.cost;
-
-                let card_rect = UiRect::new(column_x + 12.0, y, column_w - 24.0, card_h);
-                if y + card_h > content_top && y < content_bottom {
-                    let action = draw_skill_card(
-                        card_rect,
-                        skill,
-                        is_unlocked,
-                        can_unlock,
-                        player_stats,
-                        data,
-                    );
-                    if action != UiAction::None {
-                        return action;
-                    }
-                }
-                y += card_h + card_gap;
+        *selected_category = (*selected_category).min(categories.len() - 1);
+        let tab_gap = 10.0;
+        let tab_w = ((screen_w - margin * 2.0 - tab_gap * 3.0) / 4.0).max(120.0);
+        for (idx, category) in categories.iter().enumerate() {
+            let tab = UiRect::new(
+                margin + idx as f32 * (tab_w + tab_gap),
+                content_top,
+                tab_w,
+                42.0,
+            );
+            let selected = idx == *selected_category;
+            if draw_glass_button(
+                tab,
+                &skill_category_label(category, data),
+                if selected {
+                    colors::CAB_YELLOW
+                } else {
+                    colors::BORDER_DIM
+                },
+                true,
+            ) && !selected
+            {
+                *selected_category = idx;
+                *selected_skill = None;
+                scroll.set_offset(0.0);
             }
         }
 
-        scroll.draw_scrollbar(list_view, content_height);
+        let category = categories[*selected_category];
+        let skills = data
+            .skills
+            .iter()
+            .filter(|skill| skill.category == category)
+            .collect::<Vec<_>>();
+        if selected_skill
+            .as_ref()
+            .is_none_or(|id| !skills.iter().any(|skill| &skill.id == id))
+        {
+            *selected_skill = skills.first().map(|skill| skill.id.clone());
+        }
+
+        let body_top = content_top + 56.0;
+        let body_h = content_bottom - body_top;
+        let gap = 18.0;
+        let list_w = if screen_w >= 1100.0 {
+            (screen_w * 0.42).clamp(390.0, 620.0)
+        } else {
+            (screen_w - margin * 2.0) * 0.46
+        };
+        let detail_w = screen_w - margin * 2.0 - list_w - gap;
+        let list_panel = UiRect::new(margin, body_top, list_w, body_h);
+        let detail_panel = UiRect::new(margin + list_w + gap, body_top, detail_w, body_h);
+        draw_glass_panel(list_panel, colors::BORDER_DIM);
+        draw_glass_panel(detail_panel, colors::BORDER_DIM);
+
+        let unlocked_count = skills
+            .iter()
+            .filter(|skill| player_stats.is_skill_unlocked(&skill.id))
+            .count();
+        draw_skill_category_mark(
+            category,
+            list_panel.x + 28.0,
+            list_panel.y + 28.0,
+            colors::CAB_YELLOW,
+        );
+        draw_small_caps(
+            &format!(
+                "{}  {}/{} unlocked",
+                skill_category_label(category, data),
+                unlocked_count,
+                skills.len()
+            ),
+            list_panel.x + 56.0,
+            list_panel.y + 32.0,
+            fonts::SIZE_SM,
+            colors::CAB_YELLOW,
+        );
+
+        let card_h = 88.0;
+        let card_gap = 10.0;
+        let list_view = Rect::new(
+            list_panel.x + 10.0,
+            list_panel.y + 52.0,
+            list_panel.w - 20.0,
+            list_panel.h - 62.0,
+        );
+        let list_height = skills.len() as f32 * (card_h + card_gap);
+        scroll.update(list_view, list_height);
+        let mut y = list_view.y - scroll.offset();
+        for skill in &skills {
+            let is_selected = selected_skill.as_deref() == Some(skill.id.as_str());
+            let is_unlocked = player_stats.is_skill_unlocked(&skill.id);
+            let available = skill.can_unlock(&player_stats.unlocked_skills)
+                && player_stats.bank_balance >= skill.cost
+                && !is_unlocked;
+            let accent = if is_selected {
+                colors::CAB_YELLOW
+            } else if is_unlocked {
+                colors::FUEL_GOOD
+            } else {
+                colors::BORDER_DIM
+            };
+            let card = UiRect::new(list_view.x, y, list_view.w - 8.0, card_h);
+            if y + card_h > list_view.y && y < list_view.y + list_view.h {
+                if draw_glass_button(card, "", accent, true) && !scroll.absorbs_press() {
+                    *selected_skill = Some(skill.id.clone());
+                }
+                draw_ui_text(
+                    &skill.name,
+                    card.x + 16.0,
+                    card.y + 28.0,
+                    fonts::SIZE_MD,
+                    colors::TEXT_PRIMARY,
+                );
+                draw_small_caps(
+                    &format!(
+                        "${}  {}",
+                        skill.cost,
+                        if is_unlocked {
+                            "Unlocked"
+                        } else if available {
+                            "Available"
+                        } else {
+                            "Locked"
+                        }
+                    ),
+                    card.x + 16.0,
+                    card.y + 48.0,
+                    fonts::SIZE_XS,
+                    if available {
+                        colors::CAB_YELLOW
+                    } else {
+                        colors::TEXT_MUTED
+                    },
+                );
+                draw_wrapped_text(
+                    &skill.description,
+                    card.x + 16.0,
+                    card.y + 68.0,
+                    card.w - 32.0,
+                    fonts::SIZE_XS,
+                    14.0,
+                    colors::TEXT_SECONDARY,
+                    1,
+                );
+            }
+            y += card_h + card_gap;
+        }
+        scroll.draw_scrollbar(list_view, list_height);
+
+        if let Some(skill) = skills
+            .iter()
+            .find(|skill| selected_skill.as_deref() == Some(skill.id.as_str()))
+        {
+            draw_small_caps(
+                "Selected upgrade",
+                detail_panel.x + 18.0,
+                detail_panel.y + 28.0,
+                fonts::SIZE_SM,
+                colors::ACCENT_SKY,
+            );
+            let is_unlocked = player_stats.is_skill_unlocked(&skill.id);
+            let can_unlock = skill.can_unlock(&player_stats.unlocked_skills)
+                && !is_unlocked
+                && player_stats.bank_balance >= skill.cost;
+            let action = draw_skill_card(
+                UiRect::new(
+                    detail_panel.x + 14.0,
+                    detail_panel.y + 44.0,
+                    detail_panel.w - 28.0,
+                    detail_panel.h - 58.0,
+                ),
+                skill,
+                is_unlocked,
+                can_unlock,
+                player_stats,
+                data,
+            );
+            if action != UiAction::None {
+                return action;
+            }
+        }
 
         draw_rectangle(
             0.0,
