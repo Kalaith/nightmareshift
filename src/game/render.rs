@@ -44,6 +44,10 @@ impl Game {
     fn draw_frame(&mut self) -> UiAction {
         clear_background(Color::from_hex(0x1a1a2e));
 
+        if let Some(scene) = self.ui_capture_scene.as_deref() {
+            return draw_component_gallery(scene, &self.game_state, self.game_data.as_ref());
+        }
+
         let action = match self.screen {
             Screen::Loading => {
                 menu_screens::draw_loading(self.game_data.as_ref(), self.data_error.as_deref())

@@ -17,6 +17,10 @@ $ErrorActionPreference = "Stop"
 $gameDir = Split-Path -Parent $PSScriptRoot
 $shared = Join-Path (Split-Path -Parent $gameDir) "macroquad-toolkit\scripts\capture_ui.ps1"
 $scenes = @(
+    "ui_core",
+    "ui_status",
+    "ui_passenger",
+    "ui_completion",
     "mainmenu",
     "seed_entry",
     "briefing",
@@ -78,3 +82,7 @@ if ($files.Count -ne $scenes.Count * $viewports.Count) {
     throw "Expected $($scenes.Count * $viewports.Count) captures, found $($files.Count)."
 }
 Write-Host "Captured $($files.Count) review images across $($viewports.Count) viewports."
+& (Join-Path $PSScriptRoot "build-review-contact-sheets.ps1")
+if ($LASTEXITCODE -ne 0) {
+    throw "Contact-sheet generation failed."
+}

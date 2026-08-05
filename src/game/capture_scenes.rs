@@ -39,7 +39,17 @@ impl Game {
     /// Seed a specific scene for the screenshot harness.
     pub fn begin_capture_scene(&mut self, scene: &str) {
         self.capture_mode = true;
+        self.ui_capture_scene = scene.starts_with("ui_").then(|| scene.to_string());
         match scene {
+            "ui_core" => {}
+            "ui_status" => {
+                self.game_state.fuel = 27.0;
+                self.game_state.earnings = 184;
+                self.game_state.time_remaining = 42;
+                self.game_state.rides_completed = 4;
+                self.game_state.rule_immunity_charges = 2;
+            }
+            "ui_passenger" | "ui_completion" => {}
             "briefing" => self.start_game(),
             // The main menu with the seed modal open mid-entry, so the
             // daily/seeded commands and the entry panel can be looked at.

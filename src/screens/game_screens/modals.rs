@@ -6,21 +6,14 @@ use crate::data::{self, GameData, Rarity};
 use crate::state::GameState;
 use crate::ui::draw_ui_text;
 use crate::ui::{
-    colors, draw_glass_button, draw_glass_panel, draw_small_caps, draw_wrapped_text, fonts,
-    spacing, UiAction, UiRect,
+    colors, draw_glass_button, draw_glass_panel, draw_modal_scrim, draw_small_caps,
+    draw_wrapped_text, fonts, spacing, UiAction, UiRect,
 };
 
 /// Draw the inventory modal
 pub fn draw_inventory_modal(game_state: &GameState, game_data: Option<&GameData>) -> UiAction {
     if let Some(data) = game_data {
-        // Semi-transparent overlay
-        draw_rectangle(
-            0.0,
-            0.0,
-            screen_width(),
-            screen_height(),
-            Color::from_rgba(0, 0, 0, 200),
-        );
+        draw_modal_scrim();
 
         // Panel
         let panel_w = (screen_width() - 180.0).min(920.0);
@@ -238,13 +231,7 @@ pub fn draw_inventory_modal(game_state: &GameState, game_data: Option<&GameData>
 /// Draw the rules panel
 pub fn draw_rules_panel(game_state: &GameState, game_data: Option<&GameData>) -> UiAction {
     // Semi-transparent overlay
-    draw_rectangle(
-        0.0,
-        0.0,
-        screen_width(),
-        screen_height(),
-        Color::from_rgba(0, 0, 0, 200),
-    );
+    draw_modal_scrim();
 
     // Panel
     let panel_w = (screen_width() - 180.0).min(900.0);

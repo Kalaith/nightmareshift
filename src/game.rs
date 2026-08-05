@@ -70,6 +70,10 @@ pub struct Game {
     /// `player_stats`; persisting any of that would hand the player a save
     /// they did not earn, so saving is suppressed for the whole run.
     capture_mode: bool,
+    /// Dedicated shared-component verification surface selected by the
+    /// screenshot harness. Product screens remain untouched; this exists so
+    /// component states can be reviewed directly at every supported viewport.
+    ui_capture_scene: Option<String>,
     /// Why `game_data` is `None`, when it is. Shown on the loading screen,
     /// which refuses to advance — a structural data failure used to be a
     /// panic, which on the web build is a silent black canvas.
@@ -191,6 +195,7 @@ impl Game {
             almanac_selected: None,
             delete_armed_until: None,
             capture_mode: false,
+            ui_capture_scene: None,
             data_error,
             save_notice,
             run_seed: seed_from_launch(),

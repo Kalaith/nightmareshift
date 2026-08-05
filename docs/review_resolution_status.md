@@ -12,7 +12,7 @@ Date: 2026-08-05
 | 4. In-shift UI | Complete | Compact status bar, known/inferred/unknown route language, disabled reasons and quote floors, persistent need state, mouse/touch cab controls, itemized leg receipts |
 | 5. Meta/onboarding/accessibility | Complete | Generated hero art, forecast briefing, tabbed skill dossier, compact Almanac roster/dossier, first-shift handbook, persistent options and audio controls |
 | 6. Horror/audio | Complete | Mixer, ambience/tension layers, original WAV set, authored cues, captions, distinct reaction frames, painted cockpit environment |
-| 7. Automated validation | Complete | 246 tests plus source gate, 90-campaign matrix, 124-scene viewport matrix, Windows/WebGL no-parameter publish, clean real-browser startup/input transition |
+| 7. Automated validation | Complete | 246 tests plus source gate, 90-campaign matrix, 140-capture viewport matrix including dedicated shared-component scenes, Windows/WebGL no-parameter publish, clean real-browser startup/input transition |
 
 ## Balance result
 
@@ -34,4 +34,7 @@ completed by bot runs or screenshots:
 
 No further balance tuning should be claimed from those gates until the forms
 contain real participant observations. The implementation, capture harness,
-and measurement artifacts needed to conduct them are complete.
+and measurement artifacts needed to conduct them are complete. Use
+`docs/human_validation_protocol.md` and run
+`scripts/summarize-human-playtests.ps1` to validate and summarize collected
+rows without replacing qualitative review.

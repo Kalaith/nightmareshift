@@ -6,8 +6,8 @@ use crate::data::GameData;
 use crate::state::{Persistence, PlayerStats};
 use crate::ui::draw_ui_text;
 use crate::ui::{
-    colors, draw_glass_panel, draw_small_caps, draw_title_background, draw_wrapped_text, fonts,
-    UiAction, UiRect,
+    colors, draw_glass_panel, draw_modal_scrim, draw_small_caps, draw_title_background,
+    draw_wrapped_text, fonts, UiAction, UiRect,
 };
 
 use super::widgets::draw_menu_command;
@@ -64,13 +64,7 @@ pub fn draw_main_menu(
     // that night, Escape walks away. The Space shortcut to Start is
     // suppressed in the dispatcher while this is `Some`.
     if let Some(digits) = seed_entry.as_mut() {
-        draw_rectangle(
-            0.0,
-            0.0,
-            screen_width(),
-            screen_height(),
-            Color::new(0.0, 0.0, 0.0, 0.72),
-        );
+        draw_modal_scrim();
         let panel = UiRect::centered_x(screen_width(), screen_height() * 0.32, 460.0_f32, 190.0);
         draw_glass_panel(panel, colors::ACCENT_SKY);
         let inner = panel.inset(20.0);

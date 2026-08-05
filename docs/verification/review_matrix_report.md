@@ -2,23 +2,25 @@
 
 Date: 2026-08-05
 
-The deterministic capture harness rendered 31 scenes at each supported target:
+The deterministic capture harness rendered 35 scenes at each supported target:
 
 | Viewport | Captures | Result |
 | --- | ---: | --- |
-| 1920x1080 | 31 | Pass |
-| 1600x900 | 31 | Pass |
-| 1366x768 | 31 | Pass |
-| 900x720 | 31 | Pass after responsive corrections |
+| 1920x1080 | 35 | Pass |
+| 1600x900 | 35 | Pass |
+| 1366x768 | 35 | Pass |
+| 900x720 | 35 | Pass after responsive corrections |
 
-The raw 124 PNGs are reproducible with `scripts/capture-review-matrix.ps1`
-and deliberately ignored by Git (78.4 MB in this run). The four committed
-contact sheets preserve the inspected matrix without turning generated build
-evidence into permanent repository weight.
+The raw 140 PNGs are reproducible with `scripts/capture-review-matrix.ps1`
+and deliberately ignored by Git. The same command now rebuilds four committed,
+labelled contact sheets through `scripts/build-review-contact-sheets.ps1`,
+preserving the inspected matrix without turning raw build evidence into
+permanent repository weight.
 
 ## Scene coverage
 
-Main menu, seed entry, standard and hazard briefings, waiting and refuelling,
+Dedicated core-vocabulary, status-bar, passenger-card, and completion-summary
+scenes; main menu, seed entry, standard and hazard briefings, waiting and refuelling,
 ride request, normal/broke/blocked route choices, guideline and event choices,
 rules with cab-action controls, inventory, trade offer and result, warded ride,
 four supernatural reactions, pause, skill tree, almanac, leaderboard, standard
@@ -40,6 +42,10 @@ campaign completion.
   and outcome paragraphs remain within their panels at all four sizes.
 - High contrast, 125% text, and reduced motion were captured together in the
   accessible-options scene.
+- The component gallery separately captures semantic type and colors, all ten
+  required drawn icons, default/hover/focus/disabled/selected/urgent button
+  states, labelled meters and badges, tooltips, the status bar, the portrait
+  card, and the itemized completion summary at every viewport.
 
 Keyboard activation and visible focus are centralized in the shared button
 component. Mouse and touch use the same hit regions; the toolkit scroll area
