@@ -33,6 +33,12 @@ pub struct AlmanacEntry {
     /// with your own eyes is not gated behind lore.
     #[serde(default)]
     pub tells_seen: Vec<String>,
+    /// Exact tiers earned by surviving rides, separate from purchased study.
+    #[serde(default)]
+    pub earned_knowledge_levels: Vec<u32>,
+    /// Exact tiers bought with lore, so the dossier can name their source.
+    #[serde(default)]
+    pub lore_knowledge_levels: Vec<u32>,
 }
 
 impl AlmanacEntry {
@@ -442,6 +448,9 @@ impl PlayerStats {
             .iter()
             .filter(|threshold| entry.rides_survived >= **threshold)
             .count() as u32;
+        if earned > 0 && !entry.earned_knowledge_levels.contains(&earned) {
+            entry.earned_knowledge_levels.push(earned);
+        }
         if earned > entry.knowledge_level {
             entry.knowledge_level = earned;
             Some(earned)
@@ -470,6 +479,7 @@ impl PlayerStats {
             return false;
         }
         entry.knowledge_level += 1;
+        entry.lore_knowledge_levels.push(entry.knowledge_level);
         self.lore_fragments -= cost;
         true
     }

@@ -7,7 +7,8 @@ use crate::state::GameState;
 use crate::ui::draw_ui_text;
 use crate::ui::{
     colors, draw_cockpit_background, draw_glass_button, draw_glass_panel, draw_small_caps,
-    draw_wrapped_text, fonts, get_fuel_color, layout, spacing, UiAction, UiRect,
+    draw_ui_icon, draw_wrapped_text, fonts, get_fuel_color, layout, spacing, UiAction, UiIcon,
+    UiRect,
 };
 use macroquad_toolkit::ui::format_clock;
 
@@ -46,7 +47,20 @@ pub fn draw_waiting(
         let right_w = inner.w - left_w - 28.0;
         let mut y = inner.y + 16.0;
 
-        draw_small_caps("Dispatch", inner.x, y, fonts::SIZE_SM, colors::CAB_YELLOW);
+        draw_ui_icon(
+            UiIcon::Cab,
+            inner.x + 10.0,
+            y - 4.0,
+            20.0,
+            colors::CAB_YELLOW,
+        );
+        draw_small_caps(
+            "Dispatch",
+            inner.x + 28.0,
+            y,
+            fonts::SIZE_SM,
+            colors::CAB_YELLOW,
+        );
         y += 36.0;
         draw_ui_text(
             &data.localization.ui.game.waiting.looking,

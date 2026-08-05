@@ -7,7 +7,7 @@ use crate::state::{DrivingPhase, GameState};
 use crate::ui::draw_ui_text;
 use crate::ui::{
     colors, draw_cockpit_background, draw_glass_button, draw_glass_panel, draw_small_caps,
-    draw_wrapped_text, fonts, layout, UiAction, UiRect,
+    draw_ui_icon, draw_wrapped_text, fonts, layout, UiAction, UiIcon, UiRect,
 };
 
 use super::scene::{draw_bottom_taxi_scene, pulsing_warning_color};
@@ -454,6 +454,13 @@ pub fn draw_driving(
                     card.x + card.w - COST_COLUMN_W,
                     card.y + 57.0,
                     fonts::SIZE_XS,
+                    risk_color,
+                );
+                draw_ui_icon(
+                    UiIcon::Risk,
+                    card.x + card.w - COST_COLUMN_W - 10.0,
+                    card.y + 54.0,
+                    12.0,
                     risk_color,
                 );
 

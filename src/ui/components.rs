@@ -165,20 +165,36 @@ impl StatusBar {
                 );
             }
 
-            if draw_glass_button(
+            let rules_clicked = draw_glass_button(
                 UiRect::new(rules_btn_x, btn_y, 86.0, btn_h),
                 "R Rules",
                 colors::TEXT_SECONDARY,
                 true,
-            ) {
+            );
+            draw_ui_icon(
+                UiIcon::Rules,
+                rules_btn_x + 12.0,
+                btn_y + btn_h / 2.0,
+                14.0,
+                colors::TEXT_MUTED,
+            );
+            if rules_clicked {
                 return UiAction::ToggleRules;
             }
-            if draw_glass_button(
+            let inventory_clicked = draw_glass_button(
                 UiRect::new(inv_btn_x, btn_y, inv_btn_w, btn_h),
                 "I Inv",
                 colors::TEXT_SECONDARY,
                 true,
-            ) {
+            );
+            draw_ui_icon(
+                UiIcon::Inventory,
+                inv_btn_x + 12.0,
+                btn_y + btn_h / 2.0,
+                14.0,
+                colors::TEXT_MUTED,
+            );
+            if inventory_clicked {
                 return UiAction::ToggleInventory;
             }
         }

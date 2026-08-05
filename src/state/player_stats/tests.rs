@@ -354,3 +354,27 @@ fn presentation_cycles_stay_inside_supported_values() {
     assert_eq!(brightness, vec![100, 115, 90, 100]);
     assert_eq!(volume, vec![80, 100, 0, 50]);
 }
+
+#[test]
+fn almanac_tiers_remember_whether_play_or_lore_revealed_them() {
+    let mut stats = PlayerStats::new();
+    assert_eq!(stats.record_ride_survived(7), Some(1));
+    let earned = stats.get_almanac_entry(7);
+    assert_eq!(earned.earned_knowledge_levels, vec![1]);
+    assert!(earned.lore_knowledge_levels.is_empty());
+
+    stats.lore_fragments = 10;
+    assert!(stats.upgrade_almanac_knowledge(7, 3));
+    let mixed = stats.get_almanac_entry(7);
+    assert_eq!(mixed.knowledge_level, 2);
+    assert_eq!(mixed.earned_knowledge_levels, vec![1]);
+    assert_eq!(mixed.lore_knowledge_levels, vec![2]);
+}
+
+#[test]
+fn legacy_almanac_entries_default_to_an_unattributed_earlier_record() {
+    let legacy = r#"{"passenger_id":4,"encountered":true,"knowledge_level":2}"#;
+    let entry: AlmanacEntry = serde_json::from_str(legacy).expect("legacy entry loads");
+    assert!(entry.earned_knowledge_levels.is_empty());
+    assert!(entry.lore_knowledge_levels.is_empty());
+}
