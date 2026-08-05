@@ -1,6 +1,7 @@
 //! Core game state structure.
 
 use crate::data::*;
+use crate::state::FareContribution;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
@@ -412,6 +413,7 @@ pub struct GameState {
     pub time_remaining: u32,
     pub rides_completed: u32,
     pub rules_violated: u32,
+    pub fare_contributions: Vec<FareContribution>,
 
     // Current shift
     pub current_rules: Vec<Rule>,
@@ -543,6 +545,7 @@ impl GameState {
             time_remaining: constants.initial_time,
             rides_completed: 0,
             rules_violated: 0,
+            fare_contributions: Vec::new(),
             current_rules: Vec::new(),
             hidden_rules: Vec::new(),
             revealed_hidden_rules: Vec::new(),
@@ -608,6 +611,7 @@ impl GameState {
         self.minimum_earnings = constants.minimum_earnings;
         self.rides_completed = 0;
         self.rules_violated = 0;
+        self.fare_contributions.clear();
         self.current_rules.clear();
         self.hidden_rules.clear();
         self.revealed_hidden_rules.clear();

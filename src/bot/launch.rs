@@ -38,6 +38,14 @@ impl PlaytestBot {
             if args.iter().any(|arg| arg == "--bot-once") {
                 max_shifts = 1;
             }
+            let max_campaigns = parse_u32_arg(&args, "--bot-campaigns")
+                .or_else(|| parse_env_u32("NIGHTMARE_SHIFT_BOT_CAMPAIGNS"))
+                .map(|value| value.max(1));
+            if max_campaigns.is_some() {
+                // A complete campaign can contain six shifts. This ceiling is
+                // only a watchdog; campaign completion/loss is the real stop.
+                max_shifts = u32::MAX;
+            }
 
             let strategy = parse_string_arg(&args, "--bot-strategy")
                 .or_else(|| std::env::var("NIGHTMARE_SHIFT_BOT_STRATEGY").ok())
@@ -83,7 +91,9 @@ impl PlaytestBot {
             let bot = Self {
                 strategy,
                 max_shifts,
+                max_campaigns,
                 completed_shifts: 0,
+                completed_campaigns: 0,
                 action_delay: delay_ms as f64 / 1000.0,
                 last_action_time: 0.0,
                 route_cursor: 0,
@@ -97,20 +107,24 @@ impl PlaytestBot {
                 unlock_all_skills,
                 named_skills,
                 fresh_stats,
+                configured_seed: parse_u64_arg(&args, "--seed")
+                    .or_else(|| parse_env_u64("NIGHTMARE_SHIFT_SEED")),
                 soothed_at_leg: None,
                 soothe_cursor: 0,
                 guessed_at_ride: None,
             };
 
             eprintln!(
-                "[BOT] Enabled: strategy={:?}, shifts={}, delay={}ms, almanac_level={}, all_skills={}, skills={:?}, fresh_stats={}",
+                "[BOT] Enabled: strategy={:?}, shifts={}, campaigns={:?}, delay={}ms, almanac_level={}, all_skills={}, skills={:?}, fresh_stats={}, seed={:?}",
                 bot.strategy,
                 bot.max_shifts,
+                bot.max_campaigns,
                 delay_ms,
                 bot.almanac_level,
                 bot.unlock_all_skills,
                 bot.named_skills,
-                bot.fresh_stats
+                bot.fresh_stats,
+                bot.configured_seed,
             );
             Some(bot)
         }
@@ -173,7 +187,27 @@ fn parse_u32_arg(args: &[String], name: &str) -> Option<u32> {
 }
 
 #[cfg(not(target_arch = "wasm32"))]
+fn parse_u64_arg(args: &[String], name: &str) -> Option<u64> {
+    let prefix = format!("{}=", name);
+    args.iter()
+        .find_map(|arg| arg.strip_prefix(&prefix))
+        .and_then(|value| value.parse().ok())
+        .or_else(|| {
+            args.windows(2)
+                .find(|pair| pair[0] == name)
+                .and_then(|pair| pair[1].parse().ok())
+        })
+}
+
+#[cfg(not(target_arch = "wasm32"))]
 fn parse_env_u32(name: &str) -> Option<u32> {
+    std::env::var(name)
+        .ok()
+        .and_then(|value| value.parse().ok())
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+fn parse_env_u64(name: &str) -> Option<u64> {
     std::env::var(name)
         .ok()
         .and_then(|value| value.parse().ok())

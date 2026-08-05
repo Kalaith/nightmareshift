@@ -26,6 +26,18 @@ Sweep from no almanac knowledge through full almanac knowledge:
 .\scripts\run-bot-almanac-sweep.ps1 -Strategy learned -RunsPerLevel 1 -FreshStats
 ```
 
+Run the review's fixed-seed six-tier campaign matrix and write both raw shift
+data and a readable report to `docs/verification`:
+
+```powershell
+.\scripts\run-campaign-matrix.ps1
+```
+
+Campaign mode (`--bot-campaigns=1`) follows a run through successive nights
+and stops when the campaign is lost or completed. Every terminal shift emits a
+`[BOT_JSON]` line with its seed, progression tier, modifier, fare
+contributions, route sequence, end resources, wards, and classified outcome.
+
 ## Strategies
 
 - `coverage`: cycles routes, event choices, and guideline decisions to exercise more branches.

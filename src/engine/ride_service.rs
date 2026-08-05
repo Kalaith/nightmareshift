@@ -352,6 +352,11 @@ impl RideService {
             }
 
             // Create completion data
+            state.fare_contributions.push(FareContribution {
+                passenger_id: passenger.id,
+                passenger_name: passenger.name.clone(),
+                fare,
+            });
             state.last_ride_completion = Some(RideCompletion {
                 passenger: passenger.clone(),
                 fare_earned: fare,

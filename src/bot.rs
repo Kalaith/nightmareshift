@@ -43,7 +43,9 @@ pub enum PlaytestDirective {
 pub struct PlaytestBot {
     strategy: PlaytestStrategy,
     max_shifts: u32,
+    max_campaigns: Option<u32>,
     completed_shifts: u32,
+    completed_campaigns: u32,
     action_delay: f64,
     last_action_time: f64,
     route_cursor: usize,
@@ -62,6 +64,7 @@ pub struct PlaytestBot {
     /// save inherits whatever difficulty the file has accumulated — and then
     /// pollutes it further with every shift it plays. Sweeps set this.
     fresh_stats: bool,
+    configured_seed: Option<u64>,
     /// Leg index the bot last spent a soothing cab action on.
     soothed_at_leg: Option<usize>,
     /// Rotates the blind guess at which action settles an unstudied fare.
@@ -118,9 +121,15 @@ impl PlaytestBot {
                     self.log_terminal_shift(screen, state);
                     self.current_shift_logged = true;
                     self.completed_shifts += 1;
+                    if screen == Screen::GameOver || state.run_complete {
+                        self.completed_campaigns += 1;
+                    }
                 }
 
-                if self.completed_shifts >= self.max_shifts {
+                let campaign_limit_reached = self
+                    .max_campaigns
+                    .is_some_and(|limit| self.completed_campaigns >= limit);
+                if campaign_limit_reached || self.completed_shifts >= self.max_shifts {
                     eprintln!("[BOT] Finished {} shift(s).", self.completed_shifts);
                     return PlaytestDirective::Stop(0);
                 }
@@ -275,6 +284,63 @@ impl PlaytestBot {
                 .as_deref()
                 .unwrap_or("completed")
         );
+        let modifier = state
+            .night_modifier
+            .as_ref()
+            .map(|modifier| modifier.name.as_str())
+            .unwrap_or("None");
+        let fares = state
+            .fare_contributions
+            .iter()
+            .map(|fare| {
+                format!(
+                    "{{\"passenger_id\":{},\"passenger\":{},\"fare\":{}}}",
+                    fare.passenger_id,
+                    json_string(&fare.passenger_name),
+                    fare.fare
+                )
+            })
+            .collect::<Vec<_>>()
+            .join(",");
+        let routes = state
+            .route_history
+            .iter()
+            .map(|entry| json_string(&format!("{:?}", entry.route_type)))
+            .collect::<Vec<_>>()
+            .join(",");
+        let reason = state.game_over_reason.as_deref().unwrap_or("completed");
+        let tier = self.progression_tier();
+        eprintln!(
+            "[BOT_JSON] {{\"run\":{},\"seed\":{},\"night\":{},\"campaign_complete\":{},\"tier\":{},\"modifier\":{},\"rides\":{},\"earnings\":{},\"quota\":{},\"fuel_end\":{:.1},\"time_end\":{},\"wards_end\":{},\"failure_cause\":{},\"reason\":{},\"fares\":[{}],\"routes\":[{}]}}",
+            self.completed_campaigns + 1,
+            self.configured_seed.unwrap_or(0),
+            state.night,
+            state.run_complete,
+            json_string(&tier),
+            json_string(modifier),
+            state.rides_completed,
+            state.earnings,
+            state.minimum_earnings,
+            state.fuel,
+            state.time_remaining,
+            state.wards_in_hand(),
+            json_string(failure_cause(reason, screen, state.rules_violated)),
+            json_string(reason),
+            fares,
+            routes,
+        );
+    }
+
+    fn progression_tier(&self) -> String {
+        if !self.named_skills.is_empty() {
+            return "custom-skills".to_string();
+        }
+        match (self.almanac_level, self.unlock_all_skills) {
+            (0, false) => "baseline".to_string(),
+            (0, true) => "skills-only".to_string(),
+            (level, true) => format!("almanac-{level}-all-skills"),
+            (level, false) => format!("almanac-{level}"),
+        }
     }
 
     fn log_state_summary(&self, state: &GameState) {
@@ -292,5 +358,35 @@ impl PlaytestBot {
                 .map(|passenger| passenger.name.as_str())
                 .unwrap_or("none")
         );
+    }
+}
+
+fn json_string(value: &str) -> String {
+    serde_json::to_string(value).unwrap_or_else(|_| "\"unavailable\"".to_string())
+}
+
+fn failure_cause(reason: &str, screen: Screen, rules_violated: u32) -> &'static str {
+    if screen == Screen::Success {
+        "success"
+    } else {
+        let lower = reason.to_ascii_lowercase();
+        if lower.contains("time") || lower.contains("next leg") || lower.contains("shift ends") {
+            "time"
+        } else if lower.contains("quota") || lower.contains("earn") {
+            "quota"
+        } else if lower.contains("fuel") || lower.contains("tank") {
+            "fuel"
+        } else if lower.contains("need became uncontrollable") || lower.contains("meltdown") {
+            "meltdown"
+        } else if lower.contains("hidden rule") {
+            "hidden-rule"
+        } else if lower.contains("wrong choice") || lower.contains("misread") {
+            "misread"
+        } else if rules_violated > 0 || lower.contains("rule") || lower.contains("dispatch routes")
+        {
+            "violation"
+        } else {
+            "other"
+        }
     }
 }
