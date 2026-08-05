@@ -853,3 +853,18 @@ fn a_gift_is_not_spent_on_an_empty_back_seat() {
 
     assert!(checked > 0, "no reputation items found to check");
 }
+
+/// Mastery is durable: a story already known must retain the same drop bonus
+/// that the ride which first revealed it received.
+#[test]
+fn knowing_a_backstory_keeps_its_drop_bonus() {
+    let constants = load_constants();
+    let passenger = load_passengers().into_iter().next().expect("a passenger");
+    let unknown =
+        ItemService::calculate_drop_chance(&passenger, RouteType::Normal, false, &constants);
+    let known = ItemService::calculate_drop_chance(&passenger, RouteType::Normal, true, &constants);
+    assert!(
+        known > unknown,
+        "known story {known} did not beat {unknown}"
+    );
+}

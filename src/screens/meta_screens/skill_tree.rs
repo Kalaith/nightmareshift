@@ -323,8 +323,8 @@ pub fn draw_skill_tree(
             );
         }
 
-        let categories = ["survival", "occult", "efficiency"];
-        let wide_layout = screen_w >= 1080.0;
+        let categories = ["survival", "occult", "efficiency", "comfort"];
+        let wide_layout = screen_w >= 1200.0;
         let col_gap = 18.0;
         let col_count = if wide_layout {
             categories.len() as f32

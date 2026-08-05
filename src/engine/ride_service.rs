@@ -323,11 +323,16 @@ impl RideService {
 
             // Generate item drop
             let mut items_received = Vec::new();
+            // The item bonus belongs to knowing the passenger's story, not
+            // only to the exact ride on which it unlocked. Passing
+            // `backstory_unlocked.is_some()` made Mastered passengers lose a
+            // benefit that Studied passengers could gain mid-run.
+            let backstory_known = stats.is_backstory_unlocked(passenger.id);
             if let Some(drop) = ItemService::generate_drop(
                 &mut state.rng,
                 passenger,
                 route,
-                backstory_unlocked.is_some(),
+                backstory_known,
                 current_time,
                 &data.constants,
                 &data.item_pools,

@@ -306,11 +306,30 @@ impl PlaytestBot {
                     0
                 };
 
-                fare as i32 * 12
+                // A studied driver understands Normal's steady-road niche and
+                // values it when need is already climbing. Without this the
+                // measurement bot saw only the route's fare/time arithmetic,
+                // so it could not exercise the relief a human dossier shows.
+                let normal_relief_score = if *route == RouteType::Normal {
+                    state
+                        .current_passenger_need_state
+                        .as_ref()
+                        .map(|need| match need.stage {
+                            NeedStage::Critical | NeedStage::Meltdown => 75,
+                            NeedStage::Warning => 40,
+                            NeedStage::Calm => 12,
+                        })
+                        .unwrap_or(0)
+                } else {
+                    0
+                };
+
+                fare as i32 * 5
                     + preference_score
                     + finish_score
                     + shortcut_rule_penalty
-                    + stats.get_route_usage(*route).min(20) as i32
+                    + normal_relief_score
+                    - stats.get_route_usage(*route).min(20) as i32
                     - costs.time as i32 * 4
                     - costs.fuel as i32 * 3
                     - costs.risk as i32 * 8

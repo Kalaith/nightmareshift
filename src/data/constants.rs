@@ -59,6 +59,10 @@ pub struct GameConstants {
     pub time_cost_police: u32,
     #[serde(rename = "ROUTE_PREFERENCE_STRESS_SCALE")]
     pub route_preference_stress_scale: f32,
+    /// Need relieved on each Normal leg: its identity is the predictable,
+    /// steady road rather than speed, premium fare, or supernatural safety.
+    #[serde(rename = "NORMAL_ROUTE_NEED_RELIEF", default = "default_normal_relief")]
+    pub normal_route_need_relief: u32,
     #[serde(rename = "RISK_NORMAL")]
     pub risk_normal: u32,
     #[serde(rename = "RISK_SHORTCUT")]
@@ -368,6 +372,10 @@ fn default_quota_step() -> f32 {
 
 fn default_difficulty_step() -> u32 {
     1
+}
+
+fn default_normal_relief() -> u32 {
+    4
 }
 
 #[cfg(test)]

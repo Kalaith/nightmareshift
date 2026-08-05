@@ -66,6 +66,7 @@ impl RideService {
             route,
             current_time,
             data.constants.game_constants.route_preference_stress_scale,
+            data.constants.game_constants.normal_route_need_relief,
         );
         if Self::is_passenger_meltdown(state)
             && !Self::absorb_meltdown_with_protection(state, current_time)
@@ -387,6 +388,7 @@ impl RideService {
         route: RouteType,
         current_time: f64,
         route_preference_stress_scale: f32,
+        normal_route_need_relief: u32,
     ) {
         if let (Some(mut need_state), Some(passenger)) = (
             state.current_passenger_need_state.clone(),
@@ -409,6 +411,22 @@ impl RideService {
                 route_preference_stress_scale,
                 current_time,
             );
+
+            // Normal is the steady road: it gives up Shortcut's speed,
+            // Scenic's meter, and Police's supernatural safety in exchange
+            // for a quieter passenger and the smallest predictable fuel bill.
+            // Apply this after preference so a passenger who fears Normal can
+            // still dislike it; the route softens the leg rather than erasing
+            // authored identity.
+            if route == RouteType::Normal && normal_route_need_relief > 0 {
+                let relief_tells = PassengerStateMachine::apply_stress_delta(
+                    &mut need_state,
+                    &passenger,
+                    -(normal_route_need_relief as i32),
+                    current_time,
+                );
+                triggered_tells.extend(relief_tells);
+            }
 
             let weather_stress: i32 = state
                 .current_weather
@@ -782,6 +800,36 @@ mod tests {
             own, unrelated,
             "her own rule being in force cost the same as an unrelated one ({own})"
         );
+    }
+
+    #[test]
+    fn normal_route_relief_is_applied_after_the_passengers_reaction() {
+        use crate::engine::PassengerStateMachine;
+
+        let (mut relieved, data, _) = driving_state(100.0, 480);
+        let passenger = relieved.current_passenger.clone().expect("a passenger");
+        relieved.current_passenger_need_state = PassengerStateMachine::initialize(&passenger, 0.0);
+        let mut without_relief = relieved.clone();
+        let game = &data.constants.game_constants;
+
+        RideService::update_passenger_state(
+            &mut relieved,
+            RouteType::Normal,
+            1.0,
+            game.route_preference_stress_scale,
+            game.normal_route_need_relief,
+        );
+        RideService::update_passenger_state(
+            &mut without_relief,
+            RouteType::Normal,
+            1.0,
+            game.route_preference_stress_scale,
+            0,
+        );
+
+        let actual = relieved.current_passenger_need_state.unwrap().level;
+        let control = without_relief.current_passenger_need_state.unwrap().level;
+        assert_eq!(control - actual, game.normal_route_need_relief);
     }
 
     /// A driver with the tank and the clock full is never stranded.

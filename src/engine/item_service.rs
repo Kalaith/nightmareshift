@@ -24,7 +24,7 @@ impl ItemService {
     pub fn calculate_drop_chance(
         passenger: &Passenger,
         route_type: RouteType,
-        backstory_unlocked: bool,
+        backstory_known: bool,
         constants: &ConstantsData,
     ) -> f32 {
         let mut base_chance: f32 = constants.probabilities.item_drop;
@@ -43,7 +43,7 @@ impl ItemService {
         }
 
         // Backstory unlock significantly increases drop chance
-        if backstory_unlocked {
+        if backstory_known {
             base_chance *= 1.5;
         }
 
@@ -60,14 +60,14 @@ impl ItemService {
         rng: &mut macroquad_toolkit::rng::SeededRng,
         passenger: &Passenger,
         route_type: RouteType,
-        backstory_unlocked: bool,
+        backstory_known: bool,
         current_time: f64,
         constants: &ConstantsData,
         item_pools: &ItemPools,
         catalog: &ItemCatalog,
     ) -> Option<ItemDrop> {
         let drop_chance =
-            Self::calculate_drop_chance(passenger, route_type, backstory_unlocked, constants);
+            Self::calculate_drop_chance(passenger, route_type, backstory_known, constants);
 
         if rng.next_f32() > drop_chance {
             return None;
