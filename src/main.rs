@@ -50,16 +50,18 @@ async fn main() {
 
     // Screenshot harness: when NIGHTMARE_SHIFT_CAPTURE_PATH is set, seed a
     // scene, simulate deterministic frames, write a PNG, and exit.
-    if let Some(config) = capture::CaptureConfig::from_env("NIGHTMARE_SHIFT") {
-        game.begin_capture_scene(&config.scene);
-        capture::run_capture(&config, |_dt| {
-            game.update();
-            game.handle_input();
-            let action = game.draw();
-            game.handle_ui_action(action);
-            game.handle_playtest_bot();
-        })
-        .await;
+    if let Some(configs) = capture::CaptureConfig::all_from_env("NIGHTMARE_SHIFT") {
+        for config in configs {
+            game.begin_capture_scene(&config.scene);
+            capture::run_capture_once(&config, |_dt| {
+                game.update();
+                game.handle_input();
+                let action = game.draw();
+                game.handle_ui_action(action);
+                game.handle_playtest_bot();
+            })
+            .await;
+        }
         return;
     }
 
