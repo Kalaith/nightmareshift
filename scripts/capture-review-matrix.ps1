@@ -5,8 +5,9 @@
 .DESCRIPTION
     Builds once, then runs the deterministic capture harness for the complete
     interaction/state list at 1920x1080, 1600x900, 1366x768, and the narrow
-    900x720 browser tier. Output is grouped by viewport under
-    docs/verification/review-matrix.
+    900x720 browser tier. Raw captures are temporary build artifacts under
+    target/review-matrix; committed contact sheets go directly in
+    docs/verification.
 #>
 param(
     [switch]$SkipBuild,
@@ -62,7 +63,7 @@ $viewports = @(
 
 $first = $true
 foreach ($viewport in $viewports) {
-    $output = "docs\verification\review-matrix\$($viewport.Name)"
+    $output = "target\review-matrix\$($viewport.Name)"
     & $shared `
         -GameDir $gameDir `
         -Scenes $scenes `
@@ -77,12 +78,12 @@ foreach ($viewport in $viewports) {
     $first = $false
 }
 
-$files = Get-ChildItem -LiteralPath (Join-Path $gameDir "docs\verification\review-matrix") -Recurse -Filter *.png
+$files = Get-ChildItem -LiteralPath (Join-Path $gameDir "target\review-matrix") -Recurse -Filter *.png
 if ($files.Count -ne $scenes.Count * $viewports.Count) {
     throw "Expected $($scenes.Count * $viewports.Count) captures, found $($files.Count)."
 }
 Write-Host "Captured $($files.Count) review images across $($viewports.Count) viewports."
-& (Join-Path $PSScriptRoot "build-review-contact-sheets.ps1")
+& (Join-Path $PSScriptRoot "build-review-contact-sheets.ps1") -MatrixDir "target\review-matrix"
 if ($LASTEXITCODE -ne 0) {
     throw "Contact-sheet generation failed."
 }

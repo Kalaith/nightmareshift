@@ -8,7 +8,8 @@
     labelled JPEG sheets suitable for review and version control.
 #>
 param(
-    [string]$MatrixDir = "docs\verification\review-matrix"
+    [string]$MatrixDir = "target\review-matrix",
+    [string]$OutputDir = "docs\verification"
 )
 
 $ErrorActionPreference = "Stop"
@@ -16,6 +17,8 @@ Add-Type -AssemblyName System.Drawing
 
 $gameDir = Split-Path -Parent $PSScriptRoot
 $root = Join-Path $gameDir $MatrixDir
+$outputRoot = Join-Path $gameDir $OutputDir
+New-Item -ItemType Directory -Path $outputRoot -Force | Out-Null
 $columns = 4
 $sheetWidth = 1200
 $tileWidth = [int]($sheetWidth / $columns)
@@ -61,7 +64,7 @@ foreach ($viewportDir in Get-ChildItem -LiteralPath $root -Directory | Sort-Obje
             $graphics.DrawString($label, $labelFont, $labelBrush, $x + 4, $y + $imageHeight + 5)
         }
 
-        $output = Join-Path $root "contact_$($viewportDir.Name).jpg"
+        $output = Join-Path $outputRoot "contact_$($viewportDir.Name).jpg"
         $codec = [System.Drawing.Imaging.ImageCodecInfo]::GetImageEncoders() |
             Where-Object MimeType -eq "image/jpeg"
         $quality = [System.Drawing.Imaging.EncoderParameters]::new(1)

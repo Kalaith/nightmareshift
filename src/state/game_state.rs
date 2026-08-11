@@ -1,5 +1,7 @@
 //! Core game state structure.
 
+mod relationship_level;
+
 use crate::data::*;
 use crate::state::{
     AudioEvent, FareContribution, MetaPayout, RideBaseline, RideCompletion, ShiftTelemetry,
@@ -103,19 +105,6 @@ pub enum RelationshipLevel {
     Friendly,
     Trusted,
 }
-
-impl RelationshipLevel {
-    /// How the dossier names this standing.
-    pub fn label(self) -> &'static str {
-        match self {
-            Self::Hostile => "Hostile",
-            Self::Neutral => "Neutral",
-            Self::Friendly => "Friendly",
-            Self::Trusted => "Trusted",
-        }
-    }
-}
-
 /// Current ride information
 #[derive(Debug, Clone)]
 pub struct CurrentRide {
