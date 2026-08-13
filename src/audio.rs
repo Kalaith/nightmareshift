@@ -70,7 +70,13 @@ pub struct AudioMixer {
 
 impl AudioMixer {
     pub async fn load() -> Self {
-        let pack = AssetPack::load("assets.zip").await.ok();
+        let pack = match AssetPack::load("assets.zip").await {
+            Ok(pack) => Some(pack),
+            Err(error) => {
+                eprintln!("Asset pack unavailable; using loose audio files: {error}");
+                None
+            }
+        };
         let mut sounds = HashMap::new();
         for cue in Cue::ALL {
             match load_sound_from_pack_or_file(pack.as_ref(), cue.path()).await {

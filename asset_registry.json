@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "assets": [
+    "assets/sounds/brink.wav",
+    "assets/sounds/engine_ambience.wav",
+    "assets/sounds/meltdown.wav",
+    "assets/sounds/rain_ambience.wav",
+    "assets/sounds/success.wav",
+    "assets/sounds/tension_pulse.wav",
+    "assets/sounds/violation.wav",
+    "assets/sounds/ward.wav",
+    "assets/sounds/warning.wav"
+  ]
+}
