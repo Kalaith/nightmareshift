@@ -30,7 +30,7 @@
 param(
     [string]$BaseUrl = "http://127.0.0.1/games",
     [string]$Slug = "nightmare_shift",
-    [string]$DeployRoot = "D:\xampp\htdocs\games"
+    [string]$DeployRoot = "\\wsl.localhost\Ubuntu\home\kalai\dev\games"
 )
 
 $ErrorActionPreference = "Stop"

@@ -74,8 +74,7 @@ impl GameData {
 
 /// Load passengers from embedded JSON
 pub fn load_passengers() -> Vec<Passenger> {
-    let json = macroquad_toolkit::include_json_str!("../../assets/passengerData.json");
-    serde_json::from_str(json).unwrap_or_else(|e| {
+    macroquad_toolkit::include_json!("../../assets/passengerData.json").unwrap_or_else(|e| {
         eprintln!("Failed to parse passengers: {}", e);
         Vec::new()
     })
@@ -83,8 +82,7 @@ pub fn load_passengers() -> Vec<Passenger> {
 
 /// Load rules from embedded JSON
 pub fn load_rules() -> Vec<Rule> {
-    let json = macroquad_toolkit::include_json_str!("../../assets/shiftRulesData.json");
-    serde_json::from_str(json).unwrap_or_else(|e| {
+    macroquad_toolkit::include_json!("../../assets/shiftRulesData.json").unwrap_or_else(|e| {
         eprintln!("Failed to parse rules: {}", e);
         Vec::new()
     })
@@ -92,8 +90,7 @@ pub fn load_rules() -> Vec<Rule> {
 
 /// Load locations from embedded JSON
 pub fn load_locations() -> Vec<Location> {
-    let json = macroquad_toolkit::include_json_str!("../../assets/locationData.json");
-    serde_json::from_str(json).unwrap_or_else(|e| {
+    macroquad_toolkit::include_json!("../../assets/locationData.json").unwrap_or_else(|e| {
         eprintln!("Failed to parse locations: {}", e);
         Vec::new()
     })
@@ -101,8 +98,8 @@ pub fn load_locations() -> Vec<Location> {
 
 /// Load constants, or say exactly which part of the file is wrong.
 pub fn try_load_constants() -> Result<ConstantsData, String> {
-    let json = macroquad_toolkit::include_json_str!("../../assets/constants.json");
-    serde_json::from_str(json).map_err(|e| format!("constants.json: {e}"))
+    macroquad_toolkit::include_json!("../../assets/constants.json")
+        .map_err(|e| format!("constants.json: {e}"))
 }
 
 /// Load constants from embedded JSON.
@@ -117,8 +114,7 @@ pub fn load_constants() -> ConstantsData {
 
 /// Load skill tree from embedded JSON (JSON is an array directly)
 pub fn load_skill_tree() -> Vec<Skill> {
-    let json = macroquad_toolkit::include_json_str!("../../assets/skillTreeData.json");
-    serde_json::from_str(json).unwrap_or_else(|e| {
+    macroquad_toolkit::include_json!("../../assets/skillTreeData.json").unwrap_or_else(|e| {
         eprintln!("Failed to parse skill tree: {}", e);
         Vec::new()
     })
@@ -127,8 +123,7 @@ pub fn load_skill_tree() -> Vec<Skill> {
 /// Load the ending epilogues from embedded JSON. An unparseable file falls
 /// back empty — endings show their title and subtitle, just no paragraph.
 pub fn load_epilogues() -> Vec<Epilogue> {
-    let json = macroquad_toolkit::include_json_str!("../../assets/epilogueData.json");
-    serde_json::from_str(json).unwrap_or_else(|e| {
+    macroquad_toolkit::include_json!("../../assets/epilogueData.json").unwrap_or_else(|e| {
         eprintln!("Failed to parse epilogues: {}", e);
         Vec::new()
     })
@@ -138,8 +133,7 @@ pub fn load_epilogues() -> Vec<Epilogue> {
 /// falls back to an empty deck — no modifier ever rolls, the campaign
 /// still runs.
 pub fn load_night_modifiers() -> NightModifierData {
-    let json = macroquad_toolkit::include_json_str!("../../assets/nightModifierData.json");
-    serde_json::from_str(json).unwrap_or_else(|e| {
+    macroquad_toolkit::include_json!("../../assets/nightModifierData.json").unwrap_or_else(|e| {
         eprintln!("Failed to parse night modifiers: {}", e);
         NightModifierData {
             chance: 0.0,
@@ -150,8 +144,7 @@ pub fn load_night_modifiers() -> NightModifierData {
 
 /// Load almanac data from embedded JSON
 pub fn load_almanac() -> AlmanacData {
-    let json = macroquad_toolkit::include_json_str!("../../assets/almanacData.json");
-    serde_json::from_str(json).unwrap_or_else(|e| {
+    macroquad_toolkit::include_json!("../../assets/almanacData.json").unwrap_or_else(|e| {
         eprintln!("Failed to parse almanac: {}", e);
         AlmanacData {
             levels: std::collections::HashMap::new(),
@@ -166,8 +159,7 @@ pub fn load_almanac() -> AlmanacData {
 
 /// Load guidelines from embedded JSON
 pub fn load_guidelines() -> Vec<Guideline> {
-    let json = macroquad_toolkit::include_json_str!("../../assets/guidelineData.json");
-    serde_json::from_str(json).unwrap_or_else(|e| {
+    macroquad_toolkit::include_json!("../../assets/guidelineData.json").unwrap_or_else(|e| {
         eprintln!("Failed to parse guidelines: {}", e);
         Vec::new()
     })
@@ -175,8 +167,7 @@ pub fn load_guidelines() -> Vec<Guideline> {
 
 /// Load the mid-ride event deck from embedded JSON
 pub fn load_events() -> Vec<EventTemplate> {
-    let json = macroquad_toolkit::include_json_str!("../../assets/eventData.json");
-    serde_json::from_str(json).unwrap_or_else(|e| {
+    macroquad_toolkit::include_json!("../../assets/eventData.json").unwrap_or_else(|e| {
         eprintln!("Failed to parse events: {}", e);
         Vec::new()
     })
@@ -184,8 +175,7 @@ pub fn load_events() -> Vec<EventTemplate> {
 
 /// Load item name pools from embedded JSON
 pub fn load_item_pools() -> ItemPools {
-    let json = macroquad_toolkit::include_json_str!("../../assets/itemPoolData.json");
-    serde_json::from_str(json).unwrap_or_else(|e| {
+    macroquad_toolkit::include_json!("../../assets/itemPoolData.json").unwrap_or_else(|e| {
         eprintln!("Failed to parse item pools: {}", e);
         ItemPools::default()
     })
@@ -195,8 +185,7 @@ pub fn load_item_pools() -> ItemPools {
 /// can drop is defined here, so a dropped item always carries real effects
 /// rather than being an inert keepsake.
 pub fn load_item_catalog() -> ItemCatalog {
-    let json = macroquad_toolkit::include_json_str!("../../assets/itemData.json");
-    serde_json::from_str(json).unwrap_or_else(|e| {
+    macroquad_toolkit::include_json!("../../assets/itemData.json").unwrap_or_else(|e| {
         eprintln!("Failed to parse item catalog: {}", e);
         ItemCatalog::default()
     })
@@ -204,8 +193,7 @@ pub fn load_item_catalog() -> ItemCatalog {
 
 /// Load meta-progression payouts from embedded JSON.
 pub fn load_rewards() -> RewardData {
-    let json = macroquad_toolkit::include_json_str!("../../assets/rewardData.json");
-    serde_json::from_str(json).unwrap_or_else(|e| {
+    macroquad_toolkit::include_json!("../../assets/rewardData.json").unwrap_or_else(|e| {
         eprintln!("Failed to parse rewards: {}", e);
         RewardData::default()
     })
@@ -223,9 +211,8 @@ pub fn load_rewards() -> RewardData {
 /// remembering. Cleaning them out of the text once, here, means no caller can
 /// forget — and the emoji stay in the JSON for a font that can draw them.
 pub fn try_load_localization() -> Result<Localization, String> {
-    let json = macroquad_toolkit::include_json_str!("../../assets/localization/en.json");
     let mut value: serde_json::Value =
-        serde_json::from_str(json).map_err(|e| format!("localization/en.json: {e}"))?;
+        macroquad_toolkit::include_json!("../../assets/localization/en.json")?;
     strip_undrawable_glyphs(&mut value);
     serde_json::from_value(value).map_err(|e| format!("localization/en.json shape: {e}"))
 }

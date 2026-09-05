@@ -191,8 +191,8 @@ pub fn draw_help_options(stats: &PlayerStats, tutorial_active: bool) -> UiAction
     let row_gap = 10.0;
     let col_gap = 12.0;
     let button_w = (oi.w - col_gap * (columns - 1) as f32) / columns as f32;
-    let button_h = ((oi.h - 118.0) / ((rows.len() + columns - 1) / columns) as f32 - row_gap)
-        .clamp(34.0, 46.0);
+    let button_h =
+        ((oi.h - 118.0) / rows.len().div_ceil(columns) as f32 - row_gap).clamp(34.0, 46.0);
     for (idx, (key, label, value, action)) in rows.iter().enumerate() {
         let col = idx % columns;
         let row = idx / columns;
